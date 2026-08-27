@@ -1,0 +1,67 @@
+<UserControl x:Class="CMD_BOX_GUI.UI.Views.MediaView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="850">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="16">
+            <TextBlock Text="XỬ LÝ MEDIA &amp; STEGANOGRAPHY" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,12"/>
+
+            <!-- Khối 1: Chọn Tệp Media Nguồn -->
+            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="TỆP MEDIA NGUỒN (VIDEO / AUDIO / ẢNH)" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,6"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="TxtSourceMedia" Style="{StaticResource FlatTextBox}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <Button x:Name="BtnBrowseMedia" Grid.Column="1" Content="Duyệt File" Style="{StaticResource SecondaryButton}" Padding="10,5" Click="BtnBrowseMedia_Click"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Khối 2: Tác Vụ Xử Lý FFmpeg -->
+            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="TÁC VỤ XỬ LÝ MEDIA (FFMPEG)" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
+                    <WrapPanel>
+                        <Button x:Name="BtnCompressVideo" Content="Nén Video (CRF 26)" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnCompressVideo_Click"/>
+                        <Button x:Name="BtnEnhanceMedia" Content="Làm nét &amp; Khử nhiễu" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnEnhanceMedia_Click"/>
+                        <Button x:Name="BtnExtractMp3" Content="Trích xuất MP3" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnExtractMp3_Click"/>
+                        <Button x:Name="BtnSpeed15" Content="Tăng tốc 1.5x" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnSpeed15_Click"/>
+                        <Button x:Name="BtnSpeed05" Content="Làm chậm 0.5x" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnSpeed05_Click"/>
+                        <Button x:Name="BtnNormalizeNames" Content="Chuẩn hóa tên file thư mục" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnNormalizeNames_Click"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Khối 3: Giấu File Trong File (Steganography) -->
+            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="GIẤU FILE VÀO MEDIA (STEGANOGRAPHY)" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,6"/>
+                    <TextBlock Text="Tệp bí mật cần giấu:" FontSize="10" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="TxtSecretFile" Style="{StaticResource FlatTextBox}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <Button x:Name="BtnBrowseSecret" Grid.Column="1" Content="Duyệt File" Style="{StaticResource SecondaryButton}" Padding="10,5" Click="BtnBrowseSecret_Click"/>
+                    </Grid>
+
+                    <WrapPanel>
+                        <Button x:Name="BtnHideFile" Content="Giấu File vào Media" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnHideFile_Click"/>
+                        <Button x:Name="BtnExtractSecret" Content="Trích xuất File ẩn" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnExtractSecret_Click"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <ProgressBar x:Name="PbMedia" Style="{StaticResource FlatProgressBar}" Margin="0,2,0,4" Visibility="Collapsed"/>
+            <TextBlock x:Name="TxtStatus" Text="" FontSize="11" Foreground="{StaticResource AccentCyan}" Visibility="Collapsed"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
