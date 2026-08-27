@@ -1,70 +1,31 @@
-## Ignore Visual Studio / .NET / C# / WPF build artifacts & temporary files
-
-# Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-[Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
-bld/
+# Build output & artifacts
 [Bb]in/
 [Oo]bj/
-[Ll]og/
-[Ll]ogs/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]*/
+bld/
+*.nupkg
 
-# Visual Studio files
+# IDE & Editor files (Visual Studio, VS Code, JetBrains)
 .vs/
+.idea/
+.vscode/
 *.user
-*.userosscache
-*.sln.docstates
 *.suo
 *.userprefs
-*.launchSettings.json
-
-# Visual Studio Code
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+*.docstates
 *.code-workspace
 
-# Antigravity / Gemini / AI assistant temporary files
+# AI Assistants & Temp logs
 .gemini/
 .agents/
+*.log
 
-# Rider / JetBrains
-.idea/
-*.sln.iml
-
-# User-specific files & local settings
-*.rsuser
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-
-# Build Results & Packages
-*.nupkg
-*.snupkg
-**/[Pp]ackages/*
-!**/[Pp]ackages/build/
-project.lock.json
-project.fragment.lock.json
-artifacts/
-
-# Windows desktop garbage
+# Windows OS junk
 Thumbs.db
-ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-
-# Operating System Files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
