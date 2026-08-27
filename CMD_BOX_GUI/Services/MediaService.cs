@@ -23,25 +23,25 @@ namespace CMD_BOX_GUI.Services
             return "ffmpeg.exe";
         }
 
-        // 1. TRÍCH XUẤT ÂM THANH MP3
-        public async Task<bool> ExtractAudioMp3Async(string inputPath, string outputPath)
+        // 1. TRÍCH XUẤT ÂM THANH MP3 (VỚI TÙY CHỌN BITRATE)
+        public async Task<bool> ExtractAudioMp3Async(string inputPath, string outputPath, int bitrateKbps = 192)
         {
             string ffmpeg = FindFFmpegPath();
-            Logger.Info($"Trích xuất MP3 từ [{Path.GetFileName(inputPath)}]...");
+            Logger.Info($"Trích xuất MP3 ({bitrateKbps}kbps) từ [{Path.GetFileName(inputPath)}]...");
 
-            string args = $"-y -i \"{inputPath}\" -vn -c:a libmp3lame -q:a 2 \"{outputPath}\"";
+            string args = $"-y -i \"{inputPath}\" -vn -c:a libmp3lame -b:a {bitrateKbps}k \"{outputPath}\"";
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args);
 
             if (code == 0 && File.Exists(outputPath))
             {
-                Logger.Success($"Đã tạo file MP3: {outputPath}");
+                Logger.Success($"Đã trích xuất MP3: {outputPath}");
                 return true;
             }
-            Logger.Error("Trích xuất MP3 thất bại.");
+            Logger.Error($"Trích xuất MP3 thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
 
-        // 2. NÉN VIDEO
+        // 2. NÉN VIDEO (VỚI HỆ SỐ CRF)
         public async Task<bool> CompressVideoAsync(string inputPath, string outputPath, int crf = 26)
         {
             string ffmpeg = FindFFmpegPath();
@@ -54,10 +54,10 @@ namespace CMD_BOX_GUI.Services
             {
                 long oldSize = new FileInfo(inputPath).Length;
                 long newSize = new FileInfo(outputPath).Length;
-                Logger.Success($"Nén xong: {SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)}");
+                Logger.Success($"Nén xong [{Path.GetFileName(inputPath)}]: {SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)}");
                 return true;
             }
-            Logger.Error("Nén Video thất bại.");
+            Logger.Error($"Nén Video thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
 
@@ -72,10 +72,10 @@ namespace CMD_BOX_GUI.Services
 
             if (code == 0 && File.Exists(outputPath))
             {
-                Logger.Success($"Đã làm nét & khử nhiễu video thành công: {outputPath}");
+                Logger.Success($"Đã làm nét & khử nhiễu: {outputPath}");
                 return true;
             }
-            Logger.Error("Làm nét video thất bại.");
+            Logger.Error($"Làm nét video thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
 
@@ -83,7 +83,7 @@ namespace CMD_BOX_GUI.Services
         public async Task<bool> ChangeVideoSpeedAsync(string inputPath, string outputPath, double speed)
         {
             string ffmpeg = FindFFmpegPath();
-            Logger.Info($"Đổi tốc độ video sang {speed}x...");
+            Logger.Info($"Đổi tốc độ video [{Path.GetFileName(inputPath)}] sang {speed}x...");
 
             double setpts = 1.0 / speed;
             string args = $"-y -i \"{inputPath}\" -filter_complex \"[0:v]setpts={setpts:0.00}*PTS[v];[0:a]atempo={speed:0.00}[a]\" -map \"[v]\" -map \"[a]\" \"{outputPath}\"";
@@ -94,11 +94,119 @@ namespace CMD_BOX_GUI.Services
                 Logger.Success($"Đã đổi tốc độ Video ({speed}x): {outputPath}");
                 return true;
             }
-            Logger.Error("Đổi tốc độ thất bại.");
+            Logger.Error($"Đổi tốc độ thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
 
-        // 5. CHUẨN HÓA TÊN FILE TRONG THƯ MỤC
+        // 5. CHUYỂN ĐỔI ĐỊNH DẠNG (CONVERT FORMAT)
+        public async Task<bool> ConvertFormatAsync(string inputPath, string outputPath)
+        {
+            string ffmpeg = FindFFmpegPath();
+            Logger.Info($"Chuyển đổi định dạng [{Path.GetFileName(inputPath)}] ➔ [{Path.GetExtension(outputPath)}]...");
+
+            string args = $"-y -i \"{inputPath}\" \"{outputPath}\"";
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                Logger.Success($"Chuyển đổi định dạng thành công: {outputPath}");
+                return true;
+            }
+            Logger.Error($"Chuyển đổi định dạng thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
+
+        // 6. TẮT / XÓA ÂM THANH (MUTE VIDEO)
+        public async Task<bool> RemoveAudioAsync(string inputPath, string outputPath)
+        {
+            string ffmpeg = FindFFmpegPath();
+            Logger.Info($"Tách âm thanh khỏi [{Path.GetFileName(inputPath)}]...");
+
+            string args = $"-y -i \"{inputPath}\" -c:v copy -an \"{outputPath}\"";
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                Logger.Success($"Đã tách âm thanh thành công: {outputPath}");
+                return true;
+            }
+            Logger.Error($"Tách âm thanh thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
+
+        // 7. CHUYỂN VIDEO SANG ẢNH GIF ĐỘNG
+        public async Task<bool> VideoToGifAsync(string inputPath, string outputPath, int fps = 12, int width = 480)
+        {
+            string ffmpeg = FindFFmpegPath();
+            Logger.Info($"Tạo GIF từ [{Path.GetFileName(inputPath)}] (FPS {fps}, Rộng {width}px)...");
+
+            string args = $"-y -i \"{inputPath}\" -vf \"fps={fps},scale={width}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" \"{outputPath}\"";
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                Logger.Success($"Đã tạo file GIF: {outputPath}");
+                return true;
+            }
+            Logger.Error($"Tạo GIF thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
+
+        // 8. TRÍCH XUẤT ẢNH THUMBNAIL (SNAPSHOT)
+        public async Task<bool> ExtractThumbnailAsync(string inputPath, string outputPath, string timestamp = "00:00:01")
+        {
+            string ffmpeg = FindFFmpegPath();
+            Logger.Info($"Chụp khung hình tại {timestamp} từ [{Path.GetFileName(inputPath)}]...");
+
+            string args = $"-y -ss {timestamp} -i \"{inputPath}\" -vframes 1 -q:v 2 \"{outputPath}\"";
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                Logger.Success($"Đã trích xuất Thumbnail: {outputPath}");
+                return true;
+            }
+            Logger.Error($"Trích xuất Thumbnail thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
+
+        // 9. ĐỔI ĐỘ PHÂN GIẢI (RESIZE / SCALE)
+        public async Task<bool> ResizeVideoAsync(string inputPath, string outputPath, int width, int height)
+        {
+            string ffmpeg = FindFFmpegPath();
+            Logger.Info($"Đổi độ phân giải [{Path.GetFileName(inputPath)}] ➔ {width}x{height}...");
+
+            string args = $"-y -i \"{inputPath}\" -vf \"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2\" -c:a copy \"{outputPath}\"";
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                Logger.Success($"Đã đổi độ phân giải thành công: {outputPath}");
+                return true;
+            }
+            Logger.Error($"Đổi độ phân giải thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
+
+        // 10. CẮT VIDEO THEO THỜI GIAN (TRIM / CUT)
+        public async Task<bool> TrimVideoAsync(string inputPath, string outputPath, string startTime, string endTime)
+        {
+            string ffmpeg = FindFFmpegPath();
+            Logger.Info($"Cắt video [{Path.GetFileName(inputPath)}] từ {startTime} đến {endTime}...");
+
+            string args = $"-y -ss {startTime} -to {endTime} -i \"{inputPath}\" -c copy \"{outputPath}\"";
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                Logger.Success($"Đã cắt video thành công: {outputPath}");
+                return true;
+            }
+            Logger.Error($"Cắt video thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
+
+        // 11. CHUẨN HÓA TÊN FILE TRONG THƯ MỤC
         public void NormalizeFilenamesInDirectory(string dirPath)
         {
             if (!Directory.Exists(dirPath)) return;
@@ -130,7 +238,7 @@ namespace CMD_BOX_GUI.Services
             Logger.Success($"Đã chuẩn hóa {count} tên file!");
         }
 
-        // 6. GIẤU FILE TRONG FILE (STEGANOGRAPHY)
+        // 12. GIẤU FILE TRONG FILE (STEGANOGRAPHY)
         public async Task<bool> HideFileInMediaAsync(string containerPath, string secretFilePath, string outputPath)
         {
             Logger.Info($"Giấu tệp [{Path.GetFileName(secretFilePath)}] vào [{Path.GetFileName(containerPath)}]...");
@@ -164,7 +272,7 @@ namespace CMD_BOX_GUI.Services
             }
         }
 
-        // 7. TRÍCH XUẤT FILE ẨN
+        // 13. TRÍCH XUẤT FILE ẨN
         public async Task<bool> ExtractHiddenFileAsync(string containerPath, string outputDirectory)
         {
             Logger.Info($"Quét tìm tệp ẩn trong [{Path.GetFileName(containerPath)}]...");

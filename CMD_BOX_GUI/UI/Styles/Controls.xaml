@@ -162,4 +162,210 @@
         </Setter>
     </Style>
 
+    <!-- Sub-tab Switching Button -->
+    <Style x:Key="SubTabButton" TargetType="RadioButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Padding" Value="14,8"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="border" Background="{TemplateBinding Background}" 
+                            BorderBrush="Transparent" BorderThickness="0,0,0,2"
+                            Padding="{TemplateBinding Padding}" Margin="0,0,12,0">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{StaticResource BgCard}"/>
+                            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentCyan}"/>
+                            <Setter TargetName="border" Property="Background" Value="{StaticResource BgCard}"/>
+                            <Setter Property="Foreground" Value="{StaticResource AccentCyan}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ComboBoxItem Style -->
+    <Style TargetType="ComboBoxItem">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="10,8"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <Border x:Name="itemBorder" Background="{TemplateBinding Background}" 
+                            CornerRadius="4" Padding="{TemplateBinding Padding}" Margin="0,1">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="itemBorder" Property="Background" Value="{StaticResource BgCardHover}"/>
+                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="itemBorder" Property="Background" Value="{StaticResource AccentPrimary}"/>
+                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ComboBox ToggleButton Template -->
+    <ControlTemplate x:Key="ComboBoxToggleButtonTemplate" TargetType="ToggleButton">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="28"/>
+            </Grid.ColumnDefinitions>
+            <Border x:Name="Border" Grid.ColumnSpan="2" CornerRadius="6" 
+                    Background="{StaticResource BgInput}" 
+                    BorderBrush="{StaticResource BorderSubtle}" 
+                    BorderThickness="1"/>
+            <Path x:Name="Arrow" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" 
+                  Fill="{StaticResource TextSecondary}" Data="M 0 0 L 4 4 L 8 0 Z"/>
+        </Grid>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource BorderActive}"/>
+                <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource TextPrimary}"/>
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource AccentCyan}"/>
+                <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource AccentCyan}"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="Border" Property="Opacity" Value="0.5"/>
+                <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource TextMuted}"/>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <!-- Full Flat Dark ComboBox Style -->
+    <Style x:Key="FlatComboBox" TargetType="ComboBox">
+        <Setter Property="Background" Value="{StaticResource BgInput}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtle}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <!-- Nút bấm hiển thị và mở popup -->
+                        <ToggleButton x:Name="ToggleButton" 
+                                      Template="{StaticResource ComboBoxToggleButtonTemplate}" 
+                                      Focusable="false" 
+                                      IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
+                                      ClickMode="Press"/>
+
+                        <!-- Nội dung item đang được chọn -->
+                        <ContentPresenter x:Name="ContentSite" IsHitTestVisible="False" 
+                                          Content="{TemplateBinding SelectionBoxItem}" 
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" 
+                                          ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" 
+                                          Margin="10,6,28,6" 
+                                          VerticalAlignment="Center" 
+                                          HorizontalAlignment="Left"/>
+
+                        <!-- Menu Popup Dropdown nền tối hiện đại -->
+                        <Popup x:Name="Popup" Placement="Bottom" 
+                               IsOpen="{TemplateBinding IsDropDownOpen}" 
+                               AllowsTransparency="True" 
+                               Focusable="False" 
+                               PopupAnimation="Slide">
+                            <Grid x:Name="DropDown" SnapsToDevicePixels="True" 
+                                  MinWidth="{TemplateBinding ActualWidth}" 
+                                  MaxHeight="{TemplateBinding MaxDropDownHeight}" 
+                                  Margin="0,4,0,8">
+                                <Border x:Name="DropDownBorder" 
+                                        Background="{StaticResource BgSecondary}" 
+                                        BorderBrush="{StaticResource BorderActive}" 
+                                        BorderThickness="1" 
+                                        CornerRadius="6" 
+                                        Padding="4">
+                                    <ScrollViewer Margin="0" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Grid>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="HasItems" Value="false">
+                            <Setter TargetName="DropDownBorder" Property="MinHeight" Value="95"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="false">
+                            <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Default ComboBox Style (Tự động áp dụng cho tất cả ComboBox) -->
+    <Style TargetType="ComboBox" BasedOn="{StaticResource FlatComboBox}"/>
+
+    <!-- Flat DataGrid Style -->
+    <Style x:Key="FlatDataGrid" TargetType="DataGrid">
+        <Setter Property="Background" Value="{StaticResource BgInput}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtle}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="RowBackground" Value="{StaticResource BgCard}"/>
+        <Setter Property="AlternatingRowBackground" Value="{StaticResource BgInput}"/>
+        <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+        <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource BorderSubtle}"/>
+        <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
+        <Setter Property="HeadersVisibility" Value="Column"/>
+        <Setter Property="AutoGenerateColumns" Value="False"/>
+        <Setter Property="CanUserAddRows" Value="False"/>
+        <Setter Property="CanUserDeleteRows" Value="False"/>
+        <Setter Property="SelectionMode" Value="Single"/>
+        <Setter Property="SelectionUnit" Value="FullRow"/>
+        <Setter Property="RowHeight" Value="36"/>
+        <Setter Property="FontSize" Value="12"/>
+    </Style>
+
+    <Style TargetType="DataGridColumnHeader">
+        <Setter Property="Background" Value="{StaticResource BgSecondary}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Padding" Value="10,8"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtle}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    </Style>
+
+    <Style TargetType="DataGridRow">
+        <Setter Property="Cursor" Value="Hand"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource BgCardHover}"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{StaticResource BgCardHover}"/>
+                <Setter Property="BorderBrush" Value="{StaticResource AccentCyan}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
 </ResourceDictionary>
