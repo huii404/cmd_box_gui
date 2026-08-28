@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Text.RegularExpressions;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CMD_BOX_GUI.Core;
@@ -10,350 +10,390 @@ namespace CMD_BOX_GUI.Services
 {
     public class MediaService
     {
-        private static readonly byte[] MagicMarker = Encoding.UTF8.GetBytes("---CMD_BOX_SECRET_PAYLOAD---");
+        public static readonly string[] DefaultImageExtensions = { ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".ico", ".gif" };
+        public static readonly string[] DefaultVideoExtensions = { ".mp4", ".mkv", ".avi", ".mov", ".webm", ".flv", ".wmv", ".gif" };
 
-        public string FindFFmpegPath()
+        private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-            string appDir = AppDomain.CurrentDomain.BaseDirectory;
-            string localFfmpeg = Path.Combine(appDir, "ffmpeg.exe");
-            if (File.Exists(localFfmpeg)) return localFfmpeg;
+            ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".tif", ".ico", ".jfif", ".gif", ".heic", ".avif"
+        };
 
-            string localBinFfmpeg = Path.Combine(appDir, "bin", "ffmpeg.exe");
-            if (File.Exists(localBinFfmpeg)) return localBinFfmpeg;
+        private static readonly HashSet<string> VideoExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".webm", ".flv", ".m4v", ".ts", ".3gp"
+        };
 
-            return "ffmpeg.exe";
+        private string? _cachedFfmpegPath;
+
+        public static bool IsImageFile(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            string ext = Path.GetExtension(path);
+            return ImageExtensions.Contains(ext);
         }
 
-        // 1. TRÍCH XUẤT ÂM THANH MP3 (VỚI TÙY CHỌN BITRATE)
-        public async Task<bool> ExtractAudioMp3Async(string inputPath, string outputPath, int bitrateKbps = 192, CancellationToken cancellationToken = default)
+        public static bool IsVideoFile(string path)
         {
-            string ffmpeg = FindFFmpegPath();
-            Logger.Info($"Trích xuất MP3 ({bitrateKbps}kbps) từ [{Path.GetFileName(inputPath)}]...");
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            string ext = Path.GetExtension(path);
+            return VideoExtensions.Contains(ext);
+        }
 
-            string args = $"-y -i \"{inputPath}\" -vn -c:a libmp3lame -b:a {bitrateKbps}k \"{outputPath}\"";
-            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
+        public static string GetDefaultTargetExtension(string path)
+        {
+            if (IsImageFile(path)) return ".png";
+            if (IsVideoFile(path)) return ".mp4";
+            return Path.GetExtension(path);
+        }
 
-            if (code == 0 && File.Exists(outputPath))
+        public static List<string> GetAvailableExtensions(string path)
+        {
+            if (IsImageFile(path))
             {
-                Logger.Success($"Đã trích xuất MP3: {outputPath}");
-                return true;
+                return new List<string>(DefaultImageExtensions);
             }
-            Logger.Error($"Trích xuất MP3 thất bại cho {Path.GetFileName(inputPath)}");
-            return false;
+            if (IsVideoFile(path))
+            {
+                return new List<string>(DefaultVideoExtensions);
+            }
+            return new List<string> { Path.GetExtension(path).ToLowerInvariant() };
         }
 
-        // 2. NÉN VIDEO (VỚI HỆ SỐ CRF)
-        public async Task<bool> CompressVideoAsync(string inputPath, string outputPath, int crf = 26, CancellationToken cancellationToken = default)
+        public void SetManualFfmpegPath(string path)
+        {
+            if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+            {
+                _cachedFfmpegPath = Path.GetFullPath(path);
+            }
+        }
+
+        /// <summary>
+        /// Dò tìm đường dẫn ffmpeg.exe đa tầng (thư mục hiện tại, thư mục con, duyệt ngược lên tất cả thư mục mẹ cho đến ổ đĩa gốc, và PATH).
+        /// </summary>
+        public string FindFFmpegPath(bool forceRefresh = false)
+        {
+            if (!forceRefresh && !string.IsNullOrWhiteSpace(_cachedFfmpegPath) && File.Exists(_cachedFfmpegPath))
+            {
+                return _cachedFfmpegPath;
+            }
+
+            var candidates = new List<string>();
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+            // 1. Quét thư mục ứng dụng hiện tại
+            AddCandidatesFromFolder(candidates, baseDir);
+
+            // 2. Quét ngược lên TẤT CẢ các cấp thư mục cha (từ bin/Debug/... lên tận thư mục gốc giải pháp và ổ đĩa)
+            DirectoryInfo? currentDir = new DirectoryInfo(baseDir);
+            while (currentDir != null)
+            {
+                AddCandidatesFromFolder(candidates, currentDir.FullName);
+
+                // Quét các thư mục con trong thư mục cha (ví dụ: cmd_box_gui, CMD_BOX_GUI, ffmpeg, tools, bin)
+                try
+                {
+                    foreach (var sub in currentDir.GetDirectories())
+                    {
+                        string name = sub.Name.ToLowerInvariant();
+                        if (name.Contains("ffmpeg") || name.Contains("cmd_box") || name.Contains("bin") || name.Contains("tools"))
+                        {
+                            AddCandidatesFromFolder(candidates, sub.FullName);
+                        }
+                    }
+                }
+                catch { }
+
+                currentDir = currentDir.Parent;
+            }
+
+            // 3. Quét các vị trí thông dụng trên ổ đĩa
+            string[] commonPaths = {
+                @"G:\Code\C#\code\WPF\ffmpeg.exe",
+                @"G:\Code\C#\code\WPF\CMD_BOX_GUI\ffmpeg.exe",
+                @"G:\Code\C#\code\WPF\CMD_BOX_GUI\bin\ffmpeg.exe"
+            };
+            foreach (var cp in commonPaths)
+            {
+                if (File.Exists(cp)) candidates.Add(cp);
+            }
+
+            // 4. Kiểm tra biến môi trường PATH
+            try
+            {
+                string? pathEnv = Environment.GetEnvironmentVariable("PATH");
+                if (!string.IsNullOrEmpty(pathEnv))
+                {
+                    foreach (var p in pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        if (Directory.Exists(p))
+                        {
+                            string target = Path.Combine(p.Trim(), "ffmpeg.exe");
+                            if (File.Exists(target)) candidates.Add(target);
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            // Tìm file hợp lệ đầu tiên
+            foreach (var cand in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                if (File.Exists(cand))
+                {
+                    _cachedFfmpegPath = Path.GetFullPath(cand);
+                    return _cachedFfmpegPath;
+                }
+            }
+
+            // Fallback mặc định
+            _cachedFfmpegPath = "ffmpeg.exe";
+            return _cachedFfmpegPath;
+        }
+
+        private static void AddCandidatesFromFolder(List<string> list, string folder)
+        {
+            if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder)) return;
+
+            string[] subPaths = {
+                "ffmpeg.exe",
+                Path.Combine("bin", "ffmpeg.exe"),
+                Path.Combine("ffmpeg", "ffmpeg.exe"),
+                Path.Combine("ffmpeg", "bin", "ffmpeg.exe"),
+                Path.Combine("tools", "ffmpeg.exe"),
+                Path.Combine("tools", "bin", "ffmpeg.exe"),
+                Path.Combine("cmd_box_gui", "ffmpeg.exe"),
+                Path.Combine("cmd_box_gui", "bin", "ffmpeg.exe"),
+                Path.Combine("CMD_BOX_GUI", "ffmpeg.exe"),
+                Path.Combine("CMD_BOX_GUI", "bin", "ffmpeg.exe"),
+                Path.Combine("CMD_BOX_GUI", "CMD_BOX_GUI", "ffmpeg.exe"),
+                Path.Combine("CMD_BOX_GUI", "CMD_BOX_GUI", "bin", "ffmpeg.exe"),
+            };
+
+            foreach (var sp in subPaths)
+            {
+                string full = Path.Combine(folder, sp);
+                if (File.Exists(full))
+                {
+                    list.Add(full);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Kiểm tra trạng thái hoạt động của FFmpeg
+        /// </summary>
+        public async Task<(bool isAvailable, string path, string versionInfo)> GetFFmpegStatusAsync()
         {
             string ffmpeg = FindFFmpegPath();
-            Logger.Info($"Nén Video [{Path.GetFileName(inputPath)}] (CRF {crf})...");
+            try
+            {
+                string output = await ProcessRunner.RunCommandAndGetOutputAsync(ffmpeg, "-version");
+                if (!string.IsNullOrWhiteSpace(output) && output.Contains("ffmpeg version", StringComparison.OrdinalIgnoreCase))
+                {
+                    string firstLine = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "FFmpeg Ready";
+                    return (true, ffmpeg, firstLine);
+                }
+            }
+            catch { }
 
-            string args = $"-y -i \"{inputPath}\" -vcodec libx264 -crf {crf} -preset faster -c:a aac -b:a 128k \"{outputPath}\"";
+            return (false, ffmpeg, "Chưa tìm thấy hoặc FFmpeg không chạy được");
+        }
+
+        /// <summary>
+        /// Nén Video (H.264 CRF cố định ~30% giảm dung lượng, giữ nét cao)
+        /// </summary>
+        public async Task<bool> CompressVideoAsync(string inputPath, string outputPath, int compressionLevel = 1, CancellationToken cancellationToken = default)
+        {
+            string ffmpeg = FindFFmpegPath();
+            int crf = compressionLevel switch
+            {
+                0 => 22,
+                2 => 30,
+                3 => 34,
+                _ => 26  // Tiêu chuẩn ~30% nén
+            };
+
+            int audioBitrate = compressionLevel == 0 ? 160 : (compressionLevel >= 2 ? 96 : 128);
+
+            Logger.Info($"[FFmpeg] Đang nén Video [{Path.GetFileName(inputPath)}] (CRF {crf})...");
+            string args = $"-y -i \"{inputPath}\" -vcodec libx264 -crf {crf} -preset faster -c:a aac -b:a {audioBitrate}k \"{outputPath}\"";
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
             if (code == 0 && File.Exists(outputPath))
             {
                 long oldSize = new FileInfo(inputPath).Length;
                 long newSize = new FileInfo(outputPath).Length;
-                Logger.Success($"Nén xong [{Path.GetFileName(inputPath)}]: {SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)}");
+                Logger.Success($"[FFmpeg] Nén xong Video [{Path.GetFileName(inputPath)}]: {SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)}");
                 return true;
             }
-            Logger.Error($"Nén Video thất bại cho {Path.GetFileName(inputPath)}");
+
+            Logger.Error($"[FFmpeg] Nén Video thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
 
-        // 3. LÀM NÉT & KHỬ NHIỄU VIDEO (MEDIA ENHANCEMENT)
-        public async Task<bool> EnhanceMediaAsync(string inputPath, string outputPath, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Nén Ảnh (Tự tối ưu theo JPG, PNG, WEBP... cố định ~30% nén)
+        /// </summary>
+        public async Task<bool> CompressImageAsync(string inputPath, string outputPath, int compressionLevel = 1, CancellationToken cancellationToken = default)
         {
             string ffmpeg = FindFFmpegPath();
-            Logger.Info($"Làm nét & khử nhiễu video [{Path.GetFileName(inputPath)}]...");
+            string ext = Path.GetExtension(inputPath).ToLowerInvariant();
+            string outExt = Path.GetExtension(outputPath).ToLowerInvariant();
 
-            string args = $"-y -i \"{inputPath}\" -vf \"unsharp=5:5:1.0:5:5:0.0,hqdn3d=2:1.5:3:2.5\" -c:a copy \"{outputPath}\"";
+            Logger.Info($"[FFmpeg] Đang nén Ảnh [{Path.GetFileName(inputPath)}]...");
+
+            string args;
+            if (outExt == ".jpg" || outExt == ".jpeg" || ext == ".jpg" || ext == ".jpeg")
+            {
+                int qscale = compressionLevel == 0 ? 2 : (compressionLevel >= 2 ? 8 : 4);
+                args = $"-y -i \"{inputPath}\" -q:v {qscale} \"{outputPath}\"";
+            }
+            else if (outExt == ".webp" || ext == ".webp")
+            {
+                int quality = compressionLevel == 0 ? 85 : (compressionLevel >= 2 ? 65 : 78);
+                args = $"-y -i \"{inputPath}\" -c:v libwebp -quality {quality} \"{outputPath}\"";
+            }
+            else if (outExt == ".png" || ext == ".png")
+            {
+                int compLevel = compressionLevel == 0 ? 6 : 9;
+                args = $"-y -i \"{inputPath}\" -c:v png -compression_level {compLevel} \"{outputPath}\"";
+            }
+            else
+            {
+                args = $"-y -i \"{inputPath}\" -q:v 4 \"{outputPath}\"";
+            }
+
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
             if (code == 0 && File.Exists(outputPath))
             {
-                Logger.Success($"Đã làm nét & khử nhiễu: {outputPath}");
+                long oldSize = new FileInfo(inputPath).Length;
+                long newSize = new FileInfo(outputPath).Length;
+                Logger.Success($"[FFmpeg] Nén xong Ảnh [{Path.GetFileName(inputPath)}]: {SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)}");
                 return true;
             }
-            Logger.Error($"Làm nét video thất bại cho {Path.GetFileName(inputPath)}");
+
+            Logger.Error($"[FFmpeg] Nén Ảnh thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
 
-        // 4. ĐỔI TỐC ĐỘ PHÁT VIDEO
-        public async Task<bool> ChangeVideoSpeedAsync(string inputPath, string outputPath, double speed, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Tự động nén Media (Tự nhận diện Ảnh hoặc Video)
+        /// </summary>
+        public async Task<bool> CompressMediaAsync(string inputPath, string outputPath, int compressionLevel = 1, CancellationToken cancellationToken = default)
+        {
+            if (IsImageFile(inputPath))
+            {
+                return await CompressImageAsync(inputPath, outputPath, compressionLevel, cancellationToken);
+            }
+            return await CompressVideoAsync(inputPath, outputPath, compressionLevel, cancellationToken);
+        }
+
+        /// <summary>
+        /// Đổi đuôi tệp (Image / Video Format Converter)
+        /// </summary>
+        public async Task<bool> ConvertMediaFormatAsync(string inputPath, string outputPath, CancellationToken cancellationToken = default)
         {
             string ffmpeg = FindFFmpegPath();
-            Logger.Info($"Đổi tốc độ video [{Path.GetFileName(inputPath)}] sang {speed}x...");
+            string outExt = Path.GetExtension(outputPath).ToLowerInvariant();
 
-            double setpts = 1.0 / speed;
-            string args = $"-y -i \"{inputPath}\" -filter_complex \"[0:v]setpts={setpts:0.00}*PTS[v];[0:a]atempo={speed:0.00}[a]\" -map \"[v]\" -map \"[a]\" \"{outputPath}\"";
+            Logger.Info($"[FFmpeg] Chuyển đổi định dạng [{Path.GetFileName(inputPath)}] ➔ [{outExt}]...");
+
+            string args;
+            if (IsVideoFile(inputPath) || IsVideoFile(outputPath))
+            {
+                args = $"-y -i \"{inputPath}\" -c:v libx264 -preset faster -crf 23 -c:a aac -b:a 128k \"{outputPath}\"";
+            }
+            else
+            {
+                args = $"-y -i \"{inputPath}\" \"{outputPath}\"";
+            }
+
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
             if (code == 0 && File.Exists(outputPath))
             {
-                Logger.Success($"Đã đổi tốc độ Video ({speed}x): {outputPath}");
+                long oldSize = new FileInfo(inputPath).Length;
+                long newSize = new FileInfo(outputPath).Length;
+                Logger.Success($"[FFmpeg] Chuyển đổi thành công: {outputPath} ({SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)})");
                 return true;
             }
-            Logger.Error($"Đổi tốc độ thất bại cho {Path.GetFileName(inputPath)}");
+
+            Logger.Error($"[FFmpeg] Chuyển đổi định dạng thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
 
-        // 5. CHUYỂN ĐỔI ĐỊNH DẠNG (CONVERT FORMAT)
-        public async Task<bool> ConvertFormatAsync(string inputPath, string outputPath, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Làm nét & khử nhiễu Video theo cấp độ
+        /// </summary>
+        public async Task<bool> EnhanceVideoAsync(string inputPath, string outputPath, int enhanceLevel = 1, CancellationToken cancellationToken = default)
         {
             string ffmpeg = FindFFmpegPath();
-            Logger.Info($"Chuyển đổi định dạng [{Path.GetFileName(inputPath)}] ➔ [{Path.GetExtension(outputPath)}]...");
+            string filter = enhanceLevel switch
+            {
+                0 => "unsharp=3:3:0.6:3:3:0.0",
+                2 => "unsharp=5:5:1.5:5:5:0.0,hqdn3d=3:2:4:3",
+                3 => "unsharp=7:7:2.0:7:7:0.0,hqdn3d=4:3:5:4,eq=contrast=1.05",
+                _ => "unsharp=5:5:1.0:5:5:0.0,hqdn3d=2:1.5:3:2.5" // Mặc định
+            };
 
-            string args = $"-y -i \"{inputPath}\" \"{outputPath}\"";
+            Logger.Info($"[FFmpeg] Đang làm nét Video [{Path.GetFileName(inputPath)}] (Mức {enhanceLevel + 1})...");
+            string args = $"-y -i \"{inputPath}\" -vf \"{filter}\" -c:v libx264 -crf 20 -preset faster -c:a copy \"{outputPath}\"";
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
             if (code == 0 && File.Exists(outputPath))
             {
-                Logger.Success($"Chuyển đổi định dạng thành công: {outputPath}");
+                Logger.Success($"[FFmpeg] Làm nét Video thành công: {outputPath}");
                 return true;
             }
-            Logger.Error($"Chuyển đổi định dạng thất bại cho {Path.GetFileName(inputPath)}");
+
+            Logger.Error($"[FFmpeg] Làm nét Video thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
 
-        // 6. TẮT / XÓA ÂM THANH (MUTE VIDEO)
-        public async Task<bool> RemoveAudioAsync(string inputPath, string outputPath, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Làm nét & tối ưu độ tương phản Ảnh theo cấp độ
+        /// </summary>
+        public async Task<bool> EnhanceImageAsync(string inputPath, string outputPath, int enhanceLevel = 1, CancellationToken cancellationToken = default)
         {
             string ffmpeg = FindFFmpegPath();
-            Logger.Info($"Tách âm thanh khỏi [{Path.GetFileName(inputPath)}]...");
+            string filter = enhanceLevel switch
+            {
+                0 => "unsharp=3:3:0.6:3:3:0.0",
+                2 => "unsharp=5:5:1.8:5:5:0.0,eq=contrast=1.08:saturation=1.05",
+                3 => "unsharp=7:7:2.2:7:7:0.0,eq=contrast=1.12:saturation=1.08",
+                _ => "unsharp=5:5:1.2:5:5:0.0,eq=contrast=1.04:saturation=1.03" // Mặc định
+            };
 
-            string args = $"-y -i \"{inputPath}\" -c:v copy -an \"{outputPath}\"";
+            Logger.Info($"[FFmpeg] Đang làm nét Ảnh [{Path.GetFileName(inputPath)}] (Mức {enhanceLevel + 1})...");
+            string outExt = Path.GetExtension(outputPath).ToLowerInvariant();
+            string args = outExt == ".png"
+                ? $"-y -i \"{inputPath}\" -vf \"{filter}\" -c:v png \"{outputPath}\""
+                : $"-y -i \"{inputPath}\" -vf \"{filter}\" -q:v 2 \"{outputPath}\"";
+
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
             if (code == 0 && File.Exists(outputPath))
             {
-                Logger.Success($"Đã tách âm thanh thành công: {outputPath}");
+                Logger.Success($"[FFmpeg] Làm nét Ảnh thành công: {outputPath}");
                 return true;
             }
-            Logger.Error($"Tách âm thanh thất bại cho {Path.GetFileName(inputPath)}");
+
+            Logger.Error($"[FFmpeg] Làm nét Ảnh thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
 
-        // 7. CHUYỂN VIDEO SANG ẢNH GIF ĐỘNG
-        public async Task<bool> VideoToGifAsync(string inputPath, string outputPath, int fps = 12, int width = 480, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Tự động làm nét Media (Nhận diện Ảnh hoặc Video)
+        /// </summary>
+        public async Task<bool> EnhanceMediaAsync(string inputPath, string outputPath, int enhanceLevel = 1, CancellationToken cancellationToken = default)
         {
-            string ffmpeg = FindFFmpegPath();
-            Logger.Info($"Tạo GIF từ [{Path.GetFileName(inputPath)}] (FPS {fps}, Rộng {width}px)...");
-
-            string args = $"-y -i \"{inputPath}\" -vf \"fps={fps},scale={width}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" \"{outputPath}\"";
-            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
-
-            if (code == 0 && File.Exists(outputPath))
+            if (IsImageFile(inputPath))
             {
-                Logger.Success($"Đã tạo file GIF: {outputPath}");
-                return true;
+                return await EnhanceImageAsync(inputPath, outputPath, enhanceLevel, cancellationToken);
             }
-            Logger.Error($"Tạo GIF thất bại cho {Path.GetFileName(inputPath)}");
-            return false;
-        }
-
-        // 8. TRÍCH XUẤT ẢNH THUMBNAIL (SNAPSHOT)
-        public async Task<bool> ExtractThumbnailAsync(string inputPath, string outputPath, string timestamp = "00:00:01", CancellationToken cancellationToken = default)
-        {
-            string ffmpeg = FindFFmpegPath();
-            Logger.Info($"Chụp khung hình tại {timestamp} từ [{Path.GetFileName(inputPath)}]...");
-
-            string args = $"-y -ss {timestamp} -i \"{inputPath}\" -vframes 1 -q:v 2 \"{outputPath}\"";
-            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
-
-            if (code == 0 && File.Exists(outputPath))
-            {
-                Logger.Success($"Đã trích xuất Thumbnail: {outputPath}");
-                return true;
-            }
-            Logger.Error($"Trích xuất Thumbnail thất bại cho {Path.GetFileName(inputPath)}");
-            return false;
-        }
-
-        // 9. ĐỔI ĐỘ PHÂN GIẢI (RESIZE / SCALE)
-        public async Task<bool> ResizeVideoAsync(string inputPath, string outputPath, int width, int height, CancellationToken cancellationToken = default)
-        {
-            string ffmpeg = FindFFmpegPath();
-            Logger.Info($"Đổi độ phân giải [{Path.GetFileName(inputPath)}] ➔ {width}x{height}...");
-
-            string args = $"-y -i \"{inputPath}\" -vf \"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2\" -c:a copy \"{outputPath}\"";
-            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
-
-            if (code == 0 && File.Exists(outputPath))
-            {
-                Logger.Success($"Đã đổi độ phân giải thành công: {outputPath}");
-                return true;
-            }
-            Logger.Error($"Đổi độ phân giải thất bại cho {Path.GetFileName(inputPath)}");
-            return false;
-        }
-
-        // 10. CẮT VIDEO THEO THỜI GIAN (TRIM / CUT)
-        public async Task<bool> TrimVideoAsync(string inputPath, string outputPath, string startTime, string endTime, CancellationToken cancellationToken = default)
-        {
-            string ffmpeg = FindFFmpegPath();
-            Logger.Info($"Cắt video [{Path.GetFileName(inputPath)}] từ {startTime} đến {endTime}...");
-
-            string args = $"-y -ss {startTime} -to {endTime} -i \"{inputPath}\" -c copy \"{outputPath}\"";
-            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
-
-            if (code == 0 && File.Exists(outputPath))
-            {
-                Logger.Success($"Đã cắt video thành công: {outputPath}");
-                return true;
-            }
-            Logger.Error($"Cắt video thất bại cho {Path.GetFileName(inputPath)}");
-            return false;
-        }
-
-        // 11. CHUẨN HÓA TÊN FILE TRONG THƯ MỤC
-        public void NormalizeFilenamesInDirectory(string dirPath)
-        {
-            if (!Directory.Exists(dirPath)) return;
-            Logger.Info($"Chuẩn hóa tên file trong thư mục: {dirPath}");
-
-            int count = 0;
-            var dir = new DirectoryInfo(dirPath);
-            foreach (var file in dir.GetFiles())
-            {
-                string oldName = file.Name;
-                string cleanName = Regex.Replace(oldName, @"[^\w\-\.]+", "_");
-                cleanName = Regex.Replace(cleanName, @"_+", "_").Trim('_');
-
-                if (oldName != cleanName)
-                {
-                    try
-                    {
-                        string newPath = Path.Combine(dirPath, cleanName);
-                        if (!File.Exists(newPath))
-                        {
-                            file.MoveTo(newPath);
-                            count++;
-                        }
-                    }
-                    catch { }
-                }
-            }
-
-            Logger.Success($"Đã chuẩn hóa {count} tên file!");
-        }
-
-        // 12. GIẤU FILE TRONG FILE (STEGANOGRAPHY)
-        public async Task<bool> HideFileInMediaAsync(string containerPath, string secretFilePath, string outputPath, CancellationToken cancellationToken = default)
-        {
-            Logger.Info($"Giấu tệp [{Path.GetFileName(secretFilePath)}] vào [{Path.GetFileName(containerPath)}]...");
-            try
-            {
-                await Task.Run(async () =>
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    using var outStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
-                    using var containerStream = new FileStream(containerPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
-                    await containerStream.CopyToAsync(outStream, cancellationToken);
-
-                    await outStream.WriteAsync(MagicMarker.AsMemory(0, MagicMarker.Length), cancellationToken);
-
-                    string secretFileName = Path.GetFileName(secretFilePath);
-                    byte[] nameBytes = Encoding.UTF8.GetBytes(secretFileName);
-                    byte[] nameLenBytes = BitConverter.GetBytes(nameBytes.Length);
-                    await outStream.WriteAsync(nameLenBytes.AsMemory(0, nameLenBytes.Length), cancellationToken);
-                    await outStream.WriteAsync(nameBytes.AsMemory(0, nameBytes.Length), cancellationToken);
-
-                    using var secretStream = new FileStream(secretFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
-                    await secretStream.CopyToAsync(outStream, cancellationToken);
-                }, cancellationToken);
-
-                Logger.Success($"Đã giấu tệp thành công: {outputPath}");
-                return true;
-            }
-            catch (OperationCanceledException)
-            {
-                Logger.Warning("Đã hủy thao tác giấu file.");
-                try { if (File.Exists(outputPath)) File.Delete(outputPath); } catch { }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Lỗi giấu tệp: {ex.Message}");
-                return false;
-            }
-        }
-
-        // 13. TRÍCH XUẤT FILE ẨN
-        public async Task<bool> ExtractHiddenFileAsync(string containerPath, string outputDirectory, CancellationToken cancellationToken = default)
-        {
-            Logger.Info($"Quét tìm tệp ẩn trong [{Path.GetFileName(containerPath)}]...");
-            try
-            {
-                return await Task.Run(() =>
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    byte[] allBytes = File.ReadAllBytes(containerPath);
-                    int markerIndex = FindMarkerIndex(allBytes, MagicMarker);
-
-                    if (markerIndex == -1)
-                    {
-                        byte[] zipHeader = { 0x50, 0x4B, 0x03, 0x04 };
-                        int zipIndex = FindMarkerIndex(allBytes, zipHeader);
-                        if (zipIndex != -1 && zipIndex > 100)
-                        {
-                            string zipOut = Path.Combine(outputDirectory, "extracted_payload.zip");
-                            using var fs = new FileStream(zipOut, FileMode.Create, FileAccess.Write);
-                            fs.Write(allBytes, zipIndex, allBytes.Length - zipIndex);
-                            Logger.Success($"Đã trích xuất payload ZIP: {zipOut}");
-                            return true;
-                        }
-
-                        Logger.Warning("Không tìm thấy tệp ẩn nào.");
-                        return false;
-                    }
-
-                    int pos = markerIndex + MagicMarker.Length;
-                    int nameLen = BitConverter.ToInt32(allBytes, pos);
-                    pos += 4;
-
-                    string secretFileName = Encoding.UTF8.GetString(allBytes, pos, nameLen);
-                    pos += nameLen;
-
-                    string outFilePath = Path.Combine(outputDirectory, secretFileName);
-                    using (var fs = new FileStream(outFilePath, FileMode.Create, FileAccess.Write))
-                    {
-                        fs.Write(allBytes, pos, allBytes.Length - pos);
-                    }
-
-                    Logger.Success($"Đã trích xuất tệp ẩn: {outFilePath}");
-                    return true;
-                }, cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                Logger.Warning("Đã hủy thao tác trích xuất.");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"Lỗi trích xuất: {ex.Message}");
-                return false;
-            }
-        }
-
-        private static int FindMarkerIndex(byte[] source, byte[] pattern)
-        {
-            for (int i = 0; i <= source.Length - pattern.Length; i++)
-            {
-                bool match = true;
-                for (int j = 0; j < pattern.Length; j++)
-                {
-                    if (source[i + j] != pattern[j])
-                    {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match) return i;
-            }
-            return -1;
+            return await EnhanceVideoAsync(inputPath, outputPath, enhanceLevel, cancellationToken);
         }
     }
 }
+

@@ -150,65 +150,16 @@ namespace CMD_BOX_GUI.Services
             }
         }
 
-        // 4. CHẨN ĐOÁN PIN LAPTOP
-        public async Task<BatteryInfo> GetBatteryReportAsync()
-        {
-            var info = new BatteryInfo();
-            if (NativeMethods.GetSystemPowerStatus(out var sps))
-            {
-                info.HasBattery = sps.BatteryFlag != 128;
-                info.IsCharging = (sps.BatteryFlag & 8) != 0;
-                info.Percent = sps.BatteryLifePercent <= 100 ? sps.BatteryLifePercent : 0;
-                info.PowerSource = sps.ACLineStatus == 1 ? "Cắm sạc (AC)" : "Pin (DC)";
-            }
-
-            if (!info.HasBattery) return info;
-
-            string xmlPath = Path.Combine(Path.GetTempPath(), "cmd_battery_report.xml");
-            try
-            {
-                await ProcessRunner.RunProcessAsync("powercfg", $"/batteryreport /xml /output \"{xmlPath}\"");
-                if (File.Exists(xmlPath))
-                {
-                    string xmlContent = await File.ReadAllTextAsync(xmlPath);
-                    var doc = XDocument.Parse(xmlContent);
-
-                    info.Manufacturer = doc.Root?.Element("Batteries")?.Element("Battery")?.Element("Manufacturer")?.Value ?? "N/A";
-                    info.DeviceName = doc.Root?.Element("Batteries")?.Element("Battery")?.Element("Id")?.Value ?? "N/A";
-                    info.Chemistry = doc.Root?.Element("Batteries")?.Element("Battery")?.Element("Chemistry")?.Value ?? "Li-ion";
-                    info.SystemModel = doc.Root?.Element("SystemInformation")?.Element("SystemProductName")?.Value ?? "N/A";
-
-                    string? dcStr = doc.Root?.Element("Batteries")?.Element("Battery")?.Element("DesignCapacity")?.Value;
-                    string? fcStr = doc.Root?.Element("Batteries")?.Element("Battery")?.Element("FullChargeCapacity")?.Value;
-                    string? cycleStr = doc.Root?.Element("Batteries")?.Element("Battery")?.Element("CycleCount")?.Value;
-
-                    if (long.TryParse(dcStr, out long dc)) info.DesignCapacityMWh = dc;
-                    if (long.TryParse(fcStr, out long fc)) info.FullChargeCapacityMWh = fc;
-                    if (long.TryParse(cycleStr, out long cc)) info.CycleCount = cc;
-
-                    if (info.DesignCapacityMWh > 0 && info.FullChargeCapacityMWh > 0)
-                    {
-                        info.HealthPercent = Math.Min(100.0, (double)info.FullChargeCapacityMWh / info.DesignCapacityMWh * 100.0);
-                        info.WearPercent = Math.Max(0.0, 100.0 - info.HealthPercent);
-                    }
-                }
-            }
-            catch { }
-            finally
-            {
-                if (File.Exists(xmlPath)) File.Delete(xmlPath);
-            }
-            return info;
-        }
-
+        // 4. BÁO CÁO PIN LAPTOP (HTML)
         public async Task OpenBatteryReportHtmlAsync()
         {
             string htmlPath = Path.Combine(Path.GetTempPath(), "cmd_battery_report.html");
+            Logger.Info("Đang khởi tạo báo cáo pin HTML từ hệ thống...");
             await ProcessRunner.RunProcessAsync("powercfg", $"/batteryreport /output \"{htmlPath}\"");
             if (File.Exists(htmlPath))
             {
                 Process.Start(new ProcessStartInfo { FileName = htmlPath, UseShellExecute = true });
-                Logger.Success("Đã mở báo cáo pin HTML.");
+                Logger.Success("Đã mở báo cáo pin HTML trên trình duyệt.");
             }
         }
 

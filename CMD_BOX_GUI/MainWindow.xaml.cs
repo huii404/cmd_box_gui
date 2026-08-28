@@ -12,7 +12,6 @@ namespace CMD_BOX_GUI
 {
     public partial class MainWindow : Window
     {
-        private readonly DashboardView _dashboardView = new();
         private readonly OptimizerView _optimizerView = new();
         private readonly NetworkView _networkView = new();
         private readonly UtilitiesView _utilitiesView = new();
@@ -32,7 +31,7 @@ namespace CMD_BOX_GUI
             UpdateThemeUIState();
 
             // Load View mặc định
-            MainContentHost.Content = _dashboardView;
+            MainContentHost.Content = _optimizerView;
 
             // Timer batch update log chống lag giao diện
             _logBatchTimer = new DispatcherTimer(DispatcherPriority.Background)
@@ -82,11 +81,7 @@ namespace CMD_BOX_GUI
         {
             if (MainContentHost == null) return;
 
-            if (NavDashboard.IsChecked == true)
-            {
-                MainContentHost.Content = _dashboardView;
-            }
-            else if (NavOptimizer.IsChecked == true)
+            if (NavOptimizer.IsChecked == true)
             {
                 MainContentHost.Content = _optimizerView;
             }

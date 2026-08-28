@@ -74,30 +74,6 @@ namespace CMD_BOX_GUI.UI.Views
             finally { BtnAutoPasteLines.IsEnabled = true; }
         }
 
-        private async void BtnScanBattery_Click(object sender, RoutedEventArgs e)
-        {
-            BtnScanBattery.IsEnabled = false;
-            try
-            {
-                var info = await _utility.GetBatteryReportAsync();
-                if (!info.HasBattery)
-                {
-                    TxtBatteryHealth.Text = "N/A (PC)";
-                    TxtWearPercent.Text = "Không có pin";
-                    TxtFullCapacity.Text = "AC Online";
-                    TxtCycleCount.Text = "0 lần";
-                    return;
-                }
-
-                TxtBatteryHealth.Text = $"{info.HealthPercent:0.1}%";
-                TxtWearPercent.Text = $"Độ chai: {info.WearPercent:0.1}%";
-                TxtFullCapacity.Text = $"{info.FullChargeCapacityMWh:N0} / {info.DesignCapacityMWh:N0}";
-                TxtCycleCount.Text = $"{info.CycleCount} lần";
-                TxtBatteryName.Text = $"{info.Manufacturer} [{info.DeviceName}]";
-            }
-            finally { BtnScanBattery.IsEnabled = true; }
-        }
-
         private async void BtnOpenBatteryHtml_Click(object sender, RoutedEventArgs e)
         {
             await _utility.OpenBatteryReportHtmlAsync();

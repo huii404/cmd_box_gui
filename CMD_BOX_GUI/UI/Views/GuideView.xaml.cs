@@ -16,7 +16,6 @@ namespace CMD_BOX_GUI.UI.Views
         {
             InitializeComponent();
 
-            _expanders.Add(CardDashboard);
             _expanders.Add(CardOptimizer);
             _expanders.Add(CardNetwork);
             _expanders.Add(CardUtilities);

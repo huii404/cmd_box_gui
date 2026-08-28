@@ -70,6 +70,44 @@ namespace CMD_BOX_GUI.Models
         public long FileSizeBytes { get; set; }
         public string FileSizeFormatted => Core.SystemCore.FormatBytes(FileSizeBytes);
 
+        public bool IsImage { get; set; }
+        public bool IsVideo { get; set; }
+        public string MediaTypeText => IsImage ? "Ảnh 🖼️" : (IsVideo ? "Video 🎥" : "Tệp 📄");
+
+        public System.Collections.Generic.List<string> AvailableExtensions { get; set; } = new();
+
+        private string _targetExtension = string.Empty;
+        public string TargetExtension
+        {
+            get => _targetExtension;
+            set { _targetExtension = value; OnPropertyChanged(); }
+        }
+
+        private long _processedSizeBytes = 0;
+        public long ProcessedSizeBytes
+        {
+            get => _processedSizeBytes;
+            set
+            {
+                _processedSizeBytes = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ProcessedSizeFormatted));
+                OnPropertyChanged(nameof(CompressionRatio));
+            }
+        }
+
+        public string ProcessedSizeFormatted => _processedSizeBytes > 0 ? Core.SystemCore.FormatBytes(_processedSizeBytes) : "--";
+
+        public string CompressionRatio
+        {
+            get
+            {
+                if (FileSizeBytes <= 0 || _processedSizeBytes <= 0) return "--";
+                double diff = (double)(_processedSizeBytes - FileSizeBytes) / FileSizeBytes * 100.0;
+                return diff < 0 ? $"{diff:0.#}%" : $"+{diff:0.#}%";
+            }
+        }
+
         private string _status = "Sẵn sàng";
         public string Status
         {
@@ -91,7 +129,19 @@ namespace CMD_BOX_GUI.Models
             set { _progressPercent = value; OnPropertyChanged(); }
         }
 
-        public string OutputPath { get; set; } = string.Empty;
+        private string _outputPath = string.Empty;
+        public string OutputPath
+        {
+            get => _outputPath;
+            set
+            {
+                _outputPath = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CanCompare));
+            }
+        }
+
+        public bool CanCompare => IsImage && !string.IsNullOrWhiteSpace(_outputPath) && System.IO.File.Exists(_outputPath);
 
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? name = null)

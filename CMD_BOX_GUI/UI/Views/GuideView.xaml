@@ -22,11 +22,6 @@
                 <ColumnDefinition Width="320"/>
             </Grid.ColumnDefinitions>
 
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="📚 CẨM NANG &amp; HƯỚNG DẪN SỬ DỤNG HỆ THỐNG" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
-                <TextBlock Text="Tra cứu tính năng, mẹo tối ưu, cơ chế hoạt động và xử lý sự cố trong CMD BOX GUI." FontSize="11" Foreground="{DynamicResource TextMuted}"/>
-            </StackPanel>
-
             <!-- Search Input Box -->
             <Border Grid.Column="1" Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="6" Padding="6,2">
                 <Grid>
@@ -56,11 +51,10 @@
             <!-- Category Filter RadioButtons -->
             <WrapPanel Grid.Column="0" VerticalAlignment="Center">
                 <RadioButton x:Name="FilterAll" Content="Tất Cả" Style="{StaticResource SubTabButton}" IsChecked="True" Checked="FilterChip_Checked" Tag="ALL" Margin="0,0,6,4"/>
-                <RadioButton x:Name="FilterDashboard" Content="🤖 Trợ Lý AI Local" Style="{StaticResource SubTabButton}" Checked="FilterChip_Checked" Tag="DASHBOARD" Margin="0,0,6,4"/>
                 <RadioButton x:Name="FilterOptimizer" Content="🧹 Tối Ưu" Style="{StaticResource SubTabButton}" Checked="FilterChip_Checked" Tag="OPTIMIZER" Margin="0,0,6,4"/>
                 <RadioButton x:Name="FilterNetwork" Content="🌐 Mạng &amp; Wi-Fi" Style="{StaticResource SubTabButton}" Checked="FilterChip_Checked" Tag="NETWORK" Margin="0,0,6,4"/>
                 <RadioButton x:Name="FilterUtilities" Content="⚡ Tiện Ích" Style="{StaticResource SubTabButton}" Checked="FilterChip_Checked" Tag="UTILITIES" Margin="0,0,6,4"/>
-                <RadioButton x:Name="FilterMedia" Content="🎬 Media &amp; Stego" Style="{StaticResource SubTabButton}" Checked="FilterChip_Checked" Tag="MEDIA" Margin="0,0,6,4"/>
+                <RadioButton x:Name="FilterMedia" Content="🎬 Media" Style="{StaticResource SubTabButton}" Checked="FilterChip_Checked" Tag="MEDIA" Margin="0,0,6,4"/>
                 <RadioButton x:Name="FilterHotkeys" Content="⌨️ Phím Tắt" Style="{StaticResource SubTabButton}" Checked="FilterChip_Checked" Tag="HOTKEYS" Margin="0,0,6,4"/>
             </WrapPanel>
 
@@ -74,29 +68,6 @@
         <!-- ================= 3. EXPANDABLE KNOWLEDGE BASE ================= -->
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <StackPanel x:Name="GuideContainer" Margin="0,0,8,0">
-
-                <!-- MỤC 1: TỔNG QUAN HỆ THỐNG -->
-                <Expander x:Name="CardDashboard" Style="{StaticResource ModernExpander}" Tag="DASHBOARD RAM CPU PIN DISK O DIA TONG QUAN UPTIME NET INTERNET" IsExpanded="True">
-                    <Expander.Header>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="📊" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="1. Giám Sát Tài Nguyên &amp; Thông Số Hệ Thống (Dashboard)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Expander.Header>
-                    <StackPanel>
-                        <TextBlock Text="• Giám sát RAM &amp; CPU thời gian thực:" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Hiển thị dung lượng RAM đang sử dụng, RAM khả dụng, phần trăm tiêu thụ cùng thông số CPU (số nhân, luồng, kiến trúc x64/ARM64) với thanh tiến trình trực quan." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
-
-                        <TextBlock Text="• Giám sát Ổ đĩa lưu trữ:" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Tự động liệt kê tất cả các ổ đĩa logic (C:, D:, USB, ổ cứng di động), hiển thị dung lượng trống/tổng, phân loại ổ đĩa (Fixed, Removable, Network) và tỷ lệ đầy." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
-
-                        <TextBlock Text="• Tình trạng Nguồn &amp; Uptime máy tính:" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Báo cáo trạng thái cắm sạc (AC Online / Battery), phần trăm pin còn lại và thời gian máy tính đã chạy liên tục kể từ lần khởi động gần nhất." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
-
-                        <TextBlock Text="• Thông tin Mạng &amp; Quyền Administrator:" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Nhận diện card mạng chính, IPv4 cục bộ, địa chỉ MAC vật lý, Gateway và kiểm tra quyền Admin hiện tại của ứng dụng." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
-                    </StackPanel>
-                </Expander>
 
                 <!-- MỤC 2: TỐI ƯU & BẢO TRÌ -->
                 <Expander x:Name="CardOptimizer" Style="{StaticResource ModernExpander}" Tag="OPTIMIZER DON RAC TEMP PREFETCH CACHE DEV STARTUP TELEMETRY WINDOWS UPDATE SUALOI">
@@ -167,26 +138,23 @@
                     </StackPanel>
                 </Expander>
 
-                <!-- MỤC 5: TRUNG TÂM MEDIA & STEGANOGRAPHY -->
-                <Expander x:Name="CardMedia" Style="{StaticResource ModernExpander}" Tag="MEDIA FFMPEG VIDEO NEN H264 MP3 MP4 SPEED GIF RESIZE TRIM STEGANOGRAPHY GIAU FILE">
+                <!-- MỤC 5: TRUNG TÂM XỬ LÝ MEDIA -->
+                <Expander x:Name="CardMedia" Style="{StaticResource ModernExpander}" Tag="MEDIA FFMPEG VIDEO ANH NEN H264 PNG MP4 CONVERT DOI DUOI TEP">
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="🎬" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="5. Trung Tâm Xử Lý Video Hàng Loạt &amp; Bảo Mật Steganography (Media)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="5. Studio Xử Lý Media: Nén Ảnh / Video &amp; Đổi Đuôi Tệp Tự Nhận Diện" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel>
-                        <TextBlock Text="• Biên tập Video Hàng Loạt (Batch Processing):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Thêm từng file video hoặc thêm toàn bộ thư mục chỉ với 1 cú click. Bảng danh sách hiển thị chi tiết tên file, dung lượng, định dạng và trạng thái xử lý thời gian thực." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="• Tự động dò tìm FFmpeg đa tầng thông minh:" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Hệ thống tự động quét tìm công cụ ffmpeg.exe trong thư mục ứng dụng hiện tại, các thư mục mẹ cùng cấp (lên đến 5 cấp), các thư mục con (cmd_box_gui, bin, tools, ffmpeg) và biến môi trường PATH. Bạn cũng có thể bấm 'Chọn FFmpeg...' để chỉ định tệp thủ công." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
-                        <TextBlock Text="• Các chế độ biên tập hỗ trợ (10+ Chế độ):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
-                        <TextBlock Text="1. Nén Video H.264 (CRF 22 - 30, giảm dung lượng tới 80% mà vẫn giữ độ nét).&#x0a;2. Làm nét &amp; Khử nhiễu video bằng bộ lọc unsharp / hqdn3d.&#x0a;3. Trích xuất âm thanh sang MP3 (128 - 320 kbps).&#x0a;4. Thay đổi tốc độ video (0.5x - 2.0x).&#x0a;5. Chuyển đổi định dạng (.mp4, .mkv, .avi, .webm, .mov, .mp3, .wav).&#x0a;6. Tắt / Xóa âm thanh (Mute Video).&#x0a;7. Tạo ảnh GIF động với độ phân giải tùy chỉnh.&#x0a;8. Chụp Thumbnail tại giây chỉ định.&#x0a;9. Đổi độ phân giải (4K, Full HD 1080p, HD 720p, 480p).&#x0a;10. Cắt đoạn Video (Trim) theo mốc thời gian bắt đầu và kết thúc." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="• Nén Ảnh &amp; Video hàng loạt (Mặc định giảm ~30% dung lượng):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Tự động nhận diện Ảnh hoặc Video: Video được nén bằng thuật toán H.264/AAC với CRF tối ưu, Ảnh được tối ưu hóa theo định dạng (JPG, PNG, WebP). Giảm trung bình 30% dung lượng tệp mà mắt thường gần như không nhận ra sự suy giảm độ nét. Hỗ trợ các mức nén: Nhẹ (~15%), Tiêu chuẩn (~30%), Cao (~50%), Siêu nén (~70%)." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
-                        <TextBlock Text="• Giấu File Bí Mật vào Media (Steganography Encryption):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Đóng gói tệp tài liệu bí mật (ZIP, RAR, TXT, EXE...) gắn vào đuôi tệp video/ảnh. Tệp vỏ bọc vẫn xem hoặc phát bình thường như không có gì. Khi cần, dùng chức năng 'Trích xuất File Ẩn' để phục hồi lại dữ liệu nguyên bản." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
-
-                        <TextBlock Text="• Chuẩn hóa Tên Tệp Media:" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Tự động đổi tên toàn bộ tệp trong thư mục: loại bỏ khoảng trắng thừa, xóa ký tự đặc biệt, sửa lỗi dấu tiếng Việt giúp file tương thích tuyệt đối trên Linux, Web Server và phần mềm dựng phim." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
+                        <TextBlock Text="• Đổi đuôi tệp hàng loạt (Tự động nhận diện Ảnh ➔ .png | Video ➔ .mp4):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Khi thêm file vào danh sách, hệ thống tự động phân loại: nếu là Ảnh sẽ mặc định chuyển sang .png (hoặc chọn .jpg, .webp, .bmp, .ico...), nếu là Video sẽ mặc định chuyển sang .mp4 (hoặc chọn .mkv, .avi, .mov, .webm...). Quá trình chuyển đổi đảm bảo tương thích mọi nền tảng." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
                     </StackPanel>
                 </Expander>
 

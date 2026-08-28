@@ -82,46 +82,19 @@
                 </Border>
             </Grid>
 
-            <!-- Khối 2: Chẩn Đoán Pin Laptop -->
+            <!-- Khối 2: Báo Cáo Pin Laptop (HTML) -->
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
-                <StackPanel>
-                    <Grid Margin="0,0,0,8">
-                        <TextBlock Text="CHẨN ĐOÁN PIN LAPTOP" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
-                        <WrapPanel HorizontalAlignment="Right">
-                            <Button x:Name="BtnScanBattery" Content="Kiểm tra Pin" Style="{StaticResource PrimaryButton}" Margin="0,0,6,0" Padding="10,4" FontSize="11" Click="BtnScanBattery_Click"/>
-                            <Button x:Name="BtnOpenBatteryHtml" Content="Báo cáo HTML" Style="{StaticResource SecondaryButton}" Padding="10,4" FontSize="11" Click="BtnOpenBatteryHtml_Click"/>
-                        </WrapPanel>
-                    </Grid>
-
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="8" Margin="0,0,4,0">
-                            <StackPanel>
-                                <TextBlock Text="SỨC KHỎE PIN" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
-                                <TextBlock x:Name="TxtBatteryHealth" Text="--%" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentSuccess}"/>
-                                <TextBlock x:Name="TxtWearPercent" Text="Độ chai: --%" FontSize="10" Foreground="{DynamicResource TextSecondary}"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Grid.Column="1" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="8" Margin="4,0,4,0">
-                            <StackPanel>
-                                <TextBlock Text="DUNG LƯỢNG (MWH)" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
-                                <TextBlock x:Name="TxtFullCapacity" Text="-- / --" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
-                                <TextBlock Text="Thực tế / Gốc" FontSize="10" Foreground="{DynamicResource TextSecondary}"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Grid.Column="2" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="8" Margin="4,0,0,0">
-                            <StackPanel>
-                                <TextBlock Text="CHU KỲ SẠC" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
-                                <TextBlock x:Name="TxtCycleCount" Text="0 lần" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}"/>
-                                <TextBlock x:Name="TxtBatteryName" Text="ACPI Battery" FontSize="10" Foreground="{DynamicResource TextSecondary}"/>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <TextBlock Text="BÁO CÁO PIN LAPTOP (HTML)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                        <TextBlock Text="Khởi tạo và xuất báo cáo chi tiết thông số, tình trạng và lịch sử pin laptop ra file HTML" FontSize="11" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" x:Name="BtnOpenBatteryHtml" Content="📄 Báo Cáo HTML" Style="{StaticResource PrimaryButton}" Padding="14,7" FontSize="11.5" Click="BtnOpenBatteryHtml_Click"/>
+                </Grid>
             </Border>
 
             <!-- Khối 3: Gỡ Bloatware & Cài App Nhanh -->
