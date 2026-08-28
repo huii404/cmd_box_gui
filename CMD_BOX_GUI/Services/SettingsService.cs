@@ -70,6 +70,12 @@ namespace CMD_BOX_GUI.Services
             SaveSettings();
         }
 
+        public static void UpdateAllowAdminCmd(bool allow)
+        {
+            Current.AllowAdminCmd = allow;
+            SaveSettings();
+        }
+
         public static void ResetToDefaults()
         {
             lock (_lock)

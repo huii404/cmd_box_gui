@@ -4,79 +4,159 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="650" d:DesignWidth="850">
+             d:DesignHeight="700" d:DesignWidth="880">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="16">
 
-            <!-- Khối 1: Thông tin kết nối -->
-            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
+            <!-- 1. KHỐI THÔNG TIN KẾT NỐI MẠNG HIỆN TẠI -->
+            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="14">
                 <StackPanel>
-                    <Grid Margin="0,0,0,8">
-                        <TextBlock Text="THÔNG TIN MẠNG" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
-                        <Button x:Name="BtnRefreshNetInfo" Content="Làm mới" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right" Padding="8,3" FontSize="11" Click="BtnRefreshNetInfo_Click"/>
+                    <Grid Margin="0,0,0,10">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="🌐" FontSize="15" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="THÔNG TIN KẾT NỐI MẠNG" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button x:Name="BtnRefreshNetInfo" Content="🔄 Làm Mới" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right" Padding="10,4" FontSize="11" Click="BtnRefreshNetInfo_Click"/>
                     </Grid>
 
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Margin="0,0,6,0">
-                            <TextBlock x:Name="TxtLocalIp" Text="LAN: ..." FontSize="12" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
-                            <TextBlock x:Name="TxtGateway" Text="Gateway: ..." FontSize="11" Foreground="{DynamicResource TextSecondary}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                            <TextBlock x:Name="TxtPublicIp" Text="Public IP: ..." FontSize="12" Foreground="{DynamicResource AccentCyan}" Margin="0,0,0,4"/>
-                            <TextBlock x:Name="TxtDns" Text="DNS: ..." FontSize="11" Foreground="{DynamicResource TextSecondary}"/>
-                        </StackPanel>
+
+                        <!-- Card Mạng -->
+                        <Border Grid.Column="0" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="10,8" Margin="0,0,4,0">
+                            <StackPanel>
+                                <TextBlock Text="CARD MẠNG CHÍNH" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
+                                <TextBlock x:Name="TxtAdapterName" Text="..." FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- IP LAN -->
+                        <Border Grid.Column="1" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="10,8" Margin="4,0,4,0">
+                            <StackPanel>
+                                <TextBlock Text="IP NỘI BỘ (LAN)" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
+                                <TextBlock x:Name="TxtLocalIp" Text="..." FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- GATEWAY -->
+                        <Border Grid.Column="2" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="10,8" Margin="4,0,4,0">
+                            <StackPanel>
+                                <TextBlock Text="ROUTER GATEWAY" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
+                                <TextBlock x:Name="TxtGateway" Text="..." FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- PUBLIC IP -->
+                        <Border Grid.Column="3" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="10,8" Margin="4,0,0,0">
+                            <StackPanel>
+                                <TextBlock Text="IP CÔNG CỘNG (PUBLIC)" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
+                                <TextBlock x:Name="TxtPublicIp" Text="..." FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentSuccess}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </StackPanel>
             </Border>
 
-            <!-- Khối 2: Mật khẩu Wi-Fi -->
-            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
+            <!-- 2. KHỐI 4 TÍNH NĂNG CỨU HỘ & SỬA LỖI MẠNG -->
+            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="14">
                 <StackPanel>
-                    <Grid Margin="0,0,0,8">
-                        <TextBlock Text="MẬT KHẨU WI-FI ĐÃ LƯU" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
-                        <Button x:Name="BtnAuditWifi" Content="Quét Wi-Fi" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Right" Padding="10,4" FontSize="11" Click="BtnAuditWifi_Click"/>
+                    <TextBlock Text="🛠️ CÔNG CỤ SỬA LỖI &amp; KHÔI PHỤC MẠNG" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,12"/>
+
+                    <!-- Grid 4 Công cụ -->
+                    <Grid Margin="0,0,0,12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 1. Flush DNS -->
+                        <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="12,10" Margin="0,0,6,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="1. Xóa Cache DNS (Flush DNS)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <TextBlock Text="Xóa bộ nhớ đệm phân giải tên miền — sửa lỗi web đổi IP hoặc không tải được trang." FontSize="11" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                </StackPanel>
+                                <Button x:Name="BtnFlushDns" Grid.Column="1" Content="🧹 Chạy" Style="{StaticResource PrimaryButton}" Padding="14,6" FontSize="11" VerticalAlignment="Center" Click="BtnFlushDns_Click"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- 2. Release & Renew IP -->
+                        <Border Grid.Row="0" Grid.Column="1" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="12,10" Margin="6,0,0,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="2. Làm Mới Địa Chỉ IP (DHCP Reset)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <TextBlock Text="Xin cấp lại địa chỉ IP từ Router — sửa lỗi chấm than vàng, mất kết nối LAN." FontSize="11" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                </StackPanel>
+                                <Button x:Name="BtnRenewIp" Grid.Column="1" Content="🔄 Chạy" Style="{StaticResource PrimaryButton}" Padding="14,6" FontSize="11" VerticalAlignment="Center" Click="BtnRenewIp_Click"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- 3. Reset TCP/IP & Winsock -->
+                        <Border Grid.Row="1" Grid.Column="0" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="12,10" Margin="0,0,6,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="3. Đặt Lại TCP/IP &amp; Winsock Stack" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <TextBlock Text="Khôi phục toàn bộ giao thức mạng về mặc định — sửa lỗi sau khi gỡ VPN/Proxy." FontSize="11" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                </StackPanel>
+                                <Button x:Name="BtnResetWinsock" Grid.Column="1" Content="⚡ Chạy" Style="{StaticResource PrimaryButton}" Padding="14,6" FontSize="11" VerticalAlignment="Center" Click="BtnResetWinsock_Click"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- 4. Reset Windows Firewall -->
+                        <Border Grid.Row="1" Grid.Column="1" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="12,10" Margin="6,0,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="4. Khôi Phục Windows Firewall Gốc" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <TextBlock Text="Xóa các rule chặn mạng rác và đưa tường lửa về thiết lập mặc định của Microsoft." FontSize="11" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                                </StackPanel>
+                                <Button x:Name="BtnResetFirewall" Grid.Column="1" Content="🛡️ Chạy" Style="{StaticResource PrimaryButton}" Padding="14,6" FontSize="11" VerticalAlignment="Center" Click="BtnResetFirewall_Click"/>
+                            </Grid>
+                        </Border>
                     </Grid>
 
-                    <DataGrid x:Name="DgWifi" AutoGenerateColumns="False" IsReadOnly="True" 
-                              Background="{DynamicResource BgInput}" Foreground="{DynamicResource TextPrimary}"
-                              BorderBrush="{DynamicResource BorderSubtle}" RowBackground="{DynamicResource BgCard}"
-                              AlternatingRowBackground="{DynamicResource BgInput}" HeadersVisibility="Column"
-                              MaxHeight="180" CanUserAddRows="False" GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="{DynamicResource BorderSubtle}" FontSize="12">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Tên Wi-Fi (SSID)" Binding="{Binding Ssid}" Width="2*"/>
-                            <DataGridTextColumn Header="Mật khẩu" Binding="{Binding Password}" Width="2*"/>
-                            <DataGridTextColumn Header="Chuẩn" Binding="{Binding Authentication}" Width="*"/>
-                            <DataGridTemplateColumn Header="Sao chép" Width="80">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Button Content="Copy" Style="{StaticResource SecondaryButton}" Padding="6,2" FontSize="10" Click="BtnCopyPass_Click"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <!-- Khối Khôi Phục Toàn Diện 1-Click -->
+                    <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource AccentCyan}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,6,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="🚀 KHÔI PHỤC TOÀN DIỆN 1-CLICK (ALL-IN-ONE REPAIR)" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}"/>
+                                <TextBlock Text="Tự động thực hiện tuần tự: Xóa cache DNS ➔ Cấp lại IP ➔ Đặt lại TCP/IP Winsock ➔ Khôi phục Firewall" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Button x:Name="BtnRepairAll" Grid.Column="1" Content="🚀 Chạy Toàn Bộ" Style="{StaticResource PrimaryButton}" Padding="16,8" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" Click="BtnRepairAll_Click"/>
+                        </Grid>
+                    </Border>
                 </StackPanel>
             </Border>
 
-            <!-- Khối 3: Thao tác bảo mật & Khôi phục -->
-            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
-                <StackPanel>
-                    <TextBlock Text="CÔNG CỤ BẢO MẬT &amp; KHÔI PHỤC" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
-                    <WrapPanel>
-                        <Button x:Name="BtnRepairNetwork" Content="Khôi phục Mạng PRO (8 bước)" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnRepairNetwork_Click"/>
-                        <Button x:Name="BtnSecurityShield" Content="Kích hoạt Lá chắn bảo mật" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnSecurityShield_Click"/>
-                        <Button x:Name="BtnCheckHosts" Content="Kiểm tra tệp Hosts" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnCheckHosts_Click"/>
-                    </WrapPanel>
-                </StackPanel>
-            </Border>
-
-            <ProgressBar x:Name="PbNetwork" Style="{StaticResource FlatProgressBar}" Margin="0,2,0,4" Visibility="Collapsed"/>
-            <TextBlock x:Name="TxtStatus" Text="" FontSize="11" Foreground="{DynamicResource AccentCyan}" Visibility="Collapsed"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
+

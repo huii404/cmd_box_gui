@@ -27,8 +27,9 @@ namespace CMD_BOX_GUI
         {
             InitializeComponent();
 
-            // Cập nhật trạng thái hiển thị của nút đổi theme
+            // Cập nhật trạng thái hiển thị của nút đổi theme & nút quyền Admin CMD
             UpdateThemeUIState();
+            UpdateAdminCmdUIState();
 
             // Load View mặc định
             MainContentHost.Content = _optimizerView;
@@ -100,6 +101,49 @@ namespace CMD_BOX_GUI
             else if (NavGuide.IsChecked == true)
             {
                 MainContentHost.Content = _guideView;
+            }
+        }
+
+        private void BtnToggleAdminCmd_Click(object sender, RoutedEventArgs e)
+        {
+            bool nextState = !SettingsService.Current.AllowAdminCmd;
+            SettingsService.UpdateAllowAdminCmd(nextState);
+            UpdateAdminCmdUIState();
+
+            if (nextState)
+            {
+                Logger.Success("🛡️ Đã BẬT cơ chế Cho phép thực thi lệnh Admin CMD.");
+            }
+            else
+            {
+                Logger.Warning("🔒 Đã TẮT cơ chế thực thi lệnh Admin CMD (Bảo vệ chống lạm dụng kích hoạt).");
+            }
+        }
+
+        private void UpdateAdminCmdUIState()
+        {
+            if (TxtAdminCmdIcon == null || TxtAdminCmdLabel == null || EllAdminCmdDot == null) return;
+
+            bool isAllowed = SettingsService.Current.AllowAdminCmd;
+            if (isAllowed)
+            {
+                TxtAdminCmdIcon.Text = "🛡️";
+                TxtAdminCmdLabel.Text = "Lệnh Admin: BẬT";
+                EllAdminCmdDot.HorizontalAlignment = HorizontalAlignment.Right;
+                if (Application.Current?.Resources["AccentSuccess"] is System.Windows.Media.Brush successBrush)
+                {
+                    EllAdminCmdDot.Fill = successBrush;
+                }
+            }
+            else
+            {
+                TxtAdminCmdIcon.Text = "🔒";
+                TxtAdminCmdLabel.Text = "Lệnh Admin: TẮT";
+                EllAdminCmdDot.HorizontalAlignment = HorizontalAlignment.Left;
+                if (Application.Current?.Resources["AccentDanger"] is System.Windows.Media.Brush dangerBrush)
+                {
+                    EllAdminCmdDot.Fill = dangerBrush;
+                }
             }
         }
 

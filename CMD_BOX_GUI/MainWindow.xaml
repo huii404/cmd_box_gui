@@ -44,7 +44,7 @@
                     <RadioButton x:Name="NavGuide" Content="📖  Hướng Dẫn Dùng" Style="{StaticResource SidebarNavButton}" Checked="NavButton_Checked"/>
                 </StackPanel>
 
-                <!-- Footer Status & Theme Toggle (Góc dưới bên trái) -->
+                <!-- Footer Status, Admin CMD Switch & Theme Toggle (Góc dưới bên trái) -->
                 <StackPanel Grid.Row="2">
                     <Border Background="{DynamicResource BgCard}" CornerRadius="6" Padding="10" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" Margin="0,0,0,8">
                         <StackPanel>
@@ -52,6 +52,26 @@
                             <TextBlock Text="Hotkey: ESC / F6 ngắt" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
                         </StackPanel>
                     </Border>
+
+                    <!-- Công tắc Cho Phép / Chống Lạm Dụng Lệnh Admin CMD -->
+                    <Button x:Name="BtnToggleAdminCmd" Click="BtnToggleAdminCmd_Click"
+                            Style="{StaticResource SecondaryButton}" 
+                            HorizontalContentAlignment="Stretch"
+                            Padding="10,7" Cursor="Hand" Margin="0,0,0,6"
+                            ToolTip="Bật/Tắt cơ chế cho phép thực thi trực tiếp các lệnh Admin CMD vào Realtime Log Console">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="TxtAdminCmdIcon" Text="🛡️" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock x:Name="TxtAdminCmdLabel" Grid.Column="1" Text="Lệnh Admin: BẬT" FontSize="11.5" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}" FontWeight="Medium"/>
+                            <Border Grid.Column="2" x:Name="BrdAdminCmdSwitch" Width="30" Height="16" CornerRadius="8" Background="{DynamicResource BgInput}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" VerticalAlignment="Center">
+                                <Ellipse x:Name="EllAdminCmdDot" Width="10" Height="10" Fill="{DynamicResource AccentSuccess}" HorizontalAlignment="Right" Margin="2,0,2,0"/>
+                            </Border>
+                        </Grid>
+                    </Button>
 
                     <!-- Nút Bật/Tắt Giao diện Sáng - Tối -->
                     <Button x:Name="BtnToggleTheme" Click="BtnToggleTheme_Click"

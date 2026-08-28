@@ -1,41 +1,5 @@
 namespace CMD_BOX_GUI.Models
 {
-    public class WifiInfo
-    {
-        public string Ssid { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-        public string Authentication { get; set; } = string.Empty;
-        public string Cipher { get; set; } = string.Empty;
-    }
-
-    public class BatteryInfo
-    {
-        public bool HasBattery { get; set; }
-        public bool IsCharging { get; set; }
-        public int Percent { get; set; }
-        public string PowerSource { get; set; } = "Unknown";
-        public string DeviceName { get; set; } = "N/A";
-        public string Manufacturer { get; set; } = "N/A";
-        public string Chemistry { get; set; } = "Li-ion";
-        public long DesignCapacityMWh { get; set; }
-        public long FullChargeCapacityMWh { get; set; }
-        public long CycleCount { get; set; }
-        public double HealthPercent { get; set; }
-        public double WearPercent { get; set; }
-        public string SystemModel { get; set; } = "N/A";
-    }
-
-    public class NetworkAdapterInfo
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-        public string Ipv4Address { get; set; } = string.Empty;
-        public string MacAddress { get; set; } = string.Empty;
-        public string Gateway { get; set; } = string.Empty;
-        public string DnsServers { get; set; } = string.Empty;
-    }
-
     public class CleanCategory
     {
         public string Title { get; set; } = string.Empty;
@@ -151,23 +115,11 @@ namespace CMD_BOX_GUI.Models
     public class AppSettings
     {
         public bool IsDarkMode { get; set; } = true;
-        public string LastSelectedTab { get; set; } = "Dashboard";
+        public bool AllowAdminCmd { get; set; } = true;
+        public string LastSelectedTab { get; set; } = "Optimizer";
         public string CustomOutputDir { get; set; } = string.Empty;
         public int DefaultCrf { get; set; } = 26;
         public int AutoRefreshIntervalSec { get; set; } = 3;
         public DateTime LastSavedTime { get; set; } = DateTime.Now;
-    }
-
-    public class ChatMessage
-    {
-        public string Id { get; set; } = Guid.NewGuid().ToString();
-        public string Sender { get; set; } = "Bot"; // "User" or "Bot"
-        public string Content { get; set; } = string.Empty;
-        public DateTime Timestamp { get; set; } = DateTime.Now;
-
-        public bool IsUser => Sender.Equals("User", StringComparison.OrdinalIgnoreCase);
-        public string FormattedTime => Timestamp.ToString("HH:mm");
-        public string AvatarIcon => IsUser ? "👤" : "🤖";
-        public string SenderName => IsUser ? "Bạn" : "CMD Assistant";
     }
 }
