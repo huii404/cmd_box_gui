@@ -1,244 +1,208 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net.NetworkInformation;
-using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
-using CMD_BOX_GUI.Core;
-using CMD_BOX_GUI.Models;
-using Microsoft.Win32;
+using CMD_BOX_GUI.Services;
 
 namespace CMD_BOX_GUI.UI.Views
 {
     public partial class DashboardView : UserControl
     {
-        private readonly DispatcherTimer _autoRefreshTimer;
+        private readonly ChatbotService _chatbot = new();
 
         public DashboardView()
         {
             InitializeComponent();
 
-            _autoRefreshTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(5)
-            };
-            _autoRefreshTimer.Tick += async (_, _) => await RefreshDashboardDataAsync();
-
-            Loaded += async (_, _) =>
-            {
-                await RefreshDashboardDataAsync();
-                _autoRefreshTimer.Start();
-            };
-
-            Unloaded += (_, _) =>
-            {
-                _autoRefreshTimer.Stop();
-            };
+            // Tin nhắn chào mừng ban đầu từ Trợ Lý AI Local
+            AddBotMessage("👋 Chào bạn! Tôi là **Trợ Lý AI Local** của CMD BOX GUI.\n\n" +
+                          "Tôi có thể hỗ trợ giải đáp và hướng dẫn bạn mọi tính năng:\n" +
+                          "• 🧹 **Tối ưu & Dọn rác:** Dọn Temp/Prefetch, tắt app khởi động, sửa Windows Update.\n" +
+                          "• 🌐 **Mạng & Wi-Fi:** Bóc tách mật khẩu Wi-Fi, khôi phục mạng 8 bước, bật tường lửa.\n" +
+                          "• 🎬 **Xử lý Media:** Nén video hàng loạt (CRF), xuất MP3, giấu file bí mật (Stego).\n" +
+                          "• ⚡ **Tiện ích:** Auto Clicker, Auto Paste, chẩn đoán độ chai pin laptop.\n\n" +
+                          "👉 Bạn có thể bấm các nút gợi ý phía trên hoặc gõ câu hỏi vào ô bên dưới để bắt đầu!");
         }
 
-        private async void BtnRefresh_Click(object sender, RoutedEventArgs e)
+        // ================= XỬ LÝ HỎI ĐÁP VỚI TRỢ LÝ AI =================
+        private async void BtnSendMessage_Click(object sender, RoutedEventArgs e)
         {
-            await RefreshDashboardDataAsync();
+            await ProcessSendMessageAsync();
         }
 
-        public async Task RefreshDashboardDataAsync()
+        private async void TxtChatInput_KeyDown(object sender, KeyEventArgs e)
         {
-            TxtLastUpdated.Text = $"Cập nhật: {DateTime.Now:HH:mm:ss}";
-
-            await Task.Run(() =>
+            if (e.Key == Key.Enter)
             {
-                // 1. Thông tin RAM
-                ulong totalRam = 0;
-                ulong availRam = 0;
-                double ramUsedPercent = 0;
-                try
-                {
-                    var memStatus = new NativeMethods.MEMORYSTATUSEX();
-                    if (NativeMethods.GlobalMemoryStatusEx(memStatus))
-                    {
-                        totalRam = memStatus.ullTotalPhys;
-                        availRam = memStatus.ullAvailPhys;
-                        ulong usedRam = totalRam > availRam ? totalRam - availRam : 0;
-                        ramUsedPercent = totalRam > 0 ? (double)usedRam / totalRam * 100.0 : 0;
-                    }
-                }
-                catch { }
-
-                // 2. Thông tin CPU & Phần cứng
-                string cpuName = GetCpuName();
-                int cpuCores = Environment.ProcessorCount;
-                string osDesc = RuntimeInformation.OSDescription;
-                string osArch = RuntimeInformation.OSArchitecture.ToString();
-                string machineName = Environment.MachineName;
-                string currentUser = $"{Environment.UserDomainName}\\{Environment.UserName}";
-                string dotNetVer = RuntimeInformation.FrameworkDescription;
-
-                // 3. Thời gian Uptime & Quyền
-                TimeSpan uptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
-                string uptimeText = $"{uptime.Days} ngày {uptime.Hours} giờ {uptime.Minutes} phút";
-                bool isAdmin = SystemCore.IsAdministrator();
-                int processCount = 0;
-                try
-                {
-                    processCount = Process.GetProcesses().Length;
-                }
-                catch { }
-
-                // 4. Danh sách các Ổ Đĩa
-                var driveList = new List<DriveStorageInfo>();
-                try
-                {
-                    foreach (var drive in DriveInfo.GetDrives())
-                    {
-                        if (!drive.IsReady) continue;
-
-                        long total = drive.TotalSize;
-                        long free = drive.AvailableFreeSpace;
-                        long used = total > free ? total - free : 0;
-                        double percent = total > 0 ? (double)used / total * 100.0 : 0;
-                        string label = string.IsNullOrWhiteSpace(drive.VolumeLabel) ? "Local Disk" : drive.VolumeLabel;
-                        string format = string.IsNullOrWhiteSpace(drive.DriveFormat) ? "NTFS" : drive.DriveFormat;
-
-                        driveList.Add(new DriveStorageInfo
-                        {
-                            Name = drive.Name,
-                            Label = label,
-                            DriveType = drive.DriveType.ToString(),
-                            Format = format,
-                            TotalBytes = total,
-                            FreeBytes = free,
-                            UsedBytes = used,
-                            UsedPercent = percent,
-                            TotalFormatted = SystemCore.FormatBytes(total),
-                            FreeFormatted = SystemCore.FormatBytes(free),
-                            UsedFormatted = SystemCore.FormatBytes(used),
-                            SummaryText = $"{SystemCore.FormatBytes(used)} / {SystemCore.FormatBytes(total)} ({percent:0.#}%)"
-                        });
-                    }
-                }
-                catch { }
-
-                // 5. Nguồn & Pin
-                bool hasPower = NativeMethods.GetSystemPowerStatus(out var sps);
-
-                // 6. Mạng & IP
-                var netInfo = GetActiveNetworkInfo();
-
-                // Cập nhật giao diện trên Dispatcher
-                Dispatcher.Invoke(() =>
-                {
-                    // Update RAM
-                    if (totalRam > 0)
-                    {
-                        ulong usedRam = totalRam - availRam;
-                        TxtRamSummary.Text = $"{SystemCore.FormatBytes((long)usedRam)} / {SystemCore.FormatBytes((long)totalRam)}";
-                        PbRam.Value = ramUsedPercent;
-                        TxtRamDetail.Text = $"Trống: {SystemCore.FormatBytes((long)availRam)} ({100 - ramUsedPercent:0.#}% khả dụng)";
-                    }
-
-                    // Update CPU
-                    TxtCpuCores.Text = $"{cpuCores} Threads / Nhân";
-                    TxtCpuShortName.Text = CleanCpuShortName(cpuName);
-                    TxtCpuArch.Text = $"Kiến trúc: {osArch}";
-
-                    // Update Uptime & Quyền
-                    TxtUptime.Text = uptimeText;
-                    TxtAdminStatus.Text = isAdmin ? "🛡️ Quyền: Administrator" : "⚠️ Quyền: Standard User";
-                    TxtAdminStatus.Foreground = isAdmin ? (System.Windows.Media.Brush)FindResource("AccentSuccess") : (System.Windows.Media.Brush)FindResource("AccentWarning");
-                    TxtProcessCount.Text = $"{processCount} tiến trình đang chạy";
-
-                    // Update Power
-                    if (hasPower)
-                    {
-                        if (sps.BatteryFlag == 128)
-                        {
-                            TxtPowerStatus.Text = "PC (AC Online)";
-                            PbBattery.Value = 100;
-                            TxtBatteryDetail.Text = "Nguồn điện trực tiếp 220V";
-                        }
-                        else
-                        {
-                            int pct = sps.BatteryLifePercent <= 100 ? sps.BatteryLifePercent : 0;
-                            bool charging = (sps.BatteryFlag & 8) != 0;
-                            TxtPowerStatus.Text = charging ? $"⚡ Sạc ({pct}%)" : $"🔋 {pct}% (Pin)";
-                            PbBattery.Value = pct;
-                            TxtBatteryDetail.Text = sps.ACLineStatus == 1 ? "Đang cắm sạc nguồn" : "Đang dùng nguồn pin";
-                        }
-                    }
-
-                    // Update Drives List
-                    IcDrives.ItemsSource = driveList;
-
-                    // Update System Specs
-                    TxtMachineName.Text = machineName;
-                    TxtCpuFullName.Text = cpuName;
-                    TxtOsVersion.Text = osDesc;
-                    TxtOsArchitecture.Text = $"{osArch} ({ (Environment.Is64BitOperatingSystem ? "64-bit OS" : "32-bit OS") })";
-                    TxtCurrentUser.Text = currentUser;
-                    TxtDotNetVersion.Text = dotNetVer;
-
-                    // Update Network Specs
-                    TxtNetAdapter.Text = netInfo.AdapterName;
-                    TxtNetIpv4.Text = netInfo.Ipv4;
-                    TxtNetMac.Text = netInfo.Mac;
-                    TxtNetGateway.Text = netInfo.Gateway;
-                    TxtNetStatus.Text = netInfo.IsConnected ? "🟢 Đã kết nối Internet" : "🔴 Mất kết nối mạng";
-                });
-            });
-        }
-
-        private static string GetCpuName()
-        {
-            try
-            {
-                using var key = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DESCRIPTION\System\CentralProcessor\0");
-                if (key?.GetValue("ProcessorNameString") is string name)
-                {
-                    return name.Trim();
-                }
+                e.Handled = true;
+                await ProcessSendMessageAsync();
             }
-            catch { }
-
-            return Environment.GetEnvironmentVariable("PROCESSOR_IDENTIFIER") ?? "Generic CPU";
         }
 
-        private static string CleanCpuShortName(string fullName)
+        private async void QuickPrompt_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(fullName)) return "CPU";
-            return fullName.Replace("(R)", "").Replace("(TM)", "").Replace("CPU", "").Trim();
-        }
-
-        private static (string AdapterName, string Ipv4, string Mac, string Gateway, bool IsConnected) GetActiveNetworkInfo()
-        {
-            try
+            if (sender is Button btn && btn.Content is string text)
             {
-                var interfaces = NetworkInterface.GetAllNetworkInterfaces();
-                var active = interfaces.FirstOrDefault(nic =>
-                    nic.OperationalStatus == OperationalStatus.Up &&
-                    nic.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
-                    nic.NetworkInterfaceType != NetworkInterfaceType.Tunnel);
-
-                if (active != null)
+                string query = text;
+                int spaceIndex = text.IndexOf(' ');
+                if (spaceIndex >= 0 && spaceIndex < text.Length - 1)
                 {
-                    var ipProps = active.GetIPProperties();
-                    var ipv4 = ipProps.UnicastAddresses
-                        .FirstOrDefault(a => a.Address.AddressFamily == AddressFamily.InterNetwork)?.Address.ToString() ?? "N/A";
-                    var mac = string.Join(":", active.GetPhysicalAddress().GetAddressBytes().Select(b => b.ToString("X2")));
-                    var gateway = ipProps.GatewayAddresses.FirstOrDefault()?.Address.ToString() ?? "N/A";
-                    bool isConnected = NetworkInterface.GetIsNetworkAvailable();
-
-                    return (active.Name, ipv4, mac, gateway, isConnected);
+                    query = text[(spaceIndex + 1)..].Trim('?');
                 }
-            }
-            catch { }
 
-            return ("Không tìm thấy", "N/A", "N/A", "N/A", false);
+                TxtChatInput.Text = query;
+                await ProcessSendMessageAsync();
+            }
+        }
+
+        private async Task ProcessSendMessageAsync()
+        {
+            string question = TxtChatInput.Text.Trim();
+            if (string.IsNullOrWhiteSpace(question)) return;
+
+            TxtChatInput.Text = string.Empty;
+            AddUserMessage(question);
+
+            // Xử lý câu trả lời từ AI Local Engine (1 file duy nhất)
+            string answer = await _chatbot.AskAssistantAsync(question);
+            AddBotMessage(answer);
+        }
+
+        private void BtnClearChat_Click(object sender, RoutedEventArgs e)
+        {
+            PnlChatMessages.Children.Clear();
+            AddBotMessage("✨ Đã làm mới cuộc hội thoại! Bạn cần Trợ Lý AI Local hỗ trợ câu hỏi nào tiếp theo?");
+        }
+
+        // ================= TẠO BONG BÓNG TIN NHẮN =================
+        private void AddUserMessage(string message)
+        {
+            var bubble = new Border
+            {
+                Background = (Brush)FindResource("AccentPrimary"),
+                CornerRadius = new CornerRadius(14, 14, 2, 14),
+                Padding = new Thickness(14, 10, 14, 10),
+                Margin = new Thickness(60, 6, 0, 4),
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+
+            var sp = new StackPanel();
+            var tbText = new TextBlock
+            {
+                Text = message,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = Brushes.White,
+                FontSize = 12.5,
+                LineHeight = 19
+            };
+            var tbTime = new TextBlock
+            {
+                Text = DateTime.Now.ToString("HH:mm"),
+                FontSize = 9.5,
+                Foreground = new SolidColorBrush(Color.FromArgb(190, 255, 255, 255)),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 4, 0, 0)
+            };
+
+            sp.Children.Add(tbText);
+            sp.Children.Add(tbTime);
+            bubble.Child = sp;
+
+            PnlChatMessages.Children.Add(bubble);
+            ScrollChatToBottom();
+        }
+
+        private void AddBotMessage(string message)
+        {
+            var container = new Grid
+            {
+                Margin = new Thickness(0, 6, 60, 6),
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+            container.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            container.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            // Avatar Robot
+            var avatarBorder = new Border
+            {
+                Background = (Brush)FindResource("BgCardHover"),
+                BorderBrush = (Brush)FindResource("BorderSubtle"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(18),
+                Width = 36,
+                Height = 36,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, 0, 10, 0)
+            };
+            avatarBorder.Child = new TextBlock
+            {
+                Text = "🤖",
+                FontSize = 16,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(avatarBorder, 0);
+
+            // Message Bubble
+            var bubble = new Border
+            {
+                Background = (Brush)FindResource("BgCardHover"),
+                BorderBrush = (Brush)FindResource("BorderSubtle"),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(14, 14, 14, 2),
+                Padding = new Thickness(14, 10, 14, 10)
+            };
+            Grid.SetColumn(bubble, 1);
+
+            var sp = new StackPanel();
+            var tbHeader = new TextBlock
+            {
+                Text = "Trợ Lý AI Local",
+                FontSize = 10.5,
+                FontWeight = FontWeights.Bold,
+                Foreground = (Brush)FindResource("AccentCyan"),
+                Margin = new Thickness(0, 0, 0, 4)
+            };
+
+            var tbText = new TextBlock
+            {
+                Text = message,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = (Brush)FindResource("TextPrimary"),
+                FontSize = 12,
+                LineHeight = 19
+            };
+
+            var tbTime = new TextBlock
+            {
+                Text = DateTime.Now.ToString("HH:mm"),
+                FontSize = 9.5,
+                Foreground = (Brush)FindResource("TextMuted"),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 4, 0, 0)
+            };
+
+            sp.Children.Add(tbHeader);
+            sp.Children.Add(tbText);
+            sp.Children.Add(tbTime);
+            bubble.Child = sp;
+
+            container.Children.Add(avatarBorder);
+            container.Children.Add(bubble);
+
+            PnlChatMessages.Children.Add(container);
+            ScrollChatToBottom();
+        }
+
+        private void ScrollChatToBottom()
+        {
+            Dispatcher.InvokeAsync(() =>
+            {
+                ChatScrollViewer.ScrollToEnd();
+            }, DispatcherPriority.Background);
         }
     }
 }

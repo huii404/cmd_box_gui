@@ -94,11 +94,11 @@ namespace CMD_BOX_GUI.Services
 
                 progress?.Report(70);
 
-                // Chạy DISM Component Cleanup
+                // Chạy DISM Component Cleanup (Nhanh & An toàn)
                 try
                 {
                     Logger.Info("Đang chạy DISM Component Cleanup (WinSxS)...");
-                    await ProcessRunner.RunProcessAsync("dism.exe", "/online /cleanup-image /startcomponentcleanup /resetbase",
+                    await ProcessRunner.RunProcessAsync("dism.exe", "/online /cleanup-image /startcomponentcleanup",
                         line => { if (line.Contains("%")) Logger.Info($"[DISM] {line.Trim()}"); },
                         runAsAdmin: true);
                 }

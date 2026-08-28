@@ -7,12 +7,10 @@
              d:DesignHeight="600" d:DesignWidth="850">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="16">
-            <TextBlock Text="TỐI ƯU &amp; BẢO TRÌ HỆ THỐNG" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,12"/>
-
             <!-- Khối 1: Dọn Rác & Cache -->
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
                 <StackPanel>
-                    <TextBlock Text="DỌN DẸP BỘ NHỚ &amp; CACHE" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
+                    <TextBlock Text="DỌN DẸP BỘ NHỚ &amp; CACHE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
                     <WrapPanel>
                         <Button x:Name="BtnCleanQuick" Content="Xóa rác nhanh" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnCleanQuick_Click"/>
                         <Button x:Name="BtnCleanPro" Content="Xóa rác PRO (Sâu)" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnCleanPro_Click"/>
@@ -25,7 +23,7 @@
             <!-- Khối 2: Tinh chỉnh Hệ thống & Khởi động -->
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
                 <StackPanel>
-                    <TextBlock Text="TINH CHỈNH WINDOWS &amp; STARTUP" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
+                    <TextBlock Text="TINH CHỈNH WINDOWS &amp; STARTUP" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
                     <WrapPanel>
                         <Button x:Name="BtnDisableStartup" Content="Tắt App khởi động (Whitelist)" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnDisableStartup_Click"/>
                         <Button x:Name="BtnOptimizeServices" Content="Tắt Dịch vụ ngầm (Telemetry/Xbox)" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnOptimizeServices_Click"/>
@@ -38,7 +36,7 @@
             <!-- Khối 3: Sửa lỗi hệ thống -->
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
                 <StackPanel>
-                    <TextBlock Text="SỬA LỖI HỆ THỐNG" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
+                    <TextBlock Text="SỬA LỖI HỆ THỐNG" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
                     <WrapPanel>
                         <Button x:Name="BtnFixWU" Content="Sửa Windows Update" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnFixWU_Click"/>
                     </WrapPanel>
@@ -46,7 +44,7 @@
             </Border>
 
             <ProgressBar x:Name="PbOptimizer" Style="{StaticResource FlatProgressBar}" Margin="0,2,0,4" Visibility="Collapsed"/>
-            <TextBlock x:Name="TxtStatus" Text="" FontSize="11" Foreground="{StaticResource AccentCyan}" Visibility="Collapsed"/>
+            <TextBlock x:Name="TxtStatus" Text="" FontSize="11" Foreground="{DynamicResource AccentCyan}" Visibility="Collapsed"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

@@ -15,9 +15,6 @@
 
         <!-- Header Bar -->
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
-            <TextBlock Text="🎬 TRUNG TÂM XỬ LÝ &amp; BIÊN TẬP MEDIA (FFMPEG)" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
-            <TextBlock Text="Biên tập video hàng loạt, chuyển đổi định dạng, nén, làm nét và công cụ bảo mật Steganography." FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,0,0,10"/>
-
             <!-- Sub Navigation Tabs -->
             <StackPanel Orientation="Horizontal">
                 <RadioButton x:Name="TabBatchStudio" Content="🎬  Biên Tập Video Hàng Loạt (Table)" Style="{StaticResource SubTabButton}" IsChecked="True" Checked="SubTab_Checked"/>
@@ -53,13 +50,13 @@
 
                     <!-- Thư mục xuất -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10,0,0,0">
-                        <TextBlock Text="Thư mục xuất:" FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="Thư mục xuất:" FontSize="11" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <TextBox x:Name="TxtCustomOutputDir" Style="{StaticResource FlatTextBox}" Width="180" Height="28" FontSize="11" ToolTip="Để trống sẽ lưu cùng thư mục với file gốc"/>
                         <Button x:Name="BtnBrowseOutputDir" Content="..." Style="{StaticResource SecondaryButton}" Margin="4,0,0,0" Padding="6,2" Height="28" Click="BtnBrowseOutputDir_Click"/>
                     </StackPanel>
 
                     <!-- Thống kê số lượng -->
-                    <TextBlock x:Name="TxtTableCount" Grid.Column="2" Text="0 tệp trong danh sách" FontSize="11" Foreground="{StaticResource AccentCyan}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    <TextBlock x:Name="TxtTableCount" Grid.Column="2" Text="0 tệp trong danh sách" FontSize="11" Foreground="{DynamicResource AccentCyan}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="12,0,0,0"/>
                 </Grid>
             </Border>
 
@@ -74,7 +71,7 @@
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0">
                                             <TextBlock Text="🎥 " FontSize="11" VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center" ToolTip="{Binding FilePath}"/>
+                                            <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" ToolTip="{Binding FilePath}"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -87,7 +84,7 @@
                             <DataGridTextColumn Header="ĐỊNH DẠNG" Binding="{Binding FileExtension}" Width="80"/>
 
                             <!-- Đường dẫn gốc -->
-                            <DataGridTextColumn Header="ĐƯỜNG DẪN" Binding="{Binding FilePath}" Width="*" Foreground="{StaticResource TextMuted}"/>
+                            <DataGridTextColumn Header="ĐƯỜNG DẪN" Binding="{Binding FilePath}" Width="*" Foreground="{DynamicResource TextMuted}"/>
 
                             <!-- Trạng thái -->
                             <DataGridTemplateColumn Header="TRẠNG THÁI" Width="130">
@@ -103,7 +100,7 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Button Content="✕" Style="{StaticResource SecondaryButton}" Padding="4,1" FontSize="10" 
-                                                Foreground="{StaticResource AccentDanger}" Click="BtnRemoveItem_Click" ToolTip="Xóa khỏi danh sách"/>
+                                                Foreground="{DynamicResource AccentDanger}" Click="BtnRemoveItem_Click" ToolTip="Xóa khỏi danh sách"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -113,8 +110,8 @@
                     <!-- Text hướng dẫn khi bảng trống -->
                     <StackPanel x:Name="PnlEmptyNotice" VerticalAlignment="Center" HorizontalAlignment="Center">
                         <TextBlock Text="📂" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                        <TextBlock Text="Chưa có video nào trong danh sách" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Bấm 'Thêm Video / File' hoặc 'Thêm Cả Thư Mục' để bắt đầu chỉnh sửa hàng loạt" FontSize="11" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        <TextBlock Text="Chưa có video nào trong danh sách" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Bấm 'Thêm Video / File' hoặc 'Thêm Cả Thư Mục' để bắt đầu chỉnh sửa hàng loạt" FontSize="11" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -131,8 +128,8 @@
 
                         <!-- Label Dropdown -->
                         <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
-                            <TextBlock Text="CHẾ ĐỘ XỬ LÝ (TÁC VỤ):" FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentCyan}"/>
-                            <TextBlock Text="Chọn tính năng áp dụng cho tất cả video" FontSize="10" Foreground="{StaticResource TextMuted}"/>
+                            <TextBlock Text="CHẾ ĐỘ XỬ LÝ (TÁC VỤ):" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}"/>
+                            <TextBlock Text="Chọn tính năng áp dụng cho tất cả video" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
                         </StackPanel>
 
                         <!-- Web-like Dropdown Selector -->
@@ -150,11 +147,11 @@
                         </ComboBox>
 
                         <!-- Dynamic Settings Controls -->
-                        <Border Grid.Column="2" Background="{StaticResource BgInput}" CornerRadius="6" Padding="8,4" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <Border Grid.Column="2" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="8,4" Margin="10,0,0,0" VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <!-- Option Nén Video -->
                                 <StackPanel x:Name="PnlOptionCompress" Orientation="Horizontal">
-                                    <TextBlock Text="Mức nén:" FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Mức nén:" FontSize="11" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <ComboBox x:Name="CmbCompressCrf" Style="{StaticResource FlatComboBox}" Width="160" Height="26">
                                         <ComboBoxItem Content="Nhẹ (CRF 22 - Nét cao)"/>
                                         <ComboBoxItem Content="Tiêu chuẩn (CRF 26)" IsSelected="True"/>
@@ -164,7 +161,7 @@
 
                                 <!-- Option MP3 Bitrate -->
                                 <StackPanel x:Name="PnlOptionMp3" Orientation="Horizontal" Visibility="Collapsed">
-                                    <TextBlock Text="Chất lượng Bitrate:" FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Chất lượng Bitrate:" FontSize="11" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <ComboBox x:Name="CmbMp3Bitrate" Style="{StaticResource FlatComboBox}" Width="130" Height="26">
                                         <ComboBoxItem Content="128 kbps (Nhẹ)"/>
                                         <ComboBoxItem Content="192 kbps (Chuẩn)" IsSelected="True"/>
@@ -174,7 +171,7 @@
 
                                 <!-- Option Speed -->
                                 <StackPanel x:Name="PnlOptionSpeed" Orientation="Horizontal" Visibility="Collapsed">
-                                    <TextBlock Text="Tốc độ:" FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Tốc độ:" FontSize="11" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <ComboBox x:Name="CmbSpeedVal" Style="{StaticResource FlatComboBox}" Width="120" Height="26">
                                         <ComboBoxItem Content="0.5x (Chậm)"/>
                                         <ComboBoxItem Content="0.75x"/>
@@ -186,7 +183,7 @@
 
                                 <!-- Option Format -->
                                 <StackPanel x:Name="PnlOptionFormat" Orientation="Horizontal" Visibility="Collapsed">
-                                    <TextBlock Text="Định dạng đích:" FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Định dạng đích:" FontSize="11" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <ComboBox x:Name="CmbTargetFormat" Style="{StaticResource FlatComboBox}" Width="100" Height="26">
                                         <ComboBoxItem Content=".mp4" IsSelected="True"/>
                                         <ComboBoxItem Content=".mkv"/>
@@ -200,7 +197,7 @@
 
                                 <!-- Option GIF -->
                                 <StackPanel x:Name="PnlOptionGif" Orientation="Horizontal" Visibility="Collapsed">
-                                    <TextBlock Text="Độ rộng:" FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Độ rộng:" FontSize="11" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <ComboBox x:Name="CmbGifWidth" Style="{StaticResource FlatComboBox}" Width="110" Height="26">
                                         <ComboBoxItem Content="360px"/>
                                         <ComboBoxItem Content="480px" IsSelected="True"/>
@@ -210,13 +207,13 @@
 
                                 <!-- Option Thumbnail -->
                                 <StackPanel x:Name="PnlOptionThumbnail" Orientation="Horizontal" Visibility="Collapsed">
-                                    <TextBlock Text="Thời điểm (giây):" FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Thời điểm (giây):" FontSize="11" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <TextBox x:Name="TxtThumbnailTime" Text="00:00:01" Style="{StaticResource FlatTextBox}" Width="70" Height="26" FontSize="11"/>
                                 </StackPanel>
 
                                 <!-- Option Resize -->
                                 <StackPanel x:Name="PnlOptionResize" Orientation="Horizontal" Visibility="Collapsed">
-                                    <TextBlock Text="Độ phân giải:" FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Độ phân giải:" FontSize="11" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                     <ComboBox x:Name="CmbResolution" Style="{StaticResource FlatComboBox}" Width="140" Height="26">
                                         <ComboBoxItem Content="1920x1080 (FHD)" IsSelected="True"/>
                                         <ComboBoxItem Content="1280x720 (HD)"/>
@@ -227,9 +224,9 @@
 
                                 <!-- Option Trim -->
                                 <StackPanel x:Name="PnlOptionTrim" Orientation="Horizontal" Visibility="Collapsed">
-                                    <TextBlock Text="Từ:" FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Từ:" FontSize="11" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0"/>
                                     <TextBox x:Name="TxtTrimStart" Text="00:00:00" Style="{StaticResource FlatTextBox}" Width="65" Height="26" FontSize="11" Margin="0,0,8,0"/>
-                                    <TextBlock Text="Đến:" FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBlock Text="Đến:" FontSize="11" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0"/>
                                     <TextBox x:Name="TxtTrimEnd" Text="00:00:30" Style="{StaticResource FlatTextBox}" Width="65" Height="26" FontSize="11"/>
                                 </StackPanel>
                             </StackPanel>
@@ -252,7 +249,7 @@
 
                         <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="14,0,0,0">
                             <ProgressBar x:Name="PbBatchTotal" Style="{StaticResource FlatProgressBar}" Margin="0,0,0,4" Visibility="Collapsed"/>
-                            <TextBlock x:Name="TxtBatchStatus" Text="" FontSize="11" Foreground="{StaticResource AccentCyan}" Visibility="Collapsed"/>
+                            <TextBlock x:Name="TxtBatchStatus" Text="" FontSize="11" Foreground="{DynamicResource AccentCyan}" Visibility="Collapsed"/>
                         </StackPanel>
                     </Grid>
                 </StackPanel>
@@ -265,11 +262,11 @@
                 <!-- Khối 1: Giấu File Trong File (Steganography) -->
                 <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="14">
                     <StackPanel>
-                        <TextBlock Text="GIẤU FILE VÀO MEDIA (STEGANOGRAPHY ENCRYPTION)" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Đóng gói và giấu tệp bí mật (ZIP, RAR, EXE, TXT...) vào đuôi tệp Media (ảnh/video) mà vẫn phát bình thường." FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,0,0,10"/>
+                        <TextBlock Text="GIẤU FILE VÀO MEDIA (STEGANOGRAPHY ENCRYPTION)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Đóng gói và giấu tệp bí mật (ZIP, RAR, EXE, TXT...) vào đuôi tệp Media (ảnh/video) mà vẫn phát bình thường." FontSize="11" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,10"/>
 
                         <!-- Chọn file vỏ bọc -->
-                        <TextBlock Text="1. Tệp Media vỏ bọc (Video / Ảnh / Audio):" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="1. Tệp Media vỏ bọc (Video / Ảnh / Audio):" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,4"/>
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -280,7 +277,7 @@
                         </Grid>
 
                         <!-- Chọn file bí mật -->
-                        <TextBlock Text="2. Tệp bí mật cần giấu:" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="2. Tệp bí mật cần giấu:" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,4"/>
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -297,8 +294,8 @@
                 <!-- Khối 2: Trích xuất File Ẩn -->
                 <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="14">
                     <StackPanel>
-                        <TextBlock Text="TRÍCH XUẤT FILE ẨN TỪ MEDIA" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Quét tệp Media nghi ngờ có giấu dữ liệu ẩn để giải nén lại tệp gốc." FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,0,0,10"/>
+                        <TextBlock Text="TRÍCH XUẤT FILE ẨN TỪ MEDIA" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Quét tệp Media nghi ngờ có giấu dữ liệu ẩn để giải nén lại tệp gốc." FontSize="11" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,10"/>
 
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
@@ -316,8 +313,8 @@
                 <!-- Khối 3: Chuẩn Hóa Tên File Trong Thư Mục -->
                 <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="14">
                     <StackPanel>
-                        <TextBlock Text="CHUẨN HÓA TÊN TỆP THƯ MỤC MEDIA" FontSize="13" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Tự động dọn dẹp khoảng trắng, ký tự đặc biệt, unicode lỗi trong toàn bộ tệp của thư mục." FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,0,0,10"/>
+                        <TextBlock Text="CHUẨN HÓA TÊN TỆP THƯ MỤC MEDIA" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Tự động dọn dẹp khoảng trắng, ký tự đặc biệt, unicode lỗi trong toàn bộ tệp của thư mục." FontSize="11" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,10"/>
 
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
@@ -333,7 +330,7 @@
                 </Border>
 
                 <ProgressBar x:Name="PbStego" Style="{StaticResource FlatProgressBar}" Margin="0,2,0,4" Visibility="Collapsed"/>
-                <TextBlock x:Name="TxtStegoStatus" Text="" FontSize="11" Foreground="{StaticResource AccentCyan}" Visibility="Collapsed"/>
+                <TextBlock x:Name="TxtStegoStatus" Text="" FontSize="11" Foreground="{DynamicResource AccentCyan}" Visibility="Collapsed"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>

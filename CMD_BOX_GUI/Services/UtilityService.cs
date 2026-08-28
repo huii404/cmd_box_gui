@@ -13,6 +13,7 @@ namespace CMD_BOX_GUI.Services
     public class UtilityService
     {
         private CancellationTokenSource? _autoClickCts;
+        private CancellationTokenSource? _spamCts;
 
         // 1. AUTO CLICKER
         public async Task StartAutoClickAsync(int x, int y, int clickCount, int intervalMs, IProgress<int>? progress = null)
@@ -53,20 +54,21 @@ namespace CMD_BOX_GUI.Services
         // 2. SPAM TEXT
         public async Task SpamTextAsync(string content, int count, int delayMs, bool autoPressEnter = true)
         {
+            _spamCts?.Cancel();
+            _spamCts = new CancellationTokenSource();
+            var token = _spamCts.Token;
+
             Logger.Info($"Spam Text ({count} lần)... Bắt đầu sau 2s. [ESC/F6 ngắt]");
-            await Task.Delay(2000);
+            await Task.Delay(2000, token);
 
             await Task.Run(async () =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    try { Clipboard.SetDataObject(content, true); } catch { }
-                });
+                SafeSetClipboardText(content);
 
                 int executed = 0;
                 for (int i = 0; i < count; i++)
                 {
-                    if (SystemCore.CheckEmergencyStop())
+                    if (token.IsCancellationRequested || SystemCore.CheckEmergencyStop())
                     {
                         Logger.Warning($"Đã ngắt Spam Text ({executed}/{count}).");
                         break;
@@ -80,12 +82,15 @@ namespace CMD_BOX_GUI.Services
                     }
 
                     executed++;
-                    await Task.Delay(delayMs);
+                    try { await Task.Delay(delayMs, token); }
+                    catch (TaskCanceledException) { break; }
                 }
 
                 if (executed == count) Logger.Success($"Đã gửi xong {count} lần!");
-            });
+            }, token);
         }
+
+        public void StopSpamText() => _spamCts?.Cancel();
 
         // 3. AUTO PASTE MULTI-LINES
         public async Task AutoPasteMultiLinesAsync(string multiLineContent, int delayMs)
@@ -93,35 +98,56 @@ namespace CMD_BOX_GUI.Services
             var lines = multiLineContent.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
             if (lines.Length == 0) return;
 
+            _spamCts?.Cancel();
+            _spamCts = new CancellationTokenSource();
+            var token = _spamCts.Token;
+
             Logger.Info($"Auto Paste {lines.Length} dòng... Bắt đầu sau 2s. [ESC/F6 ngắt]");
-            await Task.Delay(2000);
+            await Task.Delay(2000, token);
 
             await Task.Run(async () =>
             {
                 int executed = 0;
                 foreach (var line in lines)
                 {
-                    if (SystemCore.CheckEmergencyStop())
+                    if (token.IsCancellationRequested || SystemCore.CheckEmergencyStop())
                     {
                         Logger.Warning($"Đã ngắt Auto Paste ({executed}/{lines.Length}).");
                         break;
                     }
 
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        try { Clipboard.SetDataObject(line, true); } catch { }
-                    });
+                    SafeSetClipboardText(line);
 
                     SystemCore.SimulateCtrlV();
                     await Task.Delay(15);
                     SystemCore.SimulateEnter();
 
                     executed++;
-                    await Task.Delay(delayMs);
+                    try { await Task.Delay(delayMs, token); }
+                    catch (TaskCanceledException) { break; }
                 }
 
                 if (executed == lines.Length) Logger.Success($"Đã dán xong {lines.Length} dòng dữ liệu!");
-            });
+            }, token);
+        }
+
+        private static void SafeSetClipboardText(string text)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                try
+                {
+                    Application.Current?.Dispatcher?.Invoke(() =>
+                    {
+                        Clipboard.SetDataObject(text, true);
+                    });
+                    return;
+                }
+                catch
+                {
+                    Thread.Sleep(20);
+                }
+            }
         }
 
         // 4. CHẨN ĐOÁN PIN LAPTOP

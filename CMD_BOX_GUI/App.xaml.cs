@@ -1,6 +1,7 @@
-﻿using System.Configuration;
+using System.Configuration;
 using System.Data;
 using System.Windows;
+using CMD_BOX_GUI.Services;
 
 namespace CMD_BOX_GUI
 {
@@ -9,6 +10,10 @@ namespace CMD_BOX_GUI
     /// </summary>
     public partial class App : Application
     {
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+            ThemeService.Initialize();
+        }
     }
-
 }

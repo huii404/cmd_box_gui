@@ -97,4 +97,27 @@ namespace CMD_BOX_GUI.Models
         protected void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(name));
     }
+
+    public class AppSettings
+    {
+        public bool IsDarkMode { get; set; } = true;
+        public string LastSelectedTab { get; set; } = "Dashboard";
+        public string CustomOutputDir { get; set; } = string.Empty;
+        public int DefaultCrf { get; set; } = 26;
+        public int AutoRefreshIntervalSec { get; set; } = 3;
+        public DateTime LastSavedTime { get; set; } = DateTime.Now;
+    }
+
+    public class ChatMessage
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public string Sender { get; set; } = "Bot"; // "User" or "Bot"
+        public string Content { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; } = DateTime.Now;
+
+        public bool IsUser => Sender.Equals("User", StringComparison.OrdinalIgnoreCase);
+        public string FormattedTime => Timestamp.ToString("HH:mm");
+        public string AvatarIcon => IsUser ? "👤" : "🤖";
+        public string SenderName => IsUser ? "Bạn" : "CMD Assistant";
+    }
 }

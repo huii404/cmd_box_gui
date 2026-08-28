@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
@@ -7,13 +8,12 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CMD_BOX_GUI.Core;
 using CMD_BOX_GUI.Models;
-using Microsoft.Win32;
 
 namespace CMD_BOX_GUI.Services
 {
     public class NetworkService
     {
-        private static readonly HttpClient httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(4) };
+        private static readonly HttpClient httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
 
         public async Task<List<NetworkAdapterInfo>> GetAdaptersInfoAsync()
         {
@@ -84,49 +84,62 @@ namespace CMD_BOX_GUI.Services
 
         public async Task<List<WifiInfo>> AuditSavedWifiAsync()
         {
-            Logger.Info("Đang trích xuất Wi-Fi đã lưu...");
-            var wifiList = new List<WifiInfo>();
+            Logger.Info("Đang quét Wi-Fi đã lưu tốc độ cao...");
+            var wifiBag = new ConcurrentBag<WifiInfo>();
 
             string profilesOutput = await ProcessRunner.RunCommandAndGetOutputAsync("netsh", "wlan show profiles");
-            var matches = Regex.Matches(profilesOutput, @"All User Profile\s*:\s*(.*)|Tất cả Hồ sơ Người dùng\s*:\s*(.*)");
-
             var profileNames = new List<string>();
-            foreach (Match m in matches)
+
+            using (var reader = new StringReader(profilesOutput))
             {
-                string name = !string.IsNullOrEmpty(m.Groups[1].Value) ? m.Groups[1].Value : m.Groups[2].Value;
-                name = name.Trim();
-                if (!string.IsNullOrEmpty(name)) profileNames.Add(name);
+                string? line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    int colon = line.IndexOf(':');
+                    if (colon >= 0 && colon < line.Length - 1)
+                    {
+                        string left = line[..colon].ToLowerInvariant();
+                        if (left.Contains("profile") || left.Contains("hồ sơ") || left.Contains("profil"))
+                        {
+                            string name = line[(colon + 1)..].Trim();
+                            if (!string.IsNullOrEmpty(name)) profileNames.Add(name);
+                        }
+                    }
+                }
             }
 
-            foreach (var profile in profileNames)
+            // Quét song song đa luồng (Parallel) để có kết quả tức thì
+            await Parallel.ForEachAsync(profileNames, new ParallelOptions { MaxDegreeOfParallelism = 4 }, async (profile, _) =>
             {
                 string detail = await ProcessRunner.RunCommandAndGetOutputAsync("netsh", $"wlan show profile name=\"{profile}\" key=clear");
                 
                 string pass = "Không có mật khẩu (Open)";
-                var passMatch = Regex.Match(detail, @"Key Content\s*:\s*(.*)|Nội dung khóa\s*:\s*(.*)");
+                var passMatch = Regex.Match(detail, @"(?:Key Content|Nội dung khóa|Schlüsselinhalt)\s*:\s*(.*)", RegexOptions.IgnoreCase);
                 if (passMatch.Success)
                 {
-                    pass = !string.IsNullOrEmpty(passMatch.Groups[1].Value) ? passMatch.Groups[1].Value.Trim() : passMatch.Groups[2].Value.Trim();
+                    pass = passMatch.Groups[1].Value.Trim();
                 }
 
                 string auth = "WPA2/WPA3";
-                var authMatch = Regex.Match(detail, @"Authentication\s*:\s*(.*)|Xác thực\s*:\s*(.*)");
+                var authMatch = Regex.Match(detail, @"(?:Authentication|Xác thực|Authentifizierung)\s*:\s*(.*)", RegexOptions.IgnoreCase);
                 if (authMatch.Success)
                 {
-                    auth = !string.IsNullOrEmpty(authMatch.Groups[1].Value) ? authMatch.Groups[1].Value.Trim() : authMatch.Groups[2].Value.Trim();
+                    auth = authMatch.Groups[1].Value.Trim();
                 }
 
-                wifiList.Add(new WifiInfo
+                wifiBag.Add(new WifiInfo
                 {
                     Ssid = profile,
                     Password = pass,
                     Authentication = auth,
                     Cipher = "AES"
                 });
-            }
+            });
 
-            Logger.Success($"Đã trích xuất {wifiList.Count} Wi-Fi.");
-            return wifiList;
+            var result = new List<WifiInfo>(wifiBag);
+            result.Sort((a, b) => string.Compare(a.Ssid, b.Ssid, StringComparison.OrdinalIgnoreCase));
+            Logger.Success($"Đã trích xuất {result.Count} mạng Wi-Fi.");
+            return result;
         }
 
         public async Task RepairNetworkProAsync(IProgress<int>? progress = null)

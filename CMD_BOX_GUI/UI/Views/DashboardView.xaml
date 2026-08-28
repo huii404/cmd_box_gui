@@ -4,214 +4,69 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="700" d:DesignWidth="850">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="16">
-            <!-- Header & Nút Làm mới -->
-            <Grid Margin="0,0,0,16">
+             d:DesignHeight="800" d:DesignWidth="900">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <!-- 1. Header & AI Status Badge -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2. Quick Suggestion Prompt Chips -->
+            <RowDefinition Height="Auto"/>
+            <!-- 3. Chat Messages Workspace -->
+            <RowDefinition Height="*"/>
+            <!-- 4. Input & Action Bar -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ================= 1. HEADER ================= -->
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="BtnClearChat" Grid.Column="1" Content="🗑️ Làm mới / Xóa Chat" Style="{StaticResource SecondaryButton}" 
+                    Padding="10,5" FontSize="11" VerticalAlignment="Center" Click="BtnClearChat_Click" ToolTip="Xóa sạch lịch sử hội thoại"/>
+        </Grid>
+
+        <!-- ================= 2. QUICK PROMPT CHIPS ================= -->
+        <Border Grid.Row="1" Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock Text="💡 GỢI Ý CÂU HỎI NHANH:" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,6"/>
+                <WrapPanel>
+                    <Button Content="🧹 Cách dọn rác Win?" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="10.5" Margin="0,0,6,4" Click="QuickPrompt_Click"/>
+                    <Button Content="📶 Xem pass Wi-Fi đã lưu?" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="10.5" Margin="0,0,6,4" Click="QuickPrompt_Click"/>
+                    <Button Content="🎬 Cách nén video CRF?" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="10.5" Margin="0,0,6,4" Click="QuickPrompt_Click"/>
+                    <Button Content="🔋 Kiểm tra độ chai pin?" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="10.5" Margin="0,0,6,4" Click="QuickPrompt_Click"/>
+                    <Button Content="⚡ Sửa lỗi mất mạng / ping lag?" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="10.5" Margin="0,0,6,4" Click="QuickPrompt_Click"/>
+                    <Button Content="🕵️‍♂️ Cách giấu file vào ảnh/video?" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="10.5" Margin="0,0,6,4" Click="QuickPrompt_Click"/>
+                    <Button Content="🛠️ Sửa lỗi Windows Update?" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="10.5" Margin="0,0,6,4" Click="QuickPrompt_Click"/>
+                    <Button Content="⌨️ Phím tắt ngắt khẩn cấp?" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="10.5" Margin="0,0,6,4" Click="QuickPrompt_Click"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ================= 3. KHUNG HỘI THOẠI (CHAT AREA) ================= -->
+        <Border Grid.Row="2" Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,0,0,10">
+            <ScrollViewer x:Name="ChatScrollViewer" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="PnlChatMessages" Margin="0,0,6,0"/>
+            </ScrollViewer>
+        </Border>
+
+        <!-- ================= 4. KHUNG NHẬP LIỆU (INPUT BAR) ================= -->
+        <Border Grid.Row="3" Background="{DynamicResource BgInput}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="8" Padding="6,5">
+            <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="THÔNG SỐ &amp; TÀI NGUYÊN HỆ THỐNG" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,2"/>
-                    <TextBlock Text="Giám sát thông số phần cứng, dung lượng ổ đĩa, bộ nhớ và trạng thái Windows theo thời gian thực." FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                </StackPanel>
+                <TextBox x:Name="TxtChatInput" Style="{StaticResource FlatTextBox}" 
+                         Background="Transparent" BorderThickness="0" Padding="8,8" FontSize="12.5"
+                         KeyDown="TxtChatInput_KeyDown"
+                         ToolTip="Nhập câu hỏi và nhấn Enter để gửi... (Ví dụ: dọn rác, wifi, nén video, pin...)"/>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock x:Name="TxtLastUpdated" Text="Cập nhật: --:--:--" FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <Button x:Name="BtnRefresh" Content="🔄 Làm mới" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="11" Click="BtnRefresh_Click"/>
-                </StackPanel>
+                <Button x:Name="BtnSendMessage" Grid.Column="1" Content="🚀 Gửi" Style="{StaticResource PrimaryButton}" 
+                        Padding="18,8" FontSize="12" Margin="6,0,0,0" Click="BtnSendMessage_Click"/>
             </Grid>
-
-            <!-- 1. Grid 4 Thẻ chỉ số tổng quan hàng đầu -->
-            <Grid Margin="0,0,0,16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Thẻ 1: RAM -->
-                <Border Grid.Column="0" Style="{StaticResource CardPanel}" Margin="0,0,4,0" Padding="12">
-                    <StackPanel>
-                        <TextBlock Text="🧠 BỘ NHỚ RAM" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="TxtRamSummary" Text="..." FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentCyan}" Margin="0,0,0,6"/>
-                        <ProgressBar x:Name="PbRam" Style="{StaticResource FlatProgressBar}" Foreground="{StaticResource AccentCyan}" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="TxtRamDetail" Text="..." FontSize="10" Foreground="{StaticResource TextSecondary}"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Thẻ 2: CPU & Luồng -->
-                <Border Grid.Column="1" Style="{StaticResource CardPanel}" Margin="4,0,4,0" Padding="12">
-                    <StackPanel>
-                        <TextBlock Text="⚡ BỘ XỬ LÝ (CPU)" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="TxtCpuCores" Text="..." FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentPrimary}" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="TxtCpuShortName" Text="..." FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4" TextTrimming="CharacterEllipsis"/>
-                        <TextBlock x:Name="TxtCpuArch" Text="..." FontSize="10" Foreground="{StaticResource TextSecondary}"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Thẻ 3: Nguồn & Pin -->
-                <Border Grid.Column="2" Style="{StaticResource CardPanel}" Margin="4,0,4,0" Padding="12">
-                    <StackPanel>
-                        <TextBlock Text="🔋 NGUỒN &amp; PIN" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="TxtPowerStatus" Text="..." FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentSuccess}" Margin="0,0,0,6"/>
-                        <ProgressBar x:Name="PbBattery" Style="{StaticResource FlatProgressBar}" Foreground="{StaticResource AccentSuccess}" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="TxtBatteryDetail" Text="..." FontSize="10" Foreground="{StaticResource TextSecondary}"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Thẻ 4: Thời gian Uptime & Quyền -->
-                <Border Grid.Column="3" Style="{StaticResource CardPanel}" Margin="4,0,0,0" Padding="12">
-                    <StackPanel>
-                        <TextBlock Text="⏱️ THỜI GIAN HOẠT ĐỘNG" FontSize="10" FontWeight="Bold" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="TxtUptime" Text="..." FontSize="13" FontWeight="Bold" Foreground="{StaticResource AccentPurple}" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="TxtAdminStatus" Text="..." FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentSuccess}" Margin="0,0,0,2"/>
-                        <TextBlock x:Name="TxtProcessCount" Text="..." FontSize="10" Foreground="{StaticResource TextSecondary}"/>
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <!-- 2. Danh sách Dung lượng Tất cả các Ổ đĩa -->
-            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,16" Padding="14">
-                <StackPanel>
-                    <TextBlock Text="💽 DUNG LƯỢNG LƯU TRỮ CÁC Ổ ĐĨA" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,12"/>
-
-                    <ItemsControl x:Name="IcDrives">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="{StaticResource BgInput}" BorderBrush="{StaticResource BorderSubtle}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,8">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-
-                                        <!-- Hàng 1: Tên ổ đĩa + Dung lượng tóm tắt -->
-                                        <Grid Grid.Row="0" Margin="0,0,0,6">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock Text="💾 " FontSize="12" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13" Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                <TextBlock Text="{Binding Label}" FontSize="12" Foreground="{StaticResource AccentCyan}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                <TextBlock Text="{Binding Format, StringFormat='({0})'}" FontSize="11" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-
-                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                <TextBlock Text="Trống: " FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                                                <TextBlock Text="{Binding FreeFormatted}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentSuccess}" Margin="0,0,8,0"/>
-                                                <TextBlock Text="Tổng: " FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                                                <TextBlock Text="{Binding TotalFormatted}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
-                                            </StackPanel>
-                                        </Grid>
-
-                                        <!-- Hàng 2: Thanh ProgressBar dung lượng -->
-                                        <ProgressBar Grid.Row="1" Height="8" Minimum="0" Maximum="100" Value="{Binding UsedPercent, Mode=OneWay}" 
-                                                     Style="{StaticResource FlatProgressBar}" Margin="0,0,0,4"/>
-
-                                        <!-- Hàng 3: Chi tiết phần trăm đã dùng -->
-                                        <Grid Grid.Row="2">
-                                            <TextBlock Text="{Binding DriveType, StringFormat='Loại: {0}'}" FontSize="10" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Left"/>
-                                            <TextBlock Text="{Binding SummaryText, StringFormat='Đã dùng: {0}'}" FontSize="10" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Right"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-
-            <!-- 3. Grid 2 cột: Chi tiết Phần Cứng / OS & Mạng -->
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Cột trái: Thông số Máy tính & Hệ điều hành -->
-                <Border Grid.Column="0" Style="{StaticResource CardPanel}" Margin="0,0,6,0" Padding="14">
-                    <StackPanel>
-                        <TextBlock Text="🖥️ HỆ THỐNG &amp; PHẦN CỨNG" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,10"/>
-
-                        <!-- Tên máy -->
-                        <Grid Margin="0,0,0,6">
-                            <TextBlock Text="Tên thiết bị (Host):" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock x:Name="TxtMachineName" Text="..." FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Right"/>
-                        </Grid>
-
-                        <!-- CPU chi tiết -->
-                        <Grid Margin="0,0,0,6">
-                            <TextBlock Text="Bộ xử lý (CPU):" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock x:Name="TxtCpuFullName" Text="..." FontSize="11" Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" MaxWidth="220"/>
-                        </Grid>
-
-                        <!-- Hệ điều hành -->
-                        <Grid Margin="0,0,0,6">
-                            <TextBlock Text="Hệ điều hành:" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock x:Name="TxtOsVersion" Text="..." FontSize="11" Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Right"/>
-                        </Grid>
-
-                        <!-- Kiến trúc -->
-                        <Grid Margin="0,0,0,6">
-                            <TextBlock Text="Kiến trúc hệ thống:" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock x:Name="TxtOsArchitecture" Text="..." FontSize="11" Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Right"/>
-                        </Grid>
-
-                        <!-- Người dùng -->
-                        <Grid Margin="0,0,0,6">
-                            <TextBlock Text="Người dùng hiện tại:" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock x:Name="TxtCurrentUser" Text="..." FontSize="11" Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Right"/>
-                        </Grid>
-
-                        <!-- .NET Runtime -->
-                        <Grid>
-                            <TextBlock Text="Môi trường chạy:" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock x:Name="TxtDotNetVersion" Text="..." FontSize="11" Foreground="{StaticResource AccentCyan}" HorizontalAlignment="Right"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- Cột phải: Thông số Mạng & Kết nối -->
-                <Border Grid.Column="1" Style="{StaticResource CardPanel}" Margin="6,0,0,0" Padding="14">
-                    <StackPanel>
-                        <TextBlock Text="🌐 KẾT NỐI MẠNG &amp; IP" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,10"/>
-
-                        <!-- Tên Adapter -->
-                        <Grid Margin="0,0,0,6">
-                            <TextBlock Text="Adapter kết nối:" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock x:Name="TxtNetAdapter" Text="..." FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" MaxWidth="200"/>
-                        </Grid>
-
-                        <!-- IPv4 -->
-                        <Grid Margin="0,0,0,6">
-                            <TextBlock Text="Địa chỉ IPv4:" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock x:Name="TxtNetIpv4" Text="..." FontSize="11" FontWeight="Bold" Foreground="{StaticResource AccentCyan}" HorizontalAlignment="Right"/>
-                        </Grid>
-
-                        <!-- MAC Address -->
-                        <Grid Margin="0,0,0,6">
-                            <TextBlock Text="Địa chỉ MAC:" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock x:Name="TxtNetMac" Text="..." FontSize="11" Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Right"/>
-                        </Grid>
-
-                        <!-- Gateway -->
-                        <Grid Margin="0,0,0,6">
-                            <TextBlock Text="Default Gateway:" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock x:Name="TxtNetGateway" Text="..." FontSize="11" Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Right"/>
-                        </Grid>
-
-                        <!-- Trạng thái Internet -->
-                        <Grid>
-                            <TextBlock Text="Trạng thái Internet:" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                            <TextBlock x:Name="TxtNetStatus" Text="..." FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentSuccess}" HorizontalAlignment="Right"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-            </Grid>
-        </StackPanel>
-    </ScrollViewer>
+        </Border>
+    </Grid>
 </UserControl>

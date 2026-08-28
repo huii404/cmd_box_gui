@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using CMD_BOX_GUI.Core;
+using CMD_BOX_GUI.Services;
 using CMD_BOX_GUI.UI.Views;
 
 namespace CMD_BOX_GUI
@@ -16,6 +17,7 @@ namespace CMD_BOX_GUI
         private readonly NetworkView _networkView = new();
         private readonly UtilitiesView _utilitiesView = new();
         private readonly MediaView _mediaView = new();
+        private readonly GuideView _guideView = new();
 
         private readonly StringBuilder _logHistory = new();
         private readonly DispatcherTimer _logBatchTimer;
@@ -25,6 +27,9 @@ namespace CMD_BOX_GUI
         public MainWindow()
         {
             InitializeComponent();
+
+            // Cập nhật trạng thái hiển thị của nút đổi theme
+            UpdateThemeUIState();
 
             // Load View mặc định
             MainContentHost.Content = _dashboardView;
@@ -80,7 +85,6 @@ namespace CMD_BOX_GUI
             if (NavDashboard.IsChecked == true)
             {
                 MainContentHost.Content = _dashboardView;
-                _ = _dashboardView.RefreshDashboardDataAsync();
             }
             else if (NavOptimizer.IsChecked == true)
             {
@@ -97,6 +101,43 @@ namespace CMD_BOX_GUI
             else if (NavMedia.IsChecked == true)
             {
                 MainContentHost.Content = _mediaView;
+            }
+            else if (NavGuide.IsChecked == true)
+            {
+                MainContentHost.Content = _guideView;
+            }
+        }
+
+        private void BtnToggleTheme_Click(object sender, RoutedEventArgs e)
+        {
+            ThemeService.ToggleTheme();
+            UpdateThemeUIState();
+            Logger.Info(ThemeService.IsDarkMode ? "Đã chuyển sang Giao diện Tối (Dark Mode)." : "Đã chuyển sang Giao diện Sáng (Light Mode).");
+        }
+
+        private void UpdateThemeUIState()
+        {
+            if (TxtThemeIcon == null || TxtThemeLabel == null || EllThemeDot == null) return;
+
+            if (ThemeService.IsDarkMode)
+            {
+                TxtThemeIcon.Text = "🌙";
+                TxtThemeLabel.Text = "Giao diện Tối";
+                EllThemeDot.HorizontalAlignment = HorizontalAlignment.Right;
+                if (Application.Current?.Resources["AccentCyan"] is System.Windows.Media.Brush cyanBrush)
+                {
+                    EllThemeDot.Fill = cyanBrush;
+                }
+            }
+            else
+            {
+                TxtThemeIcon.Text = "☀️";
+                TxtThemeLabel.Text = "Giao diện Sáng";
+                EllThemeDot.HorizontalAlignment = HorizontalAlignment.Left;
+                if (Application.Current?.Resources["AccentWarning"] is System.Windows.Media.Brush warnBrush)
+                {
+                    EllThemeDot.Fill = warnBrush;
+                }
             }
         }
 

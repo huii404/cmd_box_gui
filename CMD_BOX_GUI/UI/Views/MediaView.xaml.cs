@@ -3,9 +3,11 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using CMD_BOX_GUI.Core;
 using CMD_BOX_GUI.Models;
 using CMD_BOX_GUI.Services;
 using Microsoft.Win32;
@@ -17,6 +19,9 @@ namespace CMD_BOX_GUI.UI.Views
         private readonly MediaService _media = new();
         private readonly ObservableCollection<MediaBatchItem> _mediaItems = new();
         private string _lastOutputDir = string.Empty;
+        private CancellationTokenSource? _batchCts;
+        private CancellationTokenSource? _stegoCts;
+        private bool _isBatchRunning = false;
 
         public MediaView()
         {
@@ -104,6 +109,12 @@ namespace CMD_BOX_GUI.UI.Views
 
         private void BtnRemoveItem_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBatchRunning)
+            {
+                MessageBox.Show("Tác vụ đang chạy, không thể xóa dòng lúc này!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             if (sender is Button btn && btn.DataContext is MediaBatchItem item)
             {
                 _mediaItems.Remove(item);
@@ -113,6 +124,12 @@ namespace CMD_BOX_GUI.UI.Views
 
         private void BtnClearTable_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBatchRunning)
+            {
+                MessageBox.Show("Tác vụ đang chạy, không thể xóa bảng lúc này!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             _mediaItems.Clear();
             UpdateTableNotice();
         }
@@ -185,130 +202,162 @@ namespace CMD_BOX_GUI.UI.Views
             }
         }
 
-        // ================= THỰC THI XỬ LÝ HÀNG LOẠT =================
+        // ================= THỰC THI XỬ LÝ HÀNG LOẠT (ASYNC + CANCEL) =================
         private async void BtnStartBatch_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBatchRunning)
+            {
+                // Người dùng bấm Dừng lại
+                _batchCts?.Cancel();
+                Logger.Warning("Đang yêu cầu dừng tác vụ xử lý hàng loạt...");
+                return;
+            }
+
             if (_mediaItems.Count == 0)
             {
                 MessageBox.Show("Vui lòng thêm ít nhất một tệp Video vào bảng danh sách!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
-            SetBatchRunning(true, "Đang xử lý các tệp trong danh sách...");
+            _batchCts = new CancellationTokenSource();
+            var token = _batchCts.Token;
+
+            _isBatchRunning = true;
+            SetBatchRunning(true, "Đang xử lý các tệp trong danh sách... (ESC/F6 hoặc bấm Dừng để hủy)");
             PbBatchTotal.Maximum = _mediaItems.Count;
             PbBatchTotal.Value = 0;
 
             int mode = CmbProcessingMode.SelectedIndex;
             string customOutDir = TxtCustomOutputDir.Text.Trim();
-            int successCount = 0;
 
-            for (int i = 0; i < _mediaItems.Count; i++)
+            // Đọc thông số cấu hình trên UI thread
+            int crf = CmbCompressCrf.SelectedIndex switch { 0 => 22, 2 => 30, _ => 26 };
+            int bitrate = CmbMp3Bitrate.SelectedIndex switch { 0 => 128, 2 => 320, _ => 192 };
+            double speed = CmbSpeedVal.SelectedIndex switch { 0 => 0.5, 1 => 0.75, 2 => 1.25, 4 => 2.0, _ => 1.5 };
+            string targetExt = ((ComboBoxItem)CmbTargetFormat.SelectedItem)?.Content?.ToString() ?? ".mp4";
+            int gifWidth = CmbGifWidth.SelectedIndex switch { 0 => 360, 2 => 640, _ => 480 };
+            string snapTime = string.IsNullOrWhiteSpace(TxtThumbnailTime.Text) ? "00:00:01" : TxtThumbnailTime.Text.Trim();
+            (int resW, int resH) = CmbResolution.SelectedIndex switch
             {
-                var item = _mediaItems[i];
-                item.Status = "⏳ Đang xử lý...";
-                item.StatusColor = "#06B6D4";
+                1 => (1280, 720),
+                2 => (854, 480),
+                3 => (3840, 2160),
+                _ => (1920, 1080)
+            };
+            string tStart = string.IsNullOrWhiteSpace(TxtTrimStart.Text) ? "00:00:00" : TxtTrimStart.Text.Trim();
+            string tEnd = string.IsNullOrWhiteSpace(TxtTrimEnd.Text) ? "00:00:30" : TxtTrimEnd.Text.Trim();
 
-                string inDir = Path.GetDirectoryName(item.FilePath)!;
-                string outDir = string.IsNullOrWhiteSpace(customOutDir) ? inDir : customOutDir;
-                if (!Directory.Exists(outDir)) Directory.CreateDirectory(outDir);
-                _lastOutputDir = outDir;
+            int successCount = 0;
+            bool wasCancelled = false;
 
-                string baseName = Path.GetFileNameWithoutExtension(item.FilePath);
-                string outPath = "";
-                bool ok = false;
-
-                try
+            await Task.Run(async () =>
+            {
+                for (int i = 0; i < _mediaItems.Count; i++)
                 {
-                    switch (mode)
+                    if (token.IsCancellationRequested || SystemCore.CheckEmergencyStop())
                     {
-                        case 0: // Nén Video
-                            int crf = CmbCompressCrf.SelectedIndex switch { 0 => 22, 2 => 30, _ => 26 };
-                            outPath = Path.Combine(outDir, $"{baseName}_compressed.mp4");
-                            ok = await _media.CompressVideoAsync(item.FilePath, outPath, crf);
-                            break;
-
-                        case 1: // Làm nét
-                            outPath = Path.Combine(outDir, $"{baseName}_enhanced.mp4");
-                            ok = await _media.EnhanceMediaAsync(item.FilePath, outPath);
-                            break;
-
-                        case 2: // MP3
-                            int bitrate = CmbMp3Bitrate.SelectedIndex switch { 0 => 128, 2 => 320, _ => 192 };
-                            outPath = Path.Combine(outDir, $"{baseName}.mp3");
-                            ok = await _media.ExtractAudioMp3Async(item.FilePath, outPath, bitrate);
-                            break;
-
-                        case 3: // Tốc độ
-                            double speed = CmbSpeedVal.SelectedIndex switch { 0 => 0.5, 1 => 0.75, 2 => 1.25, 4 => 2.0, _ => 1.5 };
-                            outPath = Path.Combine(outDir, $"{baseName}_{speed}x.mp4");
-                            ok = await _media.ChangeVideoSpeedAsync(item.FilePath, outPath, speed);
-                            break;
-
-                        case 4: // Chuyển định dạng
-                            string ext = ((ComboBoxItem)CmbTargetFormat.SelectedItem).Content.ToString() ?? ".mp4";
-                            outPath = Path.Combine(outDir, $"{baseName}_converted{ext}");
-                            ok = await _media.ConvertFormatAsync(item.FilePath, outPath);
-                            break;
-
-                        case 5: // Tắt âm thanh
-                            outPath = Path.Combine(outDir, $"{baseName}_muted.mp4");
-                            ok = await _media.RemoveAudioAsync(item.FilePath, outPath);
-                            break;
-
-                        case 6: // Video to GIF
-                            int gifWidth = CmbGifWidth.SelectedIndex switch { 0 => 360, 2 => 640, _ => 480 };
-                            outPath = Path.Combine(outDir, $"{baseName}.gif");
-                            ok = await _media.VideoToGifAsync(item.FilePath, outPath, 12, gifWidth);
-                            break;
-
-                        case 7: // Thumbnail Frame
-                            string snapTime = string.IsNullOrWhiteSpace(TxtThumbnailTime.Text) ? "00:00:01" : TxtThumbnailTime.Text.Trim();
-                            outPath = Path.Combine(outDir, $"{baseName}_thumb.jpg");
-                            ok = await _media.ExtractThumbnailAsync(item.FilePath, outPath, snapTime);
-                            break;
-
-                        case 8: // Đổi độ phân giải
-                            (int w, int h) = CmbResolution.SelectedIndex switch
-                            {
-                                1 => (1280, 720),
-                                2 => (854, 480),
-                                3 => (3840, 2160),
-                                _ => (1920, 1080)
-                            };
-                            outPath = Path.Combine(outDir, $"{baseName}_{h}p.mp4");
-                            ok = await _media.ResizeVideoAsync(item.FilePath, outPath, w, h);
-                            break;
-
-                        case 9: // Trim Video
-                            string tStart = string.IsNullOrWhiteSpace(TxtTrimStart.Text) ? "00:00:00" : TxtTrimStart.Text.Trim();
-                            string tEnd = string.IsNullOrWhiteSpace(TxtTrimEnd.Text) ? "00:00:30" : TxtTrimEnd.Text.Trim();
-                            outPath = Path.Combine(outDir, $"{baseName}_trimmed.mp4");
-                            ok = await _media.TrimVideoAsync(item.FilePath, outPath, tStart, tEnd);
-                            break;
+                        wasCancelled = true;
+                        break;
                     }
-                }
-                catch
-                {
-                    ok = false;
-                }
 
-                if (ok)
-                {
-                    item.Status = "✅ Hoàn thành";
-                    item.StatusColor = "#10B981";
-                    item.OutputPath = outPath;
-                    successCount++;
-                }
-                else
-                {
-                    item.Status = "❌ Thất bại";
-                    item.StatusColor = "#EF4444";
-                }
+                    var item = _mediaItems[i];
+                    Dispatcher.Invoke(() =>
+                    {
+                        item.Status = "⏳ Đang xử lý...";
+                        item.StatusColor = "#06B6D4";
+                    });
 
-                PbBatchTotal.Value = i + 1;
-            }
+                    string inDir = Path.GetDirectoryName(item.FilePath)!;
+                    string outDir = string.IsNullOrWhiteSpace(customOutDir) ? inDir : customOutDir;
+                    if (!Directory.Exists(outDir)) Directory.CreateDirectory(outDir);
+                    _lastOutputDir = outDir;
 
-            SetBatchRunning(false, $"Đã xử lý xong: {successCount}/{_mediaItems.Count} tệp thành công!");
+                    string baseName = Path.GetFileNameWithoutExtension(item.FilePath);
+                    string outPath = "";
+                    bool ok = false;
+
+                    try
+                    {
+                        switch (mode)
+                        {
+                            case 0: // Nén Video
+                                outPath = Path.Combine(outDir, $"{baseName}_compressed.mp4");
+                                ok = await _media.CompressVideoAsync(item.FilePath, outPath, crf, token);
+                                break;
+                            case 1: // Làm nét
+                                outPath = Path.Combine(outDir, $"{baseName}_enhanced.mp4");
+                                ok = await _media.EnhanceMediaAsync(item.FilePath, outPath, token);
+                                break;
+                            case 2: // MP3
+                                outPath = Path.Combine(outDir, $"{baseName}.mp3");
+                                ok = await _media.ExtractAudioMp3Async(item.FilePath, outPath, bitrate, token);
+                                break;
+                            case 3: // Tốc độ
+                                outPath = Path.Combine(outDir, $"{baseName}_{speed}x.mp4");
+                                ok = await _media.ChangeVideoSpeedAsync(item.FilePath, outPath, speed, token);
+                                break;
+                            case 4: // Chuyển định dạng
+                                outPath = Path.Combine(outDir, $"{baseName}_converted{targetExt}");
+                                ok = await _media.ConvertFormatAsync(item.FilePath, outPath, token);
+                                break;
+                            case 5: // Tắt âm thanh
+                                outPath = Path.Combine(outDir, $"{baseName}_muted.mp4");
+                                ok = await _media.RemoveAudioAsync(item.FilePath, outPath, token);
+                                break;
+                            case 6: // Video to GIF
+                                outPath = Path.Combine(outDir, $"{baseName}.gif");
+                                ok = await _media.VideoToGifAsync(item.FilePath, outPath, 12, gifWidth, token);
+                                break;
+                            case 7: // Thumbnail Frame
+                                outPath = Path.Combine(outDir, $"{baseName}_thumb.jpg");
+                                ok = await _media.ExtractThumbnailAsync(item.FilePath, outPath, snapTime, token);
+                                break;
+                            case 8: // Đổi độ phân giải
+                                outPath = Path.Combine(outDir, $"{baseName}_{resH}p.mp4");
+                                ok = await _media.ResizeVideoAsync(item.FilePath, outPath, resW, resH, token);
+                                break;
+                            case 9: // Trim Video
+                                outPath = Path.Combine(outDir, $"{baseName}_trimmed.mp4");
+                                ok = await _media.TrimVideoAsync(item.FilePath, outPath, tStart, tEnd, token);
+                                break;
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        wasCancelled = true;
+                        break;
+                    }
+                    catch
+                    {
+                        ok = false;
+                    }
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        if (ok)
+                        {
+                            item.Status = "✅ Hoàn thành";
+                            item.StatusColor = "#10B981";
+                            item.OutputPath = outPath;
+                            successCount++;
+                        }
+                        else
+                        {
+                            item.Status = "❌ Thất bại";
+                            item.StatusColor = "#EF4444";
+                        }
+
+                        PbBatchTotal.Value = i + 1;
+                    });
+                }
+            });
+
+            _isBatchRunning = false;
+            string finalStatus = wasCancelled 
+                ? $"Đã ngắt xử lý! Hoàn tất {successCount}/{_mediaItems.Count} tệp."
+                : $"Đã xử lý xong: {successCount}/{_mediaItems.Count} tệp thành công!";
+
+            SetBatchRunning(false, finalStatus);
         }
 
         private void BtnOpenResultFolder_Click(object sender, RoutedEventArgs e)
@@ -344,7 +393,12 @@ namespace CMD_BOX_GUI.UI.Views
             PbBatchTotal.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
             TxtBatchStatus.Visibility = Visibility.Visible;
             TxtBatchStatus.Text = statusText;
-            BtnStartBatch.IsEnabled = !running;
+
+            BtnStartBatch.Content = running ? "🛑 DỪNG LẠI (CANCEL)" : "🚀 BẮT ĐẦU XỬ LÝ HÀNG LOẠT";
+            BtnStartBatch.Style = running 
+                ? (Style)FindResource("DangerButton") 
+                : (Style)FindResource("PrimaryButton");
+
             BtnAddFiles.IsEnabled = !running;
             BtnAddFolder.IsEnabled = !running;
             BtnClearTable.IsEnabled = !running;
@@ -404,8 +458,11 @@ namespace CMD_BOX_GUI.UI.Views
             string ext = Path.GetExtension(container);
             string outPath = Path.Combine(Path.GetDirectoryName(container)!, $"{Path.GetFileNameWithoutExtension(container)}_hidden{ext}");
 
+            _stegoCts?.Cancel();
+            _stegoCts = new CancellationTokenSource();
+
             SetStegoRunning(true, "Đang mã hóa & giấu tệp vào Media...");
-            bool ok = await _media.HideFileInMediaAsync(container, secret, outPath);
+            bool ok = await _media.HideFileInMediaAsync(container, secret, outPath, _stegoCts.Token);
             SetStegoRunning(false, ok ? $"Đã giấu tệp thành công: {outPath}" : "Giấu tệp thất bại!");
         }
 
@@ -419,8 +476,12 @@ namespace CMD_BOX_GUI.UI.Views
             }
 
             string outDir = Path.GetDirectoryName(container)!;
+
+            _stegoCts?.Cancel();
+            _stegoCts = new CancellationTokenSource();
+
             SetStegoRunning(true, "Đang quét & giải mã tệp ẩn...");
-            bool ok = await _media.ExtractHiddenFileAsync(container, outDir);
+            bool ok = await _media.ExtractHiddenFileAsync(container, outDir, _stegoCts.Token);
             SetStegoRunning(false, ok ? $"Đã giải nén tệp ẩn vào thư mục: {outDir}" : "Không tìm thấy dữ liệu ẩn!");
         }
 

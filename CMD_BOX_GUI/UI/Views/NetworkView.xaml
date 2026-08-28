@@ -7,13 +7,12 @@
              d:DesignHeight="650" d:DesignWidth="850">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="16">
-            <TextBlock Text="MẠNG &amp; BẢO MẬT" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,12"/>
 
             <!-- Khối 1: Thông tin kết nối -->
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
                 <StackPanel>
                     <Grid Margin="0,0,0,8">
-                        <TextBlock Text="THÔNG TIN MẠNG" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center"/>
+                        <TextBlock Text="THÔNG TIN MẠNG" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                         <Button x:Name="BtnRefreshNetInfo" Content="Làm mới" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Right" Padding="8,3" FontSize="11" Click="BtnRefreshNetInfo_Click"/>
                     </Grid>
 
@@ -23,12 +22,12 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" Margin="0,0,6,0">
-                            <TextBlock x:Name="TxtLocalIp" Text="LAN: ..." FontSize="12" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
-                            <TextBlock x:Name="TxtGateway" Text="Gateway: ..." FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                            <TextBlock x:Name="TxtLocalIp" Text="LAN: ..." FontSize="12" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtGateway" Text="Gateway: ..." FontSize="11" Foreground="{DynamicResource TextSecondary}"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                            <TextBlock x:Name="TxtPublicIp" Text="Public IP: ..." FontSize="12" Foreground="{StaticResource AccentCyan}" Margin="0,0,0,4"/>
-                            <TextBlock x:Name="TxtDns" Text="DNS: ..." FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                            <TextBlock x:Name="TxtPublicIp" Text="Public IP: ..." FontSize="12" Foreground="{DynamicResource AccentCyan}" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="TxtDns" Text="DNS: ..." FontSize="11" Foreground="{DynamicResource TextSecondary}"/>
                         </StackPanel>
                     </Grid>
                 </StackPanel>
@@ -38,16 +37,16 @@
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
                 <StackPanel>
                     <Grid Margin="0,0,0,8">
-                        <TextBlock Text="MẬT KHẨU WI-FI ĐÃ LƯU" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center"/>
+                        <TextBlock Text="MẬT KHẨU WI-FI ĐÃ LƯU" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                         <Button x:Name="BtnAuditWifi" Content="Quét Wi-Fi" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Right" Padding="10,4" FontSize="11" Click="BtnAuditWifi_Click"/>
                     </Grid>
 
                     <DataGrid x:Name="DgWifi" AutoGenerateColumns="False" IsReadOnly="True" 
-                              Background="{StaticResource BgInput}" Foreground="{StaticResource TextPrimary}"
-                              BorderBrush="{StaticResource BorderSubtle}" RowBackground="{StaticResource BgCard}"
-                              AlternatingRowBackground="{StaticResource BgInput}" HeadersVisibility="Column"
+                              Background="{DynamicResource BgInput}" Foreground="{DynamicResource TextPrimary}"
+                              BorderBrush="{DynamicResource BorderSubtle}" RowBackground="{DynamicResource BgCard}"
+                              AlternatingRowBackground="{DynamicResource BgInput}" HeadersVisibility="Column"
                               MaxHeight="180" CanUserAddRows="False" GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="{StaticResource BorderSubtle}" FontSize="12">
+                              HorizontalGridLinesBrush="{DynamicResource BorderSubtle}" FontSize="12">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Tên Wi-Fi (SSID)" Binding="{Binding Ssid}" Width="2*"/>
                             <DataGridTextColumn Header="Mật khẩu" Binding="{Binding Password}" Width="2*"/>
@@ -67,7 +66,7 @@
             <!-- Khối 3: Thao tác bảo mật & Khôi phục -->
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
                 <StackPanel>
-                    <TextBlock Text="CÔNG CỤ BẢO MẬT &amp; KHÔI PHỤC" FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
+                    <TextBlock Text="CÔNG CỤ BẢO MẬT &amp; KHÔI PHỤC" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
                     <WrapPanel>
                         <Button x:Name="BtnRepairNetwork" Content="Khôi phục Mạng PRO (8 bước)" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnRepairNetwork_Click"/>
                         <Button x:Name="BtnSecurityShield" Content="Kích hoạt Lá chắn bảo mật" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnSecurityShield_Click"/>
@@ -77,7 +76,7 @@
             </Border>
 
             <ProgressBar x:Name="PbNetwork" Style="{StaticResource FlatProgressBar}" Margin="0,2,0,4" Visibility="Collapsed"/>
-            <TextBlock x:Name="TxtStatus" Text="" FontSize="11" Foreground="{StaticResource AccentCyan}" Visibility="Collapsed"/>
+            <TextBlock x:Name="TxtStatus" Text="" FontSize="11" Foreground="{DynamicResource AccentCyan}" Visibility="Collapsed"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
