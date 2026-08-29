@@ -37,7 +37,7 @@
 
                 <!-- Navigation Tabs -->
                 <StackPanel Grid.Row="1">
-                    <RadioButton x:Name="NavOptimizer" Content="🧹  Tối Ưu &amp; Dọn Dẹp" Style="{StaticResource SidebarNavButton}" IsChecked="True" Checked="NavButton_Checked"/>
+                    <RadioButton x:Name="NavOptimizer" Content="🧹  System Optimizer" Style="{StaticResource SidebarNavButton}" IsChecked="True" Checked="NavButton_Checked"/>
                     <RadioButton x:Name="NavNetwork" Content="🌐  Mạng &amp; Bảo Mật" Style="{StaticResource SidebarNavButton}" Checked="NavButton_Checked"/>
                     <RadioButton x:Name="NavUtilities" Content="⚡  Tiện Ích &amp; Tự Động" Style="{StaticResource SidebarNavButton}" Checked="NavButton_Checked"/>
                     <RadioButton x:Name="NavMedia" Content="🎬  Xử Lý Media" Style="{StaticResource SidebarNavButton}" Checked="NavButton_Checked"/>

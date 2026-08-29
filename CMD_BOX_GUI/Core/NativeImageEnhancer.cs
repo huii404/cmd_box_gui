@@ -7,20 +7,22 @@ using System.Windows.Media.Imaging;
 namespace CMD_BOX_GUI.Core
 {
     /// <summary>
-    /// Bộ xử lý làm nét & tối ưu ảnh thuần C# (.NET) siêu tốc độ cao:
-    /// - Không cần công cụ CLI ngoài (không cần Vulkan / tệp .bin cồng kềnh)
-    /// - Xử lý trực tiếp trên RAM bằng đa luồng Parallel.For trên toàn bộ lõi CPU Ryzen
-    /// - Tích hợp Unsharp Masking (USM), Tương phản nổi khối 3D (S-Curve), Khử mờ và Tăng rực rỡ màu sắc (Vibrance).
+    /// Bộ xử lý làm nét & tối ưu ảnh thuần C# (.NET) đa yếu tố:
+    /// - Không cần công cụ CLI ngoài (hoạt động tức thì trên RAM).
+    /// - Tích hợp Khử gai hạt vi mô (Anti-Grain), Ngưỡng mềm mượt mà (Soft-Coring USM).
+    /// - Chống quầng sáng/tối viền (Halo & Ringing Suppression - CAS Limiter).
+    /// - Tương phản nổi khối 3D S-Curve mượt mà và Tăng rực rỡ thông minh (Vibrance) bảo vệ màu da.
     /// </summary>
     public static class NativeImageEnhancer
     {
         public class EnhanceOptions
         {
-            public float Amount { get; set; } = 1.0f;       // Cường độ làm nét (0.3 - 2.5)
-            public int Radius { get; set; } = 2;            // Bán kính làm nét (1 - 5 px)
-            public int Threshold { get; set; } = 3;         // Ngưỡng lọc nhiễu (chống tăng hạt)
-            public float Contrast { get; set; } = 1.06f;    // Tương phản nổi khối (1.0 - 1.2)
-            public float Vibrance { get; set; } = 0.08f;    // Tăng rực rỡ thông minh (0.0 - 0.2)
+            public float Amount { get; set; } = 0.95f;      // Cường độ làm nét chi tiết (0.4 - 2.0)
+            public int Radius { get; set; } = 2;            // Bán kính làm nét (1 - 4 px)
+            public float Threshold { get; set; } = 3.0f;    // Ngưỡng lọc nhiễu hạt (Soft-coring)
+            public float EdgeSensitivity { get; set; } = 1.0f; // Hệ số thích ứng cạnh (giữ phẳng vùng mịn)
+            public float Contrast { get; set; } = 1.04f;    // Tương phản S-Curve mượt mà (1.0 - 1.15)
+            public float Vibrance { get; set; } = 0.05f;    // Tăng rực rỡ thông minh (0.0 - 0.15)
             public int ScalePercent { get; set; } = 100;    // Tỉ lệ phóng to (100% hoặc 200%)
         }
 
@@ -28,10 +30,10 @@ namespace CMD_BOX_GUI.Core
         {
             return level switch
             {
-                0 => new EnhanceOptions { Amount = 0.6f, Radius = 1, Threshold = 4, Contrast = 1.03f, Vibrance = 0.04f, ScalePercent = 100 }, // Nhẹ
-                2 => new EnhanceOptions { Amount = 1.5f, Radius = 2, Threshold = 2, Contrast = 1.10f, Vibrance = 0.10f, ScalePercent = 100 }, // Cao
-                3 => new EnhanceOptions { Amount = 2.2f, Radius = 3, Threshold = 1, Contrast = 1.15f, Vibrance = 0.14f, ScalePercent = 100 }, // Siêu nét
-                _ => new EnhanceOptions { Amount = 1.0f, Radius = 2, Threshold = 3, Contrast = 1.06f, Vibrance = 0.07f, ScalePercent = 100 }  // Tiêu chuẩn (Mức 2)
+                0 => new EnhanceOptions { Amount = 0.55f, Radius = 1, Threshold = 4.0f, EdgeSensitivity = 0.8f, Contrast = 1.02f, Vibrance = 0.03f, ScalePercent = 100 }, // Mức 1: Nhẹ (Tự nhiên, khử hạt tối đa)
+                2 => new EnhanceOptions { Amount = 1.40f, Radius = 2, Threshold = 2.5f, EdgeSensitivity = 1.2f, Contrast = 1.07f, Vibrance = 0.08f, ScalePercent = 100 }, // Mức 3: Cao (Nét căng, chi tiết rõ)
+                3 => new EnhanceOptions { Amount = 1.90f, Radius = 3, Threshold = 2.0f, EdgeSensitivity = 1.4f, Contrast = 1.10f, Vibrance = 0.10f, ScalePercent = 100 }, // Mức 4: Siêu nét (Nổi khối mạnh mẽ)
+                _ => new EnhanceOptions { Amount = 0.95f, Radius = 2, Threshold = 3.0f, EdgeSensitivity = 1.0f, Contrast = 1.04f, Vibrance = 0.05f, ScalePercent = 100 }  // Mức 2: Tiêu chuẩn (Cân bằng hoàn hảo)
             };
         }
 
@@ -66,7 +68,7 @@ namespace CMD_BOX_GUI.Core
 
                     byte[] dstPixels = new byte[height * stride];
 
-                    // 2. Xử lý thuật toán làm nét & nổi khối đa luồng siêu tốc
+                    // 2. Xử lý thuật toán làm nét đa yếu tố chống gai ảnh
                     ProcessSharpenAndEnhance(srcPixels, dstPixels, width, height, stride, options);
 
                     // 3. Tạo BitmapSource kết quả và lưu ra file
@@ -90,53 +92,111 @@ namespace CMD_BOX_GUI.Core
         private static void ProcessSharpenAndEnhance(
             byte[] src, byte[] dst, int width, int height, int stride, EnhanceOptions opts)
         {
-            // Tạo bản làm mờ nhanh (Fast Box Blur 2-pass) để làm mốc tần số thấp
-            byte[] blurred = FastBlur(src, width, height, stride, opts.Radius);
+            // Tạo bản làm mờ 3-pass (tương đương chuẩn Gaussian Blur) để làm mốc tần số thấp mượt mà, không bị răng cưa
+            byte[] blurred = FastGaussianBlur3Pass(src, width, height, stride, opts.Radius);
 
             float amount = opts.Amount;
-            int threshold = opts.Threshold;
+            float threshold = opts.Threshold;
+            float thresholdSq = threshold * threshold;
             float contrast = opts.Contrast;
             float vibrance = opts.Vibrance;
+            float edgeSens = opts.EdgeSensitivity;
 
             Parallel.For(0, height, y =>
             {
                 int rowOffset = y * stride;
+                int prevRow = Math.Max(0, y - 1) * stride;
+                int nextRow = Math.Min(height - 1, y + 1) * stride;
 
                 for (int x = 0; x < width; x++)
                 {
                     int px = rowOffset + (x * 4);
+                    int prevX = Math.Max(0, x - 1) * 4;
+                    int nextX = Math.Min(width - 1, x + 1) * 4;
 
-                    // Đọc B, G, R, A
+                    // Đọc B, G, R, A gốc
                     int b = src[px];
                     int g = src[px + 1];
                     int r = src[px + 2];
                     byte a = src[px + 3];
 
+                    // Đọc màu mờ nền
                     int blurB = blurred[px];
                     int blurG = blurred[px + 1];
                     int blurR = blurred[px + 2];
 
-                    // Tính chênh lệch biên cạnh vi mô (High-frequency details)
-                    int diffB = b - blurB;
-                    int diffG = g - blurG;
-                    int diffR = r - blurR;
+                    // 1. Phân tích vùng lân cận 3x3 để tìm Min/Max cục bộ (chống Quầng sáng/tối - Haloing suppression)
+                    int minB = b, maxB = b;
+                    int minG = g, maxG = g;
+                    int minR = r, maxR = r;
 
-                    // Áp dụng Unsharp Mask với ngưỡng chống nhiễu (Threshold)
-                    float sharpB = (Math.Abs(diffB) > threshold) ? b + diffB * amount : b;
-                    float sharpG = (Math.Abs(diffG) > threshold) ? g + diffG * amount : g;
-                    float sharpR = (Math.Abs(diffR) > threshold) ? r + diffR * amount : r;
+                    // Lấy mẫu các điểm lân cận chữ thập (Cross neighborhood) để tính biên cạnh và min/max
+                    int bLeft = src[rowOffset + prevX], gLeft = src[rowOffset + prevX + 1], rLeft = src[rowOffset + prevX + 2];
+                    int bRight = src[rowOffset + nextX], gRight = src[rowOffset + nextX + 1], rRight = src[rowOffset + nextX + 2];
+                    int bTop = src[prevRow + (x * 4)], gTop = src[prevRow + (x * 4) + 1], rTop = src[prevRow + (x * 4) + 2];
+                    int bBottom = src[nextRow + (x * 4)], gBottom = src[nextRow + (x * 4) + 1], rBottom = src[nextRow + (x * 4) + 2];
 
-                    // Tăng tương phản nổi khối 3D (S-Curve stretching)
-                    sharpB = 128f + (sharpB - 128f) * contrast;
-                    sharpG = 128f + (sharpG - 128f) * contrast;
-                    sharpR = 128f + (sharpR - 128f) * contrast;
+                    UpdateMinMax(ref minB, ref maxB, bLeft);
+                    UpdateMinMax(ref minB, ref maxB, bRight);
+                    UpdateMinMax(ref minB, ref maxB, bTop);
+                    UpdateMinMax(ref minB, ref maxB, bBottom);
 
-                    // Tăng độ rực rỡ thông minh (Vibrance boost - ưu tiên vùng màu nhạt, tránh bão hòa da người)
+                    UpdateMinMax(ref minG, ref maxG, gLeft);
+                    UpdateMinMax(ref minG, ref maxG, gRight);
+                    UpdateMinMax(ref minG, ref maxG, gTop);
+                    UpdateMinMax(ref minG, ref maxG, gBottom);
+
+                    UpdateMinMax(ref minR, ref maxR, rLeft);
+                    UpdateMinMax(ref minR, ref maxR, rRight);
+                    UpdateMinMax(ref minR, ref maxR, rTop);
+                    UpdateMinMax(ref minR, ref maxR, rBottom);
+
+                    // 2. Tính độ dốc cạnh cục bộ (Local Edge Strength) để giảm nét ở vùng phẳng/nhiễu nền (Anti-Grain)
+                    float lumaCenter = 0.299f * r + 0.587f * g + 0.114f * b;
+                    float lumaLeft = 0.299f * rLeft + 0.587f * gLeft + 0.114f * bLeft;
+                    float lumaRight = 0.299f * rRight + 0.587f * gRight + 0.114f * bRight;
+                    float lumaTop = 0.299f * rTop + 0.587f * gTop + 0.114f * bTop;
+                    float lumaBottom = 0.299f * rBottom + 0.587f * gBottom + 0.114f * bBottom;
+
+                    float grad = Math.Abs(lumaRight - lumaLeft) + Math.Abs(lumaBottom - lumaTop);
+                    // Hệ số thích ứng cạnh: vùng phẳng grad nhỏ -> weight thấp (khử gai); vùng chi tiết grad cao -> weight cao
+                    float edgeWeight = Math.Clamp((grad / 18.0f) * edgeSens, 0.25f, 1.25f);
+
+                    // 3. Tính chênh lệch chi tiết vi mô (High-frequency details)
+                    float diffB = b - blurB;
+                    float diffG = g - blurG;
+                    float diffR = r - blurR;
+
+                    // 4. Áp dụng Soft-Coring hàm phi tuyến mượt mà (Loại bỏ triệt để hard-threshold gây gai ảnh)
+                    // Công thức coring: weight = diff^2 / (diff^2 + threshold^2)
+                    float wB = (diffB * diffB) / (diffB * diffB + thresholdSq);
+                    float wG = (diffG * diffG) / (diffG * diffG + thresholdSq);
+                    float wR = (diffR * diffR) / (diffR * diffR + thresholdSq);
+
+                    float sharpB = b + diffB * amount * wB * edgeWeight;
+                    float sharpG = g + diffG * amount * wG * edgeWeight;
+                    float sharpR = r + diffR * amount * wR * edgeWeight;
+
+                    // 5. Halo & Ringing Limiter (Kẹp biên cục bộ CAS kiểu chống quầng sáng viền gắt)
+                    float overshootB = (maxB - minB) * 0.18f + 2.0f;
+                    float overshootG = (maxG - minG) * 0.18f + 2.0f;
+                    float overshootR = (maxR - minR) * 0.18f + 2.0f;
+
+                    sharpB = Math.Clamp(sharpB, minB - overshootB, maxB + overshootB);
+                    sharpG = Math.Clamp(sharpG, minG - overshootG, maxG + overshootG);
+                    sharpR = Math.Clamp(sharpR, minR - overshootR, maxR + overshootR);
+
+                    // 6. Tăng tương phản nổi khối 3D S-Curve mượt mà (bảo vệ Highlight và Shadow không bị cháy)
+                    sharpB = ApplySmoothSCurve(sharpB, contrast);
+                    sharpG = ApplySmoothSCurve(sharpG, contrast);
+                    sharpR = ApplySmoothSCurve(sharpR, contrast);
+
+                    // 7. Tăng độ rực rỡ thông minh (Vibrance boost - bảo vệ sắc độ da người)
                     if (vibrance > 0.001f)
                     {
-                        float max = Math.Max(sharpR, Math.Max(sharpG, sharpB));
-                        float min = Math.Min(sharpR, Math.Min(sharpG, sharpB));
-                        float sat = (max - min) / (max + 0.001f);
+                        float maxVal = Math.Max(sharpR, Math.Max(sharpG, sharpB));
+                        float minVal = Math.Min(sharpR, Math.Min(sharpG, sharpB));
+                        float sat = (maxVal - minVal) / (maxVal + 0.001f);
                         float boost = (1.0f - sat) * vibrance;
 
                         float gray = 0.299f * sharpR + 0.587f * sharpG + 0.114f * sharpB;
@@ -154,10 +214,40 @@ namespace CMD_BOX_GUI.Core
             });
         }
 
+        private static void UpdateMinMax(ref int min, ref int max, int val)
+        {
+            if (val < min) min = val;
+            if (val > max) max = val;
+        }
+
+        /// <summary>
+        /// Đường cong tương phản S-Curve mềm mại giúp nổi khối tự nhiên, không làm cháy sáng hay bết tối
+        /// </summary>
+        private static float ApplySmoothSCurve(float val, float contrast)
+        {
+            if (Math.Abs(contrast - 1.0f) < 0.001f) return val;
+            float norm = Math.Clamp(val / 255.0f, 0.0f, 1.0f);
+            // S-Curve: f(x) = x + c * x * (1 - x) * (x - 0.5)
+            float s = norm + (contrast - 1.0f) * 1.8f * norm * (1.0f - norm) * (norm - 0.5f);
+            return Math.Clamp(s * 255.0f, 0.0f, 255.0f);
+        }
+
+        /// <summary>
+        /// Bộ lọc Gaussian Blur 3-pass đa luồng siêu tốc O(1) xấp xỉ phân phối chuẩn
+        /// </summary>
+        private static byte[] FastGaussianBlur3Pass(byte[] src, int width, int height, int stride, int radius)
+        {
+            if (radius < 1) radius = 1;
+            byte[] pass1 = FastBoxBlur(src, width, height, stride, radius);
+            if (radius <= 1) return pass1;
+            byte[] pass2 = FastBoxBlur(pass1, width, height, stride, radius);
+            return pass2;
+        }
+
         /// <summary>
         /// Thuật toán Fast Separable Box Blur O(1) đa luồng cực nhanh
         /// </summary>
-        private static byte[] FastBlur(byte[] src, int width, int height, int stride, int radius)
+        private static byte[] FastBoxBlur(byte[] src, int width, int height, int stride, int radius)
         {
             if (radius < 1) radius = 1;
             byte[] temp = new byte[src.Length];

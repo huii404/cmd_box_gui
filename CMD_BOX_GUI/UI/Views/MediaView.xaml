@@ -96,7 +96,7 @@
                 <StackPanel x:Name="PnlEmptyNotice" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <TextBlock Text="📁" FontSize="36" HorizontalAlignment="Center" Margin="0,0,0,6"/>
                     <TextBlock Text="Kéo thả tệp Ảnh / Video hoặc bấm 'Thêm Ảnh / Video' vào đây" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Sau đó chọn tính năng (Nén ~30% / Đổi định dạng / Làm nét) ở dropdown phía dưới" FontSize="11" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                    <TextBlock Text="Sau đó chọn tính năng (Nén ~40% / Đổi định dạng / Làm nét) ở dropdown phía dưới" FontSize="11" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -120,17 +120,20 @@
 
                     <!-- Dropdown Sổ Ra Chọn Tính Năng -->
                     <ComboBox x:Name="CmbActionFeature" Grid.Column="1" Style="{StaticResource FlatComboBox}" Height="34" SelectionChanged="CmbActionFeature_SelectionChanged">
-                        <ComboBoxItem Content="📦 Nén Tệp (Cố định ~30% dung lượng)" IsSelected="True"/>
+                        <ComboBoxItem Content="📦 Nén Tệp (Cố định ~40% dung lượng)" IsSelected="True"/>
                         <ComboBoxItem Content="🔄 Đổi Định Dạng Tệp"/>
                         <ComboBoxItem Content="✨ Làm Nét &amp; Tối Ưu (Ảnh / Video)"/>
+                        <ComboBoxItem Content="🎵 Trích Xuất Âm Thanh (Video ➔ MP3/AAC/WAV)"/>
+                        <ComboBoxItem Content="🔇 Tắt Tiếng Video (Stream Copy 0.1s)"/>
+                        <ComboBoxItem Content="🎞️ Tạo Ảnh Động GIF (Video ➔ HD GIF)"/>
                     </ComboBox>
 
                     <!-- Panel Cấu Hình Động Thay Đổi Theo Tính Năng Được Chọn -->
                     <Border Grid.Column="2" Background="{DynamicResource BgInput}" CornerRadius="6" Padding="10,6" Margin="10,0,0,0" VerticalAlignment="Center">
                         <Grid>
-                            <!-- 1. Cấu hình cho NÉN FILE (Cố định 30% và ẩn cấu hình mức nén) -->
+                            <!-- 1. Cấu hình cho NÉN FILE (Cố định 40% và ẩn cấu hình mức nén) -->
                             <StackPanel x:Name="PnlOptionCompress" Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="💡 Mức nén tự động tối ưu ~30% dung lượng (giữ nguyên độ nét cao, hạn chế vỡ hình)." FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
+                                <TextBlock Text="💡 Mức nén tự động tối ưu ~40% dung lượng (giữ nguyên độ nét cao, hạn chế vỡ hình)." FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
                             </StackPanel>
 
                             <!-- 2. Cấu hình cho ĐỔI ĐỊNH DẠNG -->
@@ -142,12 +145,43 @@
                             <StackPanel x:Name="PnlOptionEnhance" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
                                 <TextBlock Text="Mức độ làm nét:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <ComboBox x:Name="CmbEnhanceLevel" Style="{StaticResource FlatComboBox}" Width="310" Height="28">
-                                    <ComboBoxItem Content="Mức 1: Nhẹ (Làm nét tự nhiên, vi điểm)"/>
-                                    <ComboBoxItem Content="Mức 2: Tiêu chuẩn (Nổi khối 3D + Tương phản S-Curve)" IsSelected="True"/>
-                                    <ComboBoxItem Content="Mức 3: Cao (Tăng nét đậm + Tăng rực rỡ màu)"/>
-                                    <ComboBoxItem Content="Mức 4: Siêu nét (Chi tiết cao + Tương phản tối đa)"/>
+                                    <ComboBoxItem Content="Mức 1: Nhẹ (Làm nét tự nhiên, khử gai tối đa)"/>
+                                    <ComboBoxItem Content="Mức 2: Tiêu chuẩn (Nổi khối 3D + Chống quầng sáng/tối viền)" IsSelected="True"/>
+                                    <ComboBoxItem Content="Mức 3: Cao (Tăng chi tiết vi mô + Tăng rực rỡ)"/>
+                                    <ComboBoxItem Content="Mức 4: Siêu nét (Nổi khối mạnh mẽ + Tương phản S-Curve)"/>
                                 </ComboBox>
-                                <TextBlock Text="⚡ Thuật toán Native C#: Nổi khối 3D + Unsharp vi điểm siêu tốc (~0.1s)" FontSize="11" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                <TextBlock Text="⚡ Thuật toán Native C#: Nổi khối 3D + Khử gai Soft-Coring (~0.1s)" FontSize="11" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- 4. Cấu hình cho TRÍCH XUẤT ÂM THANH -->
+                            <StackPanel x:Name="PnlOptionExtractAudio" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                                <TextBlock Text="Định dạng âm thanh:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <ComboBox x:Name="CmbAudioFormat" Style="{StaticResource FlatComboBox}" Width="260" Height="28">
+                                    <ComboBoxItem Content="MP3 (320kbps - Chuẩn chất lượng cao)" IsSelected="True"/>
+                                    <ComboBoxItem Content="AAC (256kbps - Chuẩn Apple Audio)"/>
+                                    <ComboBoxItem Content="WAV (Lossless - Nguyên bản không nén)"/>
+                                    <ComboBoxItem Content="FLAC (Lossless - Nén không mất dữ liệu)"/>
+                                    <ComboBoxItem Content="M4A (High Quality Audio)"/>
+                                </ComboBox>
+                                <TextBlock Text="⚡ Tách nhạc nền / audio từ video cực nhanh" FontSize="11" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- 5. Cấu hình cho TẮT TIẾNG VIDEO (MUTE) -->
+                            <StackPanel x:Name="PnlOptionMuteVideo" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                                <TextBlock Text="⚡ Chế độ Stream Copy siêu tốc (~0.1s): Giữ nguyên 100% độ nét video gốc, loại bỏ hoàn toàn âm thanh." FontSize="11" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <!-- 6. Cấu hình cho TẠO ẢNH ĐỘNG GIF (Mặc định chuẩn 480p, 12 FPS, Palettegen 256 màu) -->
+                            <StackPanel x:Name="PnlOptionMakeGif" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                                <TextBlock Text="Bắt đầu:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBox x:Name="TxtGifStart" Text="0" Width="36" Style="{StaticResource FlatTextBox}" Height="26" Padding="4,1" FontSize="11" VerticalContentAlignment="Center" Margin="0,0,8,0" ToolTip="Thời điểm bắt đầu cắt (giây), ví dụ: 0, 10, 65..."/>
+                                <TextBlock Text="s | Độ dài:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <ComboBox x:Name="CmbGifDuration" Style="{StaticResource FlatComboBox}" Width="150" Height="26" FontSize="11" Padding="6,1" Margin="0,0,8,0" ToolTip="Độ dài đoạn GIF cần cắt">
+                                    <ComboBoxItem Content="3 giây (~1-2MB)"/>
+                                    <ComboBoxItem Content="5 giây (Chuẩn meme ~2-5MB)" IsSelected="True"/>
+                                    <ComboBoxItem Content="10 giây (~5-10MB)"/>
+                                </ComboBox>
+                                <TextBlock Text="⚡ Tự động tối ưu 480p @ 12 FPS, Two-pass Palette 256 màu" FontSize="11" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center" Margin="6,0,0,0"/>
                             </StackPanel>
                         </Grid>
                     </Border>

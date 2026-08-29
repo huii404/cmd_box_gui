@@ -4,109 +4,193 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="750" d:DesignWidth="850">
+             d:DesignHeight="780" d:DesignWidth="920">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="16">
             
-            <!-- Khối 1: Auto Click & Spam Text -->
+            <!-- Khối 1: TỰ ĐỘNG HÓA NHỎ GỌN (Auto Clicker & Spam Text / Auto Paste) -->
             <Grid Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Auto Click -->
+                <!-- 1.1. Auto Clicker (Giao diện thu gọn tối giản) -->
                 <Border Grid.Column="0" Style="{StaticResource CardPanel}" Margin="0,0,6,0" Padding="12">
                     <StackPanel>
-                        <TextBlock Text="AUTO CLICK (ESC/F6 ngắt)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
-
-                        <Grid Margin="0,0,0,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="TxtClickX" Text="500" Style="{StaticResource FlatTextBox}" Margin="0,0,4,0"/>
-                            <TextBox x:Name="TxtClickY" Grid.Column="1" Text="500" Style="{StaticResource FlatTextBox}" Margin="4,0,0,0"/>
+                        <Grid Margin="0,0,0,8">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="🎯" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="AUTO CLICKER" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="ESC / F6 ngắt" FontSize="10" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                         </Grid>
 
-                        <Button x:Name="BtnGetCurrentMousePos" Content="Lấy vị trí chuột (Sau 3s)" Style="{StaticResource SecondaryButton}" Margin="0,0,0,6" Padding="8,4" FontSize="11" Click="BtnGetCurrentMousePos_Click"/>
-
+                        <!-- Hàng 1: Tọa độ X, Y + Nút Lấy vị trí -->
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="50"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel Margin="0,0,4,0">
-                                <TextBlock Text="Số lần" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
-                                <TextBox x:Name="TxtClickCount" Text="100" Style="{StaticResource FlatTextBox}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Margin="4,0,0,0">
-                                <TextBlock Text="Delay (ms)" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
-                                <TextBox x:Name="TxtClickDelay" Text="100" Style="{StaticResource FlatTextBox}"/>
-                            </StackPanel>
+                            <TextBlock Text="X:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="TxtClickX" Grid.Column="1" Text="500" Style="{StaticResource FlatTextBox}" Height="26" Padding="4,1" FontSize="11" VerticalContentAlignment="Center" Margin="0,0,6,0"/>
+                            
+                            <TextBlock Grid.Column="2" Text="Y:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="TxtClickY" Grid.Column="3" Text="500" Style="{StaticResource FlatTextBox}" Height="26" Padding="4,1" FontSize="11" VerticalContentAlignment="Center" Margin="0,0,6,0"/>
+
+                            <Button Grid.Column="4" x:Name="BtnGetCurrentMousePos" Content="📍 Lấy Tọa Độ (3s)" Style="{StaticResource SecondaryButton}" Height="26" Padding="6,1" FontSize="10.5" Click="BtnGetCurrentMousePos_Click" ToolTip="Bấm nút rồi rê chuột đến vị trí mong muốn trong 3 giây"/>
                         </Grid>
 
-                        <WrapPanel>
-                            <Button x:Name="BtnStartAutoClick" Content="Bắt đầu Click" Style="{StaticResource PrimaryButton}" Margin="0,0,6,0" Padding="10,6" Click="BtnStartAutoClick_Click"/>
-                            <Button x:Name="BtnStopAutoClick" Content="Dừng lại" Style="{StaticResource DangerButton}" Padding="10,6" Click="BtnStopAutoClick_Click"/>
-                        </WrapPanel>
+                        <!-- Hàng 2: Số lần + Delay + Nút Bắt đầu / Dừng -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="55"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="55"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Lần:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="TxtClickCount" Grid.Column="1" Text="100" Style="{StaticResource FlatTextBox}" Height="26" Padding="4,1" FontSize="11" VerticalContentAlignment="Center" Margin="0,0,6,0"/>
+
+                            <TextBlock Grid.Column="2" Text="Ms:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="TxtClickDelay" Grid.Column="3" Text="100" Style="{StaticResource FlatTextBox}" Height="26" Padding="4,1" FontSize="11" VerticalContentAlignment="Center" Margin="0,0,6,0"/>
+
+                            <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button x:Name="BtnStartAutoClick" Content="▶ Bắt Đầu" Style="{StaticResource PrimaryButton}" Height="26" Padding="8,1" FontSize="10.5" FontWeight="SemiBold" Margin="0,0,4,0" Click="BtnStartAutoClick_Click"/>
+                                <Button x:Name="BtnStopAutoClick" Content="⏹ Dừng" Style="{StaticResource DangerButton}" Height="26" Padding="8,1" FontSize="10.5" Click="BtnStopAutoClick_Click"/>
+                            </StackPanel>
+                        </Grid>
                     </StackPanel>
                 </Border>
 
-                <!-- Spam Text -->
+                <!-- 1.2. Spam Text / Auto Paste (Giao diện thu gọn tối giản) -->
                 <Border Grid.Column="1" Style="{StaticResource CardPanel}" Margin="6,0,0,0" Padding="12">
                     <StackPanel>
-                        <TextBlock Text="SPAM TEXT / AUTO PASTE (ESC/F6 ngắt)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
-                        <TextBox x:Name="TxtSpamContent" Text="Xin chào bạn!" Style="{StaticResource FlatTextBox}" Margin="0,0,0,6"/>
-
-                        <Grid Margin="0,0,0,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Margin="0,0,4,0">
-                                <TextBlock Text="Số lần" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
-                                <TextBox x:Name="TxtSpamCount" Text="10" Style="{StaticResource FlatTextBox}"/>
+                        <Grid Margin="0,0,0,8">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="💬" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="SPAM TEXT &amp; AUTO PASTE" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <StackPanel Grid.Column="1" Margin="4,0,0,0">
-                                <TextBlock Text="Delay (ms)" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
-                                <TextBox x:Name="TxtSpamDelay" Text="200" Style="{StaticResource FlatTextBox}"/>
-                            </StackPanel>
+                            <TextBlock Text="ESC / F6 ngắt" FontSize="10" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                         </Grid>
 
-                        <WrapPanel>
-                            <Button x:Name="BtnStartSpam" Content="Gửi Spam" Style="{StaticResource PrimaryButton}" Margin="0,0,6,0" Padding="10,6" Click="BtnStartSpam_Click"/>
-                            <Button x:Name="BtnAutoPasteLines" Content="Paste nhiều dòng" Style="{StaticResource SecondaryButton}" Padding="10,6" Click="BtnAutoPasteLines_Click"/>
-                        </WrapPanel>
+                        <!-- Hàng 1: Nội dung văn bản -->
+                        <TextBox x:Name="TxtSpamContent" Text="Xin chào bạn!" Style="{StaticResource FlatTextBox}" Height="26" Padding="6,1" FontSize="11" VerticalContentAlignment="Center" Margin="0,0,0,8" ToolTip="Nhập văn bản cần spam hoặc dán nhiều dòng"/>
+
+                        <!-- Hàng 2: Số lần + Delay + Nút Gửi / Paste dòng -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="55"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="55"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Lần:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="TxtSpamCount" Grid.Column="1" Text="10" Style="{StaticResource FlatTextBox}" Height="26" Padding="4,1" FontSize="11" VerticalContentAlignment="Center" Margin="0,0,6,0"/>
+
+                            <TextBlock Grid.Column="2" Text="Ms:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBox x:Name="TxtSpamDelay" Grid.Column="3" Text="200" Style="{StaticResource FlatTextBox}" Height="26" Padding="4,1" FontSize="11" VerticalContentAlignment="Center" Margin="0,0,6,0"/>
+
+                            <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button x:Name="BtnStartSpam" Content="🚀 Gửi Spam" Style="{StaticResource PrimaryButton}" Height="26" Padding="8,1" FontSize="10.5" FontWeight="SemiBold" Margin="0,0,4,0" Click="BtnStartSpam_Click" ToolTip="Tự động spam nội dung liên tục sau 2 giây"/>
+                                <Button x:Name="BtnAutoPasteLines" Content="📋 Paste Dòng" Style="{StaticResource SecondaryButton}" Height="26" Padding="8,1" FontSize="10.5" Click="BtnAutoPasteLines_Click" ToolTip="Tự động dán lần lượt từng dòng từ clipboard có độ trễ"/>
+                            </StackPanel>
+                        </Grid>
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <!-- Khối 2: Báo Cáo Pin Laptop (HTML) -->
-            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock Text="BÁO CÁO PIN LAPTOP (HTML)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
-                        <TextBlock Text="Khởi tạo và xuất báo cáo chi tiết thông số, tình trạng và lịch sử pin laptop ra file HTML" FontSize="11" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0"/>
-                    </StackPanel>
-                    <Button Grid.Column="1" x:Name="BtnOpenBatteryHtml" Content="📄 Báo Cáo HTML" Style="{StaticResource PrimaryButton}" Padding="14,7" FontSize="11.5" Click="BtnOpenBatteryHtml_Click"/>
-                </Grid>
-            </Border>
+            <!-- Khối 2: Chẩn Đoán Pin Laptop & Dọn Rác Bloatware -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-            <!-- Khối 3: Gỡ Bloatware & Cài App Nhanh -->
-            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
+                <Border Grid.Column="0" Style="{StaticResource CardPanel}" Margin="0,0,6,0" Padding="12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="🔋 BÁO CÁO PIN LAPTOP (HTML)" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                            <TextBlock Text="Đo dung lượng gốc, chai pin &amp; chu kỳ sạc" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" x:Name="BtnOpenBatteryHtml" Content="📄 Xuất Báo Cáo" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="11" Click="BtnOpenBatteryHtml_Click"/>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource CardPanel}" Margin="6,0,0,0" Padding="12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="🗑️ GỠ BLOATWARE WINDOWS" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                            <TextBlock Text="Xóa app rác mặc định (Candy Crush, Xbox thừa...)" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" x:Name="BtnUninstallBloatware" Content="🗑️ Gỡ Sạch" Style="{StaticResource DangerButton}" Padding="10,5" FontSize="11" Click="BtnUninstallBloatware_Click"/>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Khối 3: CÀI ĐẶT ỨNG DỤNG PHÂN LOẠI ĐA DẠNG (WINGET 1-CLICK) -->
+            <Border Style="{StaticResource CardPanel}" Padding="14">
                 <StackPanel>
-                    <TextBlock Text="CÀI APP &amp; GỠ BLOATWARE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
+                    <Grid Margin="0,0,0,12">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="📦" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="CÀI ĐẶT ỨNG DỤNG 1-CHẠM (PHÂN LOẠI WINGET)" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="Tự động tải &amp; cài đặt âm thầm qua Microsoft Winget" FontSize="10.5" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Nhóm 1: Trình Duyệt Web & Mạng Xã Hội -->
+                    <TextBlock Text="🌐 TRÌNH DUYỆT &amp; GIAO TIẾP:" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,6"/>
+                    <WrapPanel Margin="0,0,0,10">
+                        <Button Content="Google Chrome" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallChrome_Click"/>
+                        <Button Content="Brave Browser" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallBrave_Click"/>
+                        <Button Content="Mozilla Firefox" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallFirefox_Click"/>
+                        <Button Content="Zalo PC" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallZalo_Click"/>
+                        <Button Content="Telegram Desktop" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallTelegram_Click"/>
+                        <Button Content="Discord" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallDiscord_Click"/>
+                    </WrapPanel>
+
+                    <!-- Nhóm 2: Lập Trình & Công Cụ Dev -->
+                    <TextBlock Text="💻 LẬP TRÌNH &amp; DEV TOOLS:" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,6"/>
+                    <WrapPanel Margin="0,0,0,10">
+                        <Button Content="Visual Studio Code" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallVSCode_Click"/>
+                        <Button Content="Git" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallGit_Click"/>
+                        <Button Content="Node.js (LTS)" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallNode_Click"/>
+                        <Button Content="Python 3" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallPython_Click"/>
+                        <Button Content="Notepad++" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallNotepadPlusPlus_Click"/>
+                        <Button Content="Postman" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallPostman_Click"/>
+                        <Button Content="Docker Desktop" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallDocker_Click"/>
+                    </WrapPanel>
+
+                    <!-- Nhóm 3: Tiện Ích & Hệ Thống -->
+                    <TextBlock Text="⚡ TIỆN ÍCH &amp; HỆ THỐNG:" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,6"/>
+                    <WrapPanel Margin="0,0,0,10">
+                        <Button Content="7-Zip" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstall7Zip_Click"/>
+                        <Button Content="WinRAR" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallWinRAR_Click"/>
+                        <Button Content="UniKey" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallUniKey_Click"/>
+                        <Button Content="Everything Search" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallEverything_Click"/>
+                        <Button Content="Revo Uninstaller" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallRevo_Click"/>
+                    </WrapPanel>
+
+                    <!-- Nhóm 4: Giải Trí & Đồ Họa -->
+                    <TextBlock Text="🎬 GIẢI TRÍ &amp; ĐỒ HỌA / STREAM:" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,6"/>
                     <WrapPanel>
-                        <Button x:Name="BtnUninstallBloatware" Content="Gỡ Bloatware Win" Style="{StaticResource DangerButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnUninstallBloatware_Click"/>
-                        <Button Content="Cài Chrome" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnInstallChrome_Click"/>
-                        <Button Content="Cài VS Code" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnInstallVSCode_Click"/>
-                        <Button Content="Cài Git" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnInstallGit_Click"/>
-                        <Button Content="Cài 7-Zip" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnInstall7Zip_Click"/>
+                        <Button Content="VLC Media Player" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallVLC_Click"/>
+                        <Button Content="Spotify" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallSpotify_Click"/>
+                        <Button Content="OBS Studio" Style="{StaticResource SecondaryButton}" Margin="0,0,6,6" Padding="10,5" FontSize="11" Click="BtnInstallOBS_Click"/>
                     </WrapPanel>
                 </StackPanel>
             </Border>

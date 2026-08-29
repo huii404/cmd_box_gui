@@ -10,6 +10,12 @@ namespace CMD_BOX_GUI.UI.Views
     {
         private readonly NetworkService _network = new();
         private bool _isBusy = false;
+        private bool _isIpMasked = false;
+
+        private string _rawAdapterName = "...";
+        private string _rawLocalIp = "...";
+        private string _rawGateway = "...";
+        private string _rawPublicIp = "...";
 
         public NetworkView()
         {
@@ -23,17 +29,61 @@ namespace CMD_BOX_GUI.UI.Views
             try
             {
                 var (localIp, gateway, dns, adapterName) = await _network.GetCurrentNetworkInfoAsync();
-                TxtAdapterName.Text = adapterName;
-                TxtLocalIp.Text = localIp;
-                TxtGateway.Text = gateway;
+                _rawAdapterName = adapterName;
+                _rawLocalIp = localIp;
+                _rawGateway = gateway;
 
                 string publicIp = await _network.GetPublicIpAsync();
-                TxtPublicIp.Text = publicIp;
+                _rawPublicIp = publicIp;
+
+                UpdateIpDisplay();
             }
             finally
             {
                 BtnRefreshNetInfo.IsEnabled = true;
             }
+        }
+
+        private void BtnToggleMaskIp_Click(object sender, RoutedEventArgs e)
+        {
+            _isIpMasked = !_isIpMasked;
+            UpdateIpDisplay();
+        }
+
+        private void UpdateIpDisplay()
+        {
+            TxtAdapterName.Text = _rawAdapterName;
+
+            if (_isIpMasked)
+            {
+                TxtLocalIp.Text = MaskIpAddress(_rawLocalIp);
+                TxtGateway.Text = MaskIpAddress(_rawGateway);
+                TxtPublicIp.Text = MaskIpAddress(_rawPublicIp);
+                BtnToggleMaskIp.Content = "👁️‍🗨️ Hiện IP";
+                BtnToggleMaskIp.ToolTip = "Đang bật chế độ ẩn IP riêng tư. Bấm để hiển thị đầy đủ IP.";
+            }
+            else
+            {
+                TxtLocalIp.Text = _rawLocalIp;
+                TxtGateway.Text = _rawGateway;
+                TxtPublicIp.Text = _rawPublicIp;
+                BtnToggleMaskIp.Content = "👁️ Che IP";
+                BtnToggleMaskIp.ToolTip = "Bật / Tắt che địa chỉ IP để bảo vệ quyền riêng tư khi stream hoặc chụp ảnh.";
+            }
+        }
+
+        private static string MaskIpAddress(string ip)
+        {
+            if (string.IsNullOrWhiteSpace(ip) || ip == "..." || ip == "Không có" || ip == "N/A" || ip == "Lỗi kết nối")
+                return ip;
+
+            var parts = ip.Split('.');
+            if (parts.Length == 4)
+            {
+                return $"{parts[0]}.{parts[1]}.***.***";
+            }
+
+            return "••••••••";
         }
 
         private async void BtnRefreshNetInfo_Click(object sender, RoutedEventArgs e)
@@ -113,7 +163,7 @@ namespace CMD_BOX_GUI.UI.Views
             BtnResetFirewall.IsEnabled = isEnabled;
             BtnRepairAll.IsEnabled = isEnabled;
             BtnRefreshNetInfo.IsEnabled = isEnabled;
+            BtnToggleMaskIp.IsEnabled = isEnabled;
         }
     }
 }
-

@@ -7,44 +7,45 @@
              d:DesignHeight="600" d:DesignWidth="850">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="16">
-            <!-- Khối 1: Dọn Rác & Cache -->
+            <!-- Section 1: Disk Cleanup & Cache Purge -->
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
                 <StackPanel>
-                    <TextBlock Text="DỌN DẸP BỘ NHỚ &amp; CACHE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
+                    <TextBlock Text="DISK CLEANUP &amp; CACHE PURGE" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
                     <WrapPanel>
-                        <Button x:Name="BtnCleanQuick" Content="Xóa rác nhanh" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnCleanQuick_Click"/>
-                        <Button x:Name="BtnCleanPro" Content="Xóa rác PRO (Sâu)" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnCleanPro_Click"/>
-                        <Button x:Name="BtnCleanDev" Content="Xóa Cache Dev" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnCleanDev_Click"/>
-                        <Button x:Name="BtnCleanBrowser" Content="Xóa Cache Browser" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnCleanBrowser_Click"/>
+                        <Button x:Name="BtnCleanQuick" Content="⚡ Quick Clean" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="14,8" FontSize="11.5" FontWeight="SemiBold" Click="BtnCleanQuick_Click" ToolTip="Quickly purges User Temp, System Temp, WER, DirectX Shader, Flush DNS &amp; Recycle Bin."/>
+                        <Button x:Name="BtnCleanPro" Content="🔥 Deep Clean PRO" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="14,8" FontSize="11.5" FontWeight="SemiBold" Click="BtnCleanPro_Click" ToolTip="Exhaustive deep scan: Prefetch, WinSxS Component Store, Delivery Optimization, GPU Shaders, Event Logs &amp; 20+ hidden system paths."/>
+                        <Button x:Name="BtnCleanDev" Content="💻 Dev Cache Purge" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnCleanDev_Click" ToolTip="Clears local cache from NPM, Yarn, Pip, NuGet, Gradle, Cargo &amp; Composer."/>
+                        <Button x:Name="BtnCleanBrowser" Content="🌐 Browser Cache Purge" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnCleanBrowser_Click" ToolTip="Purges caches of Chrome, Edge, Brave, CocCoc, Firefox, Opera, Vivaldi &amp; Arc."/>
                     </WrapPanel>
                 </StackPanel>
             </Border>
 
-            <!-- Khối 2: Tinh chỉnh Hệ thống & Khởi động -->
+            <!-- Section 2: Windows Tuning & Startup Optimization -->
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
                 <StackPanel>
-                    <TextBlock Text="TINH CHỈNH WINDOWS &amp; STARTUP" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
+                    <TextBlock Text="PERFORMANCE TURBO &amp; STARTUP" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
                     <WrapPanel>
-                        <Button x:Name="BtnDisableStartup" Content="Tắt App khởi động (Whitelist)" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnDisableStartup_Click"/>
-                        <Button x:Name="BtnOptimizeServices" Content="Tắt Dịch vụ ngầm (Telemetry/Xbox)" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnOptimizeServices_Click"/>
-                        <Button x:Name="BtnTaskbar" Content="Tắt Taskbar W11" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnTaskbar_Click"/>
-                        <Button x:Name="BtnSystemPro" Content="Tối ưu phản hồi PRO" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnSystemPro_Click"/>
+                        <Button x:Name="BtnDisableStartup" Content="🛑 Startup Optimizer" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnDisableStartup_Click" ToolTip="Scans and disables unnecessary background startup applications while preserving essential GPU/Audio/OEM drivers."/>
+                        <Button x:Name="BtnOptimizeServices" Content="🛡️ Disable Telemetry" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnOptimizeServices_Click" ToolTip="Disables Diagnostic Tracking (DiagTrack), dmwappush, Xbox services, and MapsBroker background services."/>
+                        <Button x:Name="BtnTaskbar" Content="🪟 Win 11 Taskbar Tweaks" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnTaskbar_Click" ToolTip="Cleans Windows 11 Taskbar by hiding Searchbox, Widgets, TaskView, Chat and Copilot icons."/>
+                        <Button x:Name="BtnSystemPro" Content="⚡ Low Latency Turbo" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnSystemPro_Click" ToolTip="Optimizes Desktop responsiveness, Network gaming throttling (0xFFFFFFFF), MenuShowDelay &amp; disables Hibernation."/>
                     </WrapPanel>
                 </StackPanel>
             </Border>
 
-            <!-- Khối 3: Sửa lỗi hệ thống -->
+            <!-- Section 3: System Diagnostics & Repair -->
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
                 <StackPanel>
-                    <TextBlock Text="SỬA LỖI HỆ THỐNG" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
+                    <TextBlock Text="SYSTEM DIAGNOSTICS &amp; REPAIR" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
                     <WrapPanel>
-                        <Button x:Name="BtnFixWU" Content="Sửa Windows Update" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" Click="BtnFixWU_Click"/>
+                        <Button x:Name="BtnFixWU" Content="🔄 Fix Windows Update" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnFixWU_Click" ToolTip="Stops update services, resets SoftwareDistribution/catroot2 corrupted caches and restarts services."/>
                     </WrapPanel>
                 </StackPanel>
             </Border>
 
-            <ProgressBar x:Name="PbOptimizer" Style="{StaticResource FlatProgressBar}" Margin="0,2,0,4" Visibility="Collapsed"/>
-            <TextBlock x:Name="TxtStatus" Text="" FontSize="11" Foreground="{DynamicResource AccentCyan}" Visibility="Collapsed"/>
+            <!-- Progress & Status -->
+            <ProgressBar x:Name="PbOptimizer" Style="{StaticResource FlatProgressBar}" Margin="0,2,0,4" Visibility="Collapsed" Height="8"/>
+            <TextBlock x:Name="TxtStatus" Text="" FontSize="11.5" Foreground="{DynamicResource AccentCyan}" FontWeight="SemiBold" Visibility="Collapsed"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

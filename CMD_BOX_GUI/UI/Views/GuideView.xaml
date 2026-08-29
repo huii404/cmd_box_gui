@@ -74,44 +74,53 @@
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="🧹" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="2. Tối Ưu Hóa, Dọn Rác &amp; Bảo Trì Windows (Optimizer)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="2. Hệ Thống Tối Ưu &amp; Dọn Rác Windows (System Optimizer)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel>
-                        <TextBlock Text="• Xóa rác nhanh (Quick Clean):" FontWeight="SemiBold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Tự động xóa các file tạm trong thư mục %temp%, C:\Windows\Temp và Prefetch mà người dùng thông thường khó dọn thủ công. An toàn 100%, không ảnh hưởng dữ liệu cá nhân." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="• Quick Clean (Xóa rác nhanh):" FontWeight="SemiBold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Tự động dọn sạch thư mục %temp%, C:\Windows\Temp, Recent, WER Temp, DirectX Shader Cache, làm sạch Thùng rác và Flush DNS." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
-                        <TextBlock Text="• Xóa rác PRO (Deep Clean):" FontWeight="SemiBold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Dọn dẹp chuyên sâu: Windows Error Reporting, Crash Dumps, Downloaded Installations, Thumbnail Cache và bộ nhớ đệm hệ thống tích tụ lâu ngày." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="• Deep Clean PRO (Dọn rác chuyên sâu đa tầng):" FontWeight="SemiBold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Quét sạch hơn 20+ ngóc ngách sâu trong Windows: Prefetch, WinSxS Component Store (DISM), Delivery Optimization, Event Logs, GPU Shader Caches (NVIDIA/AMD/Intel), BSOD Minidumps, Cryptnet SSL/TLS Caches, Defender Scan Logs và các tệp cài đặt tạm thời." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
-                        <TextBlock Text="• Dọn Cache Lập trình viên &amp; Trình duyệt:" FontWeight="SemiBold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Giải phóng hàng GB dung lượng từ cache npm, pip, nuget, .gradle, node-gyp cũng như cache tạm của Chrome, Edge, Brave, Cốc Cốc." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="• Dev &amp; Browser Cache Purge:" FontWeight="SemiBold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Giải phóng dung lượng từ cache NPM, Yarn, Pip, NuGet, Gradle, Cargo, Composer và bộ nhớ đệm Chrome, Edge, Brave, Cốc Cốc, Firefox, Opera, Vivaldi, Arc." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
-                        <TextBlock Text="• Tinh chỉnh Startup &amp; Tắt dịch vụ ngầm (Telemetry/Xbox):" FontWeight="SemiBold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Tắt bớt ứng dụng tự khởi động cùng Windows (chỉ giữ lại danh sách thiết yếu) và ngắt các dịch vụ thu thập dữ liệu ngầm (Telemetry) giúp máy chạy nhẹ, giảm nghẽn RAM/CPU." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="• Performance Turbo &amp; Startup Optimizer:" FontWeight="SemiBold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Tối ưu độ trễ Desktop, tắt giới hạn mạng Gaming (NetworkThrottling 0xFFFFFFFF), tắt dịch vụ thu thập ngầm (DiagTrack, Xbox, Maps) và loại bỏ ứng dụng khởi động thừa (bảo tồn driver OEM/GPU/Audio)." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
-                        <TextBlock Text="• Sửa lỗi Windows Update:" FontWeight="SemiBold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Tự động dừng và đặt lại các service wuauserv, cryptSvc, bits, msiserver, đổi tên thư mục SoftwareDistribution khi Windows bị kẹt cập nhật hoặc báo mã lỗi 0x800..." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
+                        <TextBlock Text="• Fix Windows Update &amp; Win 11 Taskbar Tweaks:" FontWeight="SemiBold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Sửa lỗi kẹt cập nhật 0x800... bằng cách đặt lại SoftwareDistribution/catroot2 và dọn dẹp các icon thừa trên Taskbar Windows 11 (Searchbox, Widgets, Copilot, Chat)." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
                     </StackPanel>
                 </Expander>
 
-                <!-- MỤC 3: MẠNG & BẢO MẬT -->
-                <Expander x:Name="CardNetwork" Style="{StaticResource ModernExpander}" Tag="NETWORK MANG WIFI MAT KHAU SECURITY KHIEN KHOI PHUC DNS FLUSH HOSTS IP">
+                <!-- MỤC 3: MẠNG & SỬA LỖI INTERNET -->
+                <Expander x:Name="CardNetwork" Style="{StaticResource ModernExpander}" Tag="NETWORK MANG LAN INTERNET IP FLUSH DNS RENEW DHCP WINSOCK TCP FIREWALL REPAIR ALL">
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="🌐" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="3. Quản Trị Mạng, Khôi Phục Kết Nối &amp; Mật Khẩu Wi-Fi (Network)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="3. Thông Tin Kết Nối Mạng &amp; Bộ Công Cụ Cứu Hộ Internet (Network Repair)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel>
-                        <TextBlock Text="• Khôi phục Mạng PRO (8 Bước Tự Động):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimary}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Giải pháp xử lý triệt để khi mất mạng, chấm than vàng hoặc lỗi DNS: Xóa bộ nhớ đệm DNS (Flush DNS) -> Giải phóng &amp; Cấp lại IP (Release/Renew) -> Reset Winsock -> Reset TCP/IP Stack -> Khởi động lại Adapter mạng." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="• Thông tin mạng thời gian thực &amp; Chế độ Che IP Riêng Tư (Mask IP):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Tự động nhận diện Card mạng, IP nội bộ (LAN), Router Gateway và IP công cộng (Public IP). Nút '👁️ Che IP' cho phép ẩn giấu các dải IP nhạy cảm (192.168.***.***) chỉ bằng 1 cú click để chống lộ thông tin khi quay màn hình, live stream hoặc chụp ảnh chia sẻ." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
-                        <TextBlock Text="• Quét &amp; Sao Chép Mật Khẩu Wi-Fi Đã Lưu:" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimary}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Bấm nút 'Quét Wi-Fi' để liệt kê toàn bộ mạng Wi-Fi máy từng kết nối cùng mật khẩu dạng rõ. Bạn có thể nhấn 'Copy' trên từng dòng để chia sẻ ngay cho điện thoại hoặc máy khác." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="• 1. Xóa Cache DNS (Flush DNS):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Xóa bộ nhớ đệm phân giải tên miền — sửa triệt để lỗi website không tải được, lỗi đổi IP máy chủ hoặc không vào được mạng dù vẫn kết nối Wi-Fi." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
-                        <TextBlock Text="• Kích hoạt Lá chắn bảo mật &amp; Kiểm tra file Hosts:" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimary}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Bật cấu hình chặn cổng SMB nguy hiểm (chống ransomware WannaCry/EternalBlue), bật tường lửa và kiểm tra nhanh tệp tin hosts xem có bị mã độc chuyển hướng website hay không." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
+                        <TextBlock Text="• 2. Làm Mới Địa Chỉ IP (DHCP Release &amp; Renew):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Giải phóng và xin cấp lại địa chỉ IP mới từ Router — khắc phục tình trạng xung đột IP, biểu tượng mạng chấm than vàng và mất kết nối LAN." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+
+                        <TextBlock Text="• 3. Đặt Lại TCP/IP &amp; Winsock Catalog (Yêu cầu Admin):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Khôi phục toàn bộ giao thức mạng về mặc định — khắc phục lỗi hỏng Winsock, lỗi nghẽn mạng sau khi gỡ phần mềm VPN/Proxy hoặc diệt virus." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+
+                        <TextBlock Text="• 4. Khôi Phục Windows Firewall Gốc (Yêu cầu Admin):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimary}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Xóa toàn bộ các rule chặn mạng rác và đưa tường lửa Windows về cấu hình mặc định an toàn của Microsoft." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+
+                        <TextBlock Text="• 🚀 Khôi Phục Toàn Diện 1-Click (All-in-One Repair):" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Tự động thực hiện tuần tự và tối ưu toàn bộ 4 bước: Xóa Cache DNS ➔ Cấp lại IP ➔ Reset TCP/IP Winsock ➔ Khôi phục Firewall gốc." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
                     </StackPanel>
                 </Expander>
 
@@ -133,31 +142,40 @@
                         <TextBlock Text="• Chẩn đoán Sức Khỏe Pin Laptop &amp; Chu Kỳ Sạc:" FontWeight="SemiBold" Foreground="{DynamicResource AccentWarning}" Margin="0,0,0,4"/>
                         <TextBlock Text="Đo chính xác dung lượng pin gốc (Design Capacity), dung lượng thực tế tối đa (Full Charge Capacity), phần trăm chai pin và số lần cắm sạc (Cycle Count). Có thể bấm 'Báo cáo HTML' để xem biểu đồ chi tiết từ Windows." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
-                        <TextBlock Text="• Gỡ Bloatware &amp; Cài App Tốc Độ Cao:" FontWeight="SemiBold" Foreground="{DynamicResource AccentWarning}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Gỡ bỏ các ứng dụng rác mặc định của Windows (Candy Crush, Xbox thừa, Cortana, Feedback Hub...) và cài đặt một chạm Chrome, VS Code, Git, 7-Zip qua Winget chuẩn Microsoft." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
+                        <TextBlock Text="• Gỡ Bloatware &amp; Cài Đặt Ứng Dụng Phân Loại (Winget 1-Click):" FontWeight="SemiBold" Foreground="{DynamicResource AccentWarning}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Gỡ bỏ các ứng dụng rác mặc định của Windows (Candy Crush, Xbox thừa, Cortana...) và cài đặt một chạm hàng chục phần mềm phổ biến phân loại theo nhóm: Trình duyệt &amp; Chat (Chrome, Brave, Zalo, Telegram, Discord), Dev Tools (VS Code, Git, Node.js, Python, Docker, Postman), Tiện ích hệ thống (7-Zip, WinRAR, UniKey, Everything, Revo) và Giải trí (VLC, Spotify, OBS Studio) qua Microsoft Winget an toàn." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
                     </StackPanel>
                 </Expander>
 
                 <!-- MỤC 5: TRUNG TÂM XỬ LÝ MEDIA -->
-                <Expander x:Name="CardMedia" Style="{StaticResource ModernExpander}" Tag="MEDIA FFMPEG VULKAN REAL-ESRGAN AI VIDEO ANH NEN LAM NET H264 PNG MP4 CONVERT DOI DUOI TEP">
+                <Expander x:Name="CardMedia" Style="{StaticResource ModernExpander}" Tag="MEDIA FFMPEG MP3 AAC WAV FLAC GIF MUTE TAT TIENG TRICH XUAT AM THANH ANH NEN LAM NET H264 PNG MP4 CONVERT DOI DUOI TEP">
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="🎬" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="5. Studio Xử Lý Media: Nén, Đổi Đuôi &amp; Làm Nét Hybrid AI (FFmpeg + Vulkan)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="5. Studio Xử Lý Media Đa Năng (Nén, Làm Nét, Đổi Đuôi, Tách Audio, Mute, GIF)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel>
-                        <TextBlock Text="• Tự động dò tìm FFmpeg &amp; Vulkan Real-ESRGAN đa tầng thông minh:" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Hệ thống tự động quét tìm công cụ ffmpeg.exe và realesrgan-ncnn-vulkan.exe trong Cli_mediaEXE, thư mục ứng dụng hiện tại, các thư mục mẹ cùng cấp (lên đến ổ đĩa gốc), các thư mục con và biến môi trường PATH. Bạn cũng có thể bấm 'FFmpeg' hoặc 'Vulkan AI' để chỉ định tệp thủ công." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="• Tự động dò tìm FFmpeg thông minh:" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Hệ thống tự động quét tìm công cụ ffmpeg.exe trong Cli_mediaEXE, thư mục ứng dụng hiện tại, các thư mục mẹ cùng cấp và biến môi trường PATH. Bạn cũng có thể bấm 'Chọn FFmpeg...' để chỉ định tệp thủ công." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
-                        <TextBlock Text="• Thuật toán Làm Nét Ảnh Hybrid AI (FFmpeg + Vulkan Real-ESRGAN GPU):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Quy trình 3 giai đoạn tối ưu đỉnh cao: 1. FFmpeg tiền xử lý khử nhiễu (hqdn3d), cân bằng màu sắc và tăng tương phản nổi khối 3D; 2. Vulkan GPU (Real-ESRGAN) tái tạo và bổ sung hàng triệu pixel siêu phân giải, khôi phục kết cấu vi mô; 3. FFmpeg hoàn thiện chi tiết vi điểm và mã hóa chất lượng cao nhất." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="• Thuật toán Làm Nét Native C# &amp; Video HQ:" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Xử lý trực tiếp trên RAM siêu tốc (~0.1s): Khử gai hạt vi mô (Anti-Grain), Soft-Coring USM thích ứng cạnh, chống quầng sáng/tối viền (Halo suppression) và nổi khối 3D S-Curve mượt mà." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
-                        <TextBlock Text="• Nén Ảnh &amp; Video hàng loạt (Mặc định giảm ~30% dung lượng):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Tự động nhận diện Ảnh hoặc Video: Video được nén bằng thuật toán H.264/AAC với CRF tối ưu, Ảnh được tối ưu hóa theo định dạng (JPG, PNG, WebP). Giảm trung bình 30% dung lượng tệp mà mắt thường gần như không nhận ra sự suy giảm độ nét." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="• Nén Ảnh &amp; Video hàng loạt (Mặc định giảm ~40% dung lượng):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Tự động nhận diện Ảnh hoặc Video: Video được nén bằng thuật toán H.264/AAC với CRF 28 tối ưu, Ảnh được tối ưu hóa theo định dạng (JPG, PNG, WebP). Giảm 40% dung lượng tệp mà mắt thường gần như không nhận ra sự suy giảm độ nét." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
                         <TextBlock Text="• Đổi đuôi tệp hàng loạt (Tự động nhận diện Ảnh ➔ .png | Video ➔ .mp4):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Khi thêm file vào danh sách, hệ thống tự động phân loại: nếu là Ảnh sẽ mặc định chuyển sang .png (hoặc chọn .jpg, .webp, .bmp, .ico...), nếu là Video sẽ mặc định chuyển sang .mp4 (hoặc chọn .mkv, .avi, .mov, .webm...). Quá trình chuyển đổi đảm bảo tương thích mọi nền tảng." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
+                        <TextBlock Text="Khi thêm file vào danh sách, bạn có thể chọn định dạng đích trực tiếp trên từng dòng của bảng (hỗ trợ .png, .jpg, .webp, .mp4, .mkv, .avi, .mov, .webm...)." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+
+                        <TextBlock Text="• Trích xuất Âm thanh từ Video (Extract Audio ➔ MP3 / AAC / WAV / FLAC / M4A):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Tách riêng track âm thanh chất lượng cao từ hàng loạt video cùng lúc với bitrate tối đa (MP3 320kbps, AAC 256kbps hoặc WAV/FLAC Lossless nguyên bản)." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+
+                        <TextBlock Text="• Tắt tiếng Video siêu tốc (Mute / Stream Copy 0.1s):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Loại bỏ hoàn toàn âm thanh rác/tiếng ồn khỏi video bằng cơ chế Stream Copy, xử lý tức thì chỉ trong vài phần trăm giây và giữ nguyên 100% chất lượng hình ảnh gốc." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+
+                        <TextBlock Text="• Tạo ảnh động GIF chất lượng cao (Video ➔ HD Palette GIF):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Chuyển đổi video ngắn thành ảnh GIF động với bộ lọc Two-pass Palettegen 256 màu tối ưu, đảm bảo chuyển động mượt mà và không bị vỡ hạt dithering." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
                     </StackPanel>
                 </Expander>
 

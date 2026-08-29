@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using CMD_BOX_GUI.Core;
 using Microsoft.Win32;
@@ -22,85 +23,171 @@ namespace CMD_BOX_GUI.Services
             }
         }
 
-        // 1. DỌN RÁC NHANH (QUICK CLEAN)
+        // ================= 1. QUICK CLEAN (FAST CLEANUP) =================
         public async Task<long> CleanQuickAsync(IProgress<int>? progress = null)
         {
-            Logger.Info("Chạy Dọn rác nhanh...");
+            Logger.Info("[Optimizer] Running Quick Clean (Temp files, WER, D3D Cache, Recycle Bin, DNS)...");
             long initialFree = GetDriveFreeSpace();
 
-            var list = new List<Action>
+            var cleanupTasks = new List<Action>
             {
                 () => WipeDirectory(Path.GetTempPath(), "User Temp"),
                 () => WipeDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"), "System Temp"),
-                () => WipeDirectory(Environment.GetFolderPath(Environment.SpecialFolder.Recent), "Recent"),
-                () => WipeDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "D3DSCache"), "DirectX"),
+                () => WipeDirectory(Environment.GetFolderPath(Environment.SpecialFolder.Recent), "Recent Files"),
+                () => WipeDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "D3DSCache"), "DirectX Shader"),
                 () => WipeDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "WER", "Temp"), "WER Temp"),
+                () => WipeDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps"), "User CrashDumps"),
                 () =>
                 {
-                    try { NativeMethods.SHEmptyRecycleBin(IntPtr.Zero, null, NativeMethods.SHERB_NOCONFIRMATION | NativeMethods.SHERB_NOPROGRESSUI | NativeMethods.SHERB_NOSOUND); } catch { }
+                    try
+                    {
+                        NativeMethods.SHEmptyRecycleBin(IntPtr.Zero, null, NativeMethods.SHERB_NOCONFIRMATION | NativeMethods.SHERB_NOPROGRESSUI | NativeMethods.SHERB_NOSOUND);
+                    }
+                    catch { }
                 },
                 () =>
                 {
-                    try { NativeMethods.DnsFlushResolverCache(); } catch { }
+                    try
+                    {
+                        NativeMethods.DnsFlushResolverCache();
+                    }
+                    catch { }
                 }
             };
 
             await Task.Run(() =>
             {
-                for (int i = 0; i < list.Count; i++)
+                for (int i = 0; i < cleanupTasks.Count; i++)
                 {
-                    list[i]();
-                    progress?.Report((int)((i + 1) * 100.0 / list.Count));
+                    cleanupTasks[i]();
+                    progress?.Report((int)((i + 1) * 100.0 / cleanupTasks.Count));
                 }
             });
 
             long freed = Math.Max(0, GetDriveFreeSpace() - initialFree);
-            Logger.Success($"Dọn nhanh xong! Đã giải phóng: {SystemCore.FormatBytes(freed)}");
+            Logger.Success($"[Optimizer] Quick Clean completed! Freed space: {SystemCore.FormatBytes(freed)}");
             return freed;
         }
 
-        // 2. DỌN RÁC CHUYÊN SÂU PRO (DISK CLEAN PRO)
+        // ================= 2. DEEP CLEAN PRO (EXHAUSTIVE DISK & SYSTEM CLEANUP) =================
         public async Task<long> CleanDiskProAsync(IProgress<int>? progress = null)
         {
-            Logger.Info("Chạy Dọn rác chuyên sâu PRO (Prefetch, WinSxS, Delivery, Logs, EventLogs)...");
+            Logger.Info("[Optimizer] Running Deep Clean PRO (All hidden locations, WinSxS, Delivery Opt, Prefetch, GPU Shaders, Crash Dumps, EventLogs)...");
             long initialFree = GetDriveFreeSpace();
 
-            // Dọn nhanh trước
+            // Giai đoạn 1: Dọn nhanh + Browser Caches
             await CleanQuickAsync();
-            progress?.Report(20);
+            progress?.Report(15);
 
-            // Dọn Browser Cache
             await ClearBrowserCacheAsync();
-            progress?.Report(40);
+            progress?.Report(30);
 
-            // Dọn Prefetch, CBS Logs, Delivery Optimization, WinSxS
+            // Giai đoạn 2: Quét sạch mọi ngóc ngách sâu trong Windows
             await Task.Run(async () =>
             {
                 string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-                WipeDirectory(Path.Combine(winDir, "Prefetch"), "Prefetch");
-                WipeDirectory(Path.Combine(winDir, "Logs", "CBS"), "CBS Logs");
-                WipeDirectory(Path.Combine(winDir, "SoftwareDistribution", "Download"), "WinUpdate Download");
+                string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
 
-                string deliveryOpt = Path.Combine(winDir, "ServiceProfiles", "NetworkService", "AppData", "Local", "Microsoft", "Windows", "DeliveryOptimization");
-                WipeDirectory(deliveryOpt, "Delivery Optimization");
+                var deepLocations = new List<(string Path, string Label)>
+                {
+                    // 1. Windows System Core Temps & Prefetch
+                    (Path.Combine(winDir, "Prefetch"), "Windows Prefetch"),
+                    (Path.Combine(winDir, "SystemTemp"), "Windows SystemTemp"),
+                    (Path.Combine(winDir, "ServiceProfiles", "LocalService", "AppData", "Local", "Temp"), "LocalService Temp"),
+                    (Path.Combine(winDir, "ServiceProfiles", "NetworkService", "AppData", "Local", "Temp"), "NetworkService Temp"),
+
+                    // 2. Windows Update & Delivery Optimization Cache
+                    (Path.Combine(winDir, "SoftwareDistribution", "Download"), "Windows Update Downloads"),
+                    (Path.Combine(winDir, "SoftwareDistribution", "DataStore", "Logs"), "Windows Update Logs"),
+                    (Path.Combine(winDir, "ServiceProfiles", "NetworkService", "AppData", "Local", "Microsoft", "Windows", "DeliveryOptimization", "cache"), "Delivery Optimization Cache"),
+
+                    // 3. System Logs & Panther Setup Logs
+                    (Path.Combine(winDir, "Logs", "CBS"), "CBS Component Logs"),
+                    (Path.Combine(winDir, "Logs", "DISM"), "DISM Service Logs"),
+                    (Path.Combine(winDir, "Logs", "DPX"), "DPX Setup Logs"),
+                    (Path.Combine(winDir, "Logs", "WindowsUpdate"), "Windows Update Logs"),
+                    (Path.Combine(winDir, "Panther"), "Windows Setup Panther Logs"),
+
+                    // 4. Crash Dumps & Minidumps
+                    (Path.Combine(winDir, "Minidump"), "BSOD Minidumps"),
+                    (Path.Combine(localApp, "CrashDumps"), "Application Crash Dumps"),
+
+                    // 5. Windows Error Reporting (WER) Deep Dumps
+                    (Path.Combine(localApp, "Microsoft", "Windows", "WER", "ReportArchive"), "WER User Archive"),
+                    (Path.Combine(localApp, "Microsoft", "Windows", "WER", "ReportQueue"), "WER User Queue"),
+                    (Path.Combine(localApp, "Microsoft", "Windows", "WER", "ERC"), "WER User ERC"),
+                    (Path.Combine(programData, "Microsoft", "Windows", "WER", "ReportArchive"), "WER System Archive"),
+                    (Path.Combine(programData, "Microsoft", "Windows", "WER", "ReportQueue"), "WER System Queue"),
+                    (Path.Combine(programData, "Microsoft", "Windows", "WER", "Temp"), "WER System Temp"),
+
+                    // 6. GPU Shader & DirectX Caches (NVIDIA, AMD, Intel, D3D)
+                    (Path.Combine(localApp, "D3DSCache"), "Direct3D Shader Cache"),
+                    (Path.Combine(localApp, "NVIDIA", "DXCache"), "NVIDIA DirectX Cache"),
+                    (Path.Combine(localApp, "NVIDIA", "GLCache"), "NVIDIA OpenGL Cache"),
+                    (Path.Combine(localApp, "NVIDIA Corporation", "NV_Cache"), "NVIDIA NV Cache"),
+                    (Path.Combine(localApp, "AMD", "DxCache"), "AMD DirectX Cache"),
+                    (Path.Combine(localApp, "AMD", "GLCache"), "AMD OpenGL Cache"),
+                    (Path.Combine(localApp, "Intel", "ShaderCache"), "Intel Shader Cache"),
+
+                    // 7. Network & Cryptnet Temporary SSL/TLS Caches
+                    (Path.Combine(localApp, "Microsoft", "Windows", "INetCache"), "INetCache Temporary"),
+                    (Path.Combine(appData, "Microsoft", "CryptnetUrlCache", "Content"), "Cryptnet Content"),
+                    (Path.Combine(appData, "Microsoft", "CryptnetUrlCache", "MetaData"), "Cryptnet Metadata"),
+
+                    // 8. Windows Defender Scans Cache & Support Temp
+                    (Path.Combine(programData, "Microsoft", "Windows Defender", "Scans", "History", "Results", "Quick"), "Defender Scan History"),
+                    (Path.Combine(programData, "Microsoft", "Windows Defender", "Support"), "Defender Support Logs"),
+
+                    // 9. Windows Installer Patch Cache ($PatchCache$) & Downloaded Program Files
+                    (Path.Combine(winDir, "Installer", "$PatchCache$"), "Installer PatchCache"),
+                    (Path.Combine(winDir, "Downloaded Program Files"), "Downloaded Program Files"),
+
+                    // 10. Local App Temporary Packages
+                    (Path.Combine(localApp, "Temp"), "Local User Temp")
+                };
+
+                int totalCount = deepLocations.Count;
+                for (int i = 0; i < totalCount; i++)
+                {
+                    var loc = deepLocations[i];
+                    WipeDirectory(loc.Path, loc.Label);
+                    progress?.Report(30 + (int)((i + 1) * 35.0 / totalCount));
+                }
+
+                // Xóa tệp memory dump lớn nếu có (C:\Windows\MEMORY.DMP)
+                string memoryDmp = Path.Combine(winDir, "MEMORY.DMP");
+                if (File.Exists(memoryDmp))
+                {
+                    try { File.Delete(memoryDmp); Logger.Info("[Deep Clean] Deleted MEMORY.DMP"); } catch { }
+                }
 
                 // Dọn Event Logs
                 try
                 {
-                    Logger.Info("Đang dọn dẹp Event Logs...");
+                    Logger.Info("[Deep Clean] Clearing Windows Event Logs...");
                     await ProcessRunner.RunProcessAsync("powershell", "-NoProfile -Command \"Get-WinEvent -ListLog * -EA SilentlyContinue | ForEach-Object { Clear-WinEvent -LogName $_.LogName -EA SilentlyContinue }\"", runAsAdmin: true);
                 }
                 catch { }
 
-                progress?.Report(70);
+                progress?.Report(75);
 
-                // Chạy DISM Component Cleanup (Nhanh & An toàn)
+                // Chạy DISM Component Store Cleanup (Thu dọn các bản cập nhật cũ trong WinSxS)
                 try
                 {
-                    Logger.Info("Đang chạy DISM Component Cleanup (WinSxS)...");
+                    Logger.Info("[Deep Clean] Running DISM Component Store Cleanup (WinSxS)...");
                     await ProcessRunner.RunProcessAsync("dism.exe", "/online /cleanup-image /startcomponentcleanup",
                         line => { if (line.Contains("%")) Logger.Info($"[DISM] {line.Trim()}"); },
                         runAsAdmin: true);
+                }
+                catch { }
+
+                // Flush DNS và Empty Recycle Bin
+                try
+                {
+                    NativeMethods.SHEmptyRecycleBin(IntPtr.Zero, null, NativeMethods.SHERB_NOCONFIRMATION | NativeMethods.SHERB_NOPROGRESSUI | NativeMethods.SHERB_NOSOUND);
+                    NativeMethods.DnsFlushResolverCache();
                 }
                 catch { }
 
@@ -108,25 +195,50 @@ namespace CMD_BOX_GUI.Services
             });
 
             long freed = Math.Max(0, GetDriveFreeSpace() - initialFree);
-            Logger.Success($"Dọn rác PRO hoàn tất! Tổng giải phóng: {SystemCore.FormatBytes(freed)}");
+            Logger.Success($"[Optimizer] Deep Clean PRO finished! Total freed: {SystemCore.FormatBytes(freed)}");
             return freed;
         }
 
-        // 3. DỌN CACHE TRÌNH DUYỆT (BROWSER CACHE)
+        // ================= 3. BROWSER CACHE PURGE =================
         public async Task ClearBrowserCacheAsync()
         {
-            Logger.Info("Đang dọn dẹp Cache trình duyệt (Chrome, Edge, Brave, Cốc Cốc, Firefox)...");
+            Logger.Info("[Optimizer] Purging Browser Caches (Chrome, Edge, Brave, CocCoc, Firefox, Opera, Vivaldi, Arc)...");
             await Task.Run(() =>
             {
                 string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
                 var browserCaches = new List<string>
                 {
+                    // Chrome
                     Path.Combine(localApp, "Google", "Chrome", "User Data", "Default", "Cache"),
                     Path.Combine(localApp, "Google", "Chrome", "User Data", "Default", "Code Cache"),
+                    Path.Combine(localApp, "Google", "Chrome", "User Data", "Default", "GPUCache"),
+                    Path.Combine(localApp, "Google", "Chrome", "User Data", "ShaderCache"),
+
+                    // Edge
                     Path.Combine(localApp, "Microsoft", "Edge", "User Data", "Default", "Cache"),
                     Path.Combine(localApp, "Microsoft", "Edge", "User Data", "Default", "Code Cache"),
+                    Path.Combine(localApp, "Microsoft", "Edge", "User Data", "Default", "GPUCache"),
+
+                    // Brave
                     Path.Combine(localApp, "BraveSoftware", "Brave-Browser", "User Data", "Default", "Cache"),
-                    Path.Combine(localApp, "CocCoc", "Browser", "User Data", "Default", "Cache")
+                    Path.Combine(localApp, "BraveSoftware", "Brave-Browser", "User Data", "Default", "Code Cache"),
+
+                    // CocCoc
+                    Path.Combine(localApp, "CocCoc", "Browser", "User Data", "Default", "Cache"),
+                    Path.Combine(localApp, "CocCoc", "Browser", "User Data", "Default", "Code Cache"),
+
+                    // Opera & Opera GX
+                    Path.Combine(appData, "Opera Software", "Opera Stable", "Cache"),
+                    Path.Combine(appData, "Opera Software", "Opera GX Stable", "Cache"),
+                    Path.Combine(localApp, "Opera Software", "Opera GX Stable", "Cache"),
+
+                    // Vivaldi
+                    Path.Combine(localApp, "Vivaldi", "User Data", "Default", "Cache"),
+
+                    // Arc Browser
+                    Path.Combine(localApp, "Arc", "User Data", "Default", "Cache")
                 };
 
                 foreach (var path in browserCaches)
@@ -134,7 +246,7 @@ namespace CMD_BOX_GUI.Services
                     if (Directory.Exists(path)) WipeDirectory(path, Path.GetFileName(Path.GetDirectoryName(path)) ?? "Browser");
                 }
 
-                // Firefox
+                // Firefox Profiles
                 string ffProfile = Path.Combine(localApp, "Mozilla", "Firefox", "Profiles");
                 if (Directory.Exists(ffProfile))
                 {
@@ -145,18 +257,19 @@ namespace CMD_BOX_GUI.Services
                     }
                 }
             });
-            Logger.Success("Đã làm sạch Cache các trình duyệt web!");
+            Logger.Success("[Optimizer] Browser caches cleaned successfully!");
         }
 
-        // 4. DỌN CACHE MÔI TRƯỜNG DEV
+        // ================= 4. DEV ENVIRONMENT CACHE PURGE =================
         public async Task<long> CleanDevCachesAsync(IProgress<int>? progress = null)
         {
-            Logger.Info("Đang dọn dẹp Cache Dev (NPM, Pip, NuGet, Gradle, Cargo)...");
+            Logger.Info("[Optimizer] Purging Developer Caches (NPM, Yarn, Pip, NuGet, Gradle, Cargo)...");
             long initialFree = GetDriveFreeSpace();
 
             var devCommands = new List<(string Name, string Cmd, string Args)>
             {
                 ("NPM", "npm", "cache clean --force"),
+                ("Yarn", "yarn", "cache clean --force"),
                 ("Pip", "pip", "cache purge"),
                 ("NuGet", "dotnet", "nuget locals all --clear")
             };
@@ -165,33 +278,39 @@ namespace CMD_BOX_GUI.Services
             {
                 var d = devCommands[i];
                 try { await ProcessRunner.RunProcessAsync(d.Cmd, d.Args); } catch { }
-                progress?.Report((int)((i + 1) * 100.0 / devCommands.Count));
+                progress?.Report((int)((i + 1) * 80.0 / devCommands.Count));
             }
 
             string user = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            WipeDirectory(Path.Combine(user, ".gradle", "caches"), "Gradle");
-            WipeDirectory(Path.Combine(user, ".cargo", ".package-cache"), "Cargo");
+            WipeDirectory(Path.Combine(user, ".gradle", "caches"), "Gradle Cache");
+            WipeDirectory(Path.Combine(user, ".cargo", ".package-cache"), "Cargo Package Cache");
+            WipeDirectory(Path.Combine(user, ".cargo", "registry", "cache"), "Cargo Registry Cache");
+            WipeDirectory(Path.Combine(user, ".nuget", "packages"), "User NuGet Packages Temp");
+            WipeDirectory(Path.Combine(user, ".composer", "cache"), "Composer Cache");
 
+            progress?.Report(100);
             long freed = Math.Max(0, GetDriveFreeSpace() - initialFree);
-            Logger.Success($"Đã dọn sạch Dev Cache! Giải phóng: {SystemCore.FormatBytes(freed)}");
+            Logger.Success($"[Optimizer] Dev Caches purged! Freed: {SystemCore.FormatBytes(freed)}");
             return freed;
         }
 
-        // 5. QUẢN LÝ TẮT APP KHỞI ĐỘNG (STARTUP APPS VỚI WHITELIST)
+        // ================= 5. STARTUP APPS OPTIMIZER (WITH DRIVER/OEM WHITELIST) =================
         public async Task DisableStartupAppsWithWhitelistAsync()
         {
-            Logger.Info("Đang quét Startup Apps và bảo vệ Driver/OEM thiết yếu...");
+            Logger.Info("[Optimizer] Scanning Startup Apps (Preserving essential Audio/GPU/OEM drivers)...");
             await Task.Run(() =>
             {
                 var whitelist = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
                     "realtek", "waves", "rtk", "nvidia", "nv", "amd", "intel", "synaptics",
-                    "asus", "dell", "lenovo", "hp", "onedrive", "securityhealth", "windowsdefender"
+                    "asus", "dell", "lenovo", "hp", "onedrive", "securityhealth", "windowsdefender",
+                    "cmd_box_gui", "antigravity"
                 };
 
                 int disabledCount = 0;
                 string[] regPaths = {
                     @"Software\Microsoft\Windows\CurrentVersion\Run",
+                    @"Software\Microsoft\Windows\CurrentVersion\RunOnce"
                 };
 
                 foreach (var path in regPaths)
@@ -218,29 +337,29 @@ namespace CMD_BOX_GUI.Services
                             {
                                 key.DeleteValue(name, false);
                                 disabledCount++;
-                                Logger.Info($"[Startup] Đã tắt app khởi động: {name}");
+                                Logger.Info($"[Startup] Disabled startup app: {name}");
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        Logger.Warning($"Lỗi quét Registry Startup: {ex.Message}");
+                        Logger.Warning($"[Startup Scan] {ex.Message}");
                     }
                 }
 
-                Logger.Success($"Đã tắt {disabledCount} ứng dụng khởi động không cần thiết (Bảo tồn Driver/GPU/Audio).");
+                Logger.Success($"[Optimizer] Disabled {disabledCount} non-essential startup apps (OEM/Hardware drivers safe).");
             });
         }
 
-        // 6. TẮT CÁC DỊCH VỤ WINDOWS KHÔNG CẦN THIẾT (TELEMETRY, XBOX, MAPS)
+        // ================= 6. DISABLE TELEMETRY & BLOAT SERVICES =================
         public async Task OptimizeServicesAsync()
         {
-            Logger.Info("Đang vô hiệu hóa các dịch vụ ngầm không cần thiết (Telemetry, Xbox, Maps, WER)...");
+            Logger.Info("[Optimizer] Disabling Telemetry, Diagnostic Tracking & Xbox bloat services...");
             var servicesToDisable = new[]
             {
                 "DiagTrack", "dmwappushservice", "MapsBroker",
                 "XblAuthManager", "XblGameSave", "XboxGipSvc", "XboxNetApiSvc",
-                "WerSvc"
+                "WerSvc", "RetailDemo"
             };
 
             await Task.Run(async () =>
@@ -251,24 +370,24 @@ namespace CMD_BOX_GUI.Services
                     {
                         await ProcessRunner.RunProcessAsync("sc.exe", $"stop \"{svc}\"", runAsAdmin: true);
                         await ProcessRunner.RunProcessAsync("sc.exe", $"config \"{svc}\" start=disabled", runAsAdmin: true);
-                        Logger.Info($"[Service] Đã tắt dịch vụ: {svc}");
+                        Logger.Info($"[Service] Disabled: {svc}");
                     }
                     catch { }
                 }
             });
 
-            Logger.Success("Đã tối ưu hóa và tắt các dịch vụ ngầm!");
+            Logger.Success("[Optimizer] Background telemetry & bloat services disabled!");
         }
 
-        // 7. TINH CHỈNH HỆ THỐNG PRO (HIBERNATE OFF, DESKTOP RESPONSIVENESS)
+        // ================= 7. LOW LATENCY TURBO & SYSTEM PRO TWEAKS =================
         public async Task OptimizeSystemProAsync()
         {
-            Logger.Info("Đang áp dụng Tinh chỉnh Hệ thống PRO...");
+            Logger.Info("[Optimizer] Applying Low Latency Turbo tweaks (Responsiveness, Network Throttling, AutoEndTasks)...");
             await Task.Run(async () =>
             {
                 // Tắt Hibernate giải phóng nhiều GB hiberfil.sys
                 await ProcessRunner.RunProcessAsync("powercfg", "-h off", runAsAdmin: true);
-                Logger.Success("Đã tắt Hibernate (Giải phóng tệp hiberfil.sys).");
+                Logger.Success("[Optimizer] Disabled Hibernation (Saved hiberfil.sys disk space).");
 
                 // Registry tweaks
                 try
@@ -286,19 +405,19 @@ namespace CMD_BOX_GUI.Services
                         multimediaKey.SetValue("SystemResponsiveness", 0, RegistryValueKind.DWord);
                         multimediaKey.SetValue("NetworkThrottlingIndex", unchecked((int)0xFFFFFFFF), RegistryValueKind.DWord);
                     }
-                    Logger.Success("Đã tối ưu hóa độ trễ phản hồi Desktop & Network Throttling!");
+                    Logger.Success("[Optimizer] Desktop responsiveness and Network Gaming Throttling optimized!");
                 }
                 catch (Exception ex)
                 {
-                    Logger.Warning($"Lỗi ghi Registry: {ex.Message}");
+                    Logger.Warning($"[Registry Tweak] {ex.Message}");
                 }
             });
         }
 
-        // 8. TINH CHỈNH TASKBAR WIN 11
+        // ================= 8. WINDOWS 11 TASKBAR TWEAKS =================
         public async Task OptimizeTaskbarWindows11Async()
         {
-            Logger.Info("Đang ẩn icon thừa trên Taskbar Win 11 (Search, Widgets, Teams, Copilot)...");
+            Logger.Info("[Optimizer] Hiding Taskbar clutter on Windows 11 (Search, Widgets, Chat, Copilot)...");
             await Task.Run(() =>
             {
                 try
@@ -320,19 +439,19 @@ namespace CMD_BOX_GUI.Services
                         copilotKey.SetValue("TurnOffWindowsCopilot", 1, RegistryValueKind.DWord);
                     }
 
-                    Logger.Success("Đã tối ưu Taskbar Win 11 thành công!");
+                    Logger.Success("[Optimizer] Windows 11 Taskbar optimized cleanly!");
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error($"Lỗi Registry Taskbar: {ex.Message}");
+                    Logger.Error($"[Taskbar Tweak] {ex.Message}");
                 }
             });
         }
 
-        // 9. SỬA LỖI WINDOWS UPDATE
+        // ================= 9. FIX WINDOWS UPDATE =================
         public async Task FixWindowsUpdateAsync()
         {
-            Logger.Info("Đang sửa lỗi Windows Update...");
+            Logger.Info("[Optimizer] Repairing Windows Update components & reset caches...");
             string script = @"
 net stop wuauserv /y
 net stop cryptSvc /y
@@ -350,7 +469,7 @@ net start msiserver
             {
                 await File.WriteAllTextAsync(tempBat, script);
                 await ProcessRunner.RunProcessAsync("cmd.exe", $"/c \"{tempBat}\"", runAsAdmin: true);
-                Logger.Success("Đã sửa lỗi và reset cache Windows Update!");
+                Logger.Success("[Optimizer] Windows Update repaired & cache refreshed!");
             }
             finally
             {
@@ -360,6 +479,8 @@ net start msiserver
 
         private static void WipeDirectory(string path, string label)
         {
+            if (string.IsNullOrWhiteSpace(path)) return;
+
             if (!Directory.Exists(path)) return;
             try
             {

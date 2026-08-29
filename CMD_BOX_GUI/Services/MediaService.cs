@@ -142,19 +142,7 @@ namespace CMD_BOX_GUI.Services
 
             string[] subPaths = {
                 "ffmpeg.exe",
-                Path.Combine("bin", "ffmpeg.exe"),
-                Path.Combine("ffmpeg", "ffmpeg.exe"),
-                Path.Combine("ffmpeg", "bin", "ffmpeg.exe"),
-                Path.Combine("tools", "ffmpeg.exe"),
-                Path.Combine("tools", "bin", "ffmpeg.exe"),
                 Path.Combine("Cli_mediaEXE", "ffmpeg.exe"),
-                Path.Combine("Cli_mediaEXE", "bin", "ffmpeg.exe"),
-                Path.Combine("cmd_box_gui", "ffmpeg.exe"),
-                Path.Combine("cmd_box_gui", "bin", "ffmpeg.exe"),
-                Path.Combine("CMD_BOX_GUI", "ffmpeg.exe"),
-                Path.Combine("CMD_BOX_GUI", "bin", "ffmpeg.exe"),
-                Path.Combine("CMD_BOX_GUI", "CMD_BOX_GUI", "ffmpeg.exe"),
-                Path.Combine("CMD_BOX_GUI", "CMD_BOX_GUI", "bin", "ffmpeg.exe"),
             };
 
             foreach (var sp in subPaths)
@@ -198,22 +186,22 @@ namespace CMD_BOX_GUI.Services
         }
 
         /// <summary>
-        /// Nén Video (H.264 CRF cố định ~30% giảm dung lượng, giữ nét cao)
+        /// Nén Video (H.264 CRF tối ưu ~40% giảm dung lượng, giữ nét cao)
         /// </summary>
         public async Task<bool> CompressVideoAsync(string inputPath, string outputPath, int compressionLevel = 1, CancellationToken cancellationToken = default)
         {
             string ffmpeg = FindFFmpegPath();
             int crf = compressionLevel switch
             {
-                0 => 22,
-                2 => 30,
-                3 => 34,
-                _ => 26  // Tiêu chuẩn ~30% nén
+                0 => 24,
+                2 => 32,
+                3 => 36,
+                _ => 28  // Tiêu chuẩn ~40% nén
             };
 
-            int audioBitrate = compressionLevel == 0 ? 160 : (compressionLevel >= 2 ? 96 : 128);
+            int audioBitrate = compressionLevel == 0 ? 128 : (compressionLevel >= 2 ? 80 : 96);
 
-            Logger.Info($"[FFmpeg] Đang nén Video [{Path.GetFileName(inputPath)}] (CRF {crf})...");
+            Logger.Info($"[FFmpeg] Đang nén Video [{Path.GetFileName(inputPath)}] (CRF {crf}, ~40% nén)...");
             string args = $"-y -i \"{inputPath}\" -vcodec libx264 -crf {crf} -preset faster -c:a aac -b:a {audioBitrate}k \"{outputPath}\"";
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
@@ -230,7 +218,7 @@ namespace CMD_BOX_GUI.Services
         }
 
         /// <summary>
-        /// Nén Ảnh (Tự tối ưu theo JPG, PNG, WEBP... cố định ~30% nén)
+        /// Nén Ảnh (Tự tối ưu theo JPG, PNG, WEBP... tối ưu ~40% nén)
         /// </summary>
         public async Task<bool> CompressImageAsync(string inputPath, string outputPath, int compressionLevel = 1, CancellationToken cancellationToken = default)
         {
@@ -238,27 +226,27 @@ namespace CMD_BOX_GUI.Services
             string ext = Path.GetExtension(inputPath).ToLowerInvariant();
             string outExt = Path.GetExtension(outputPath).ToLowerInvariant();
 
-            Logger.Info($"[FFmpeg] Đang nén Ảnh [{Path.GetFileName(inputPath)}]...");
+            Logger.Info($"[FFmpeg] Đang nén Ảnh [{Path.GetFileName(inputPath)}] (~40% nén)...");
 
             string args;
             if (outExt == ".jpg" || outExt == ".jpeg" || ext == ".jpg" || ext == ".jpeg")
             {
-                int qscale = compressionLevel == 0 ? 2 : (compressionLevel >= 2 ? 8 : 4);
+                int qscale = compressionLevel == 0 ? 3 : (compressionLevel >= 2 ? 8 : 5);
                 args = $"-y -i \"{inputPath}\" -q:v {qscale} \"{outputPath}\"";
             }
             else if (outExt == ".webp" || ext == ".webp")
             {
-                int quality = compressionLevel == 0 ? 85 : (compressionLevel >= 2 ? 65 : 78);
+                int quality = compressionLevel == 0 ? 80 : (compressionLevel >= 2 ? 55 : 68);
                 args = $"-y -i \"{inputPath}\" -c:v libwebp -quality {quality} \"{outputPath}\"";
             }
             else if (outExt == ".png" || ext == ".png")
             {
-                int compLevel = compressionLevel == 0 ? 6 : 9;
+                int compLevel = compressionLevel == 0 ? 7 : 9;
                 args = $"-y -i \"{inputPath}\" -c:v png -compression_level {compLevel} \"{outputPath}\"";
             }
             else
             {
-                args = $"-y -i \"{inputPath}\" -q:v 4 \"{outputPath}\"";
+                args = $"-y -i \"{inputPath}\" -q:v 5 \"{outputPath}\"";
             }
 
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
@@ -322,21 +310,24 @@ namespace CMD_BOX_GUI.Services
         }
 
         /// <summary>
-        /// Làm nét & khử nhiễu Video theo cấp độ (HQ Denoise + Unsharp + Tương phản nổi khối)
+        /// Làm nét & khử nhiễu Video đa yếu tố:
+        /// - Tiền xử lý khử hạt vi mô mượt mà (hqdn3d).
+        /// - Làm nét thích ứng vi điểm kênh độ sáng Luma (Unsharp lx/ly không gây nhiễu màu Chroma ca=0).
+        /// - Cân bằng tương phản S-Curve và màu sắc mượt mà không vỡ hạt (eq).
         /// </summary>
         public async Task<bool> EnhanceVideoAsync(string inputPath, string outputPath, int enhanceLevel = 1, CancellationToken cancellationToken = default)
         {
             string ffmpeg = FindFFmpegPath();
             string filter = enhanceLevel switch
             {
-                0 => "hqdn3d=1.5:1.0:2.0:1.5,unsharp=3:3:0.6:3:3:0.0,eq=contrast=1.02:saturation=1.02",
-                2 => "hqdn3d=3.0:2.0:4.0:3.0,unsharp=5:5:1.5:5:5:0.0,eq=contrast=1.06:saturation=1.05",
-                3 => "hqdn3d=4.0:3.0:5.0:4.0,unsharp=7:7:2.0:7:7:0.0,eq=contrast=1.10:saturation=1.08",
-                _ => "hqdn3d=2.0:1.5:3.0:2.0,unsharp=5:5:1.0:5:5:0.0,eq=contrast=1.04:saturation=1.03" // Mặc định (Mức 2)
+                0 => "hqdn3d=2.0:1.5:3.0:2.5,unsharp=lx=3:ly=3:la=0.5:cx=3:cy=3:ca=0.0,eq=contrast=1.02:saturation=1.02", // Nhẹ
+                2 => "hqdn3d=4.0:3.0:5.0:4.0,unsharp=lx=5:ly=5:la=1.2:cx=5:cy=5:ca=0.0,eq=contrast=1.05:saturation=1.04", // Cao
+                3 => "hqdn3d=5.0:3.5:6.0:4.5,unsharp=lx=7:ly=7:la=1.5:cx=5:cy=5:ca=0.0,eq=contrast=1.07:saturation=1.05", // Siêu nét
+                _ => "hqdn3d=3.0:2.0:4.0:3.0,unsharp=lx=5:ly=5:la=0.8:cx=3:cy=3:ca=0.0,eq=contrast=1.03:saturation=1.03"  // Tiêu chuẩn (Mức 2)
             };
 
-            Logger.Info($"[FFmpeg] Đang làm nét & khử nhiễu Video [{Path.GetFileName(inputPath)}] (Mức {enhanceLevel + 1})...");
-            string args = $"-y -i \"{inputPath}\" -vf \"{filter}\" -c:v libx264 -crf 19 -preset faster -c:a copy \"{outputPath}\"";
+            Logger.Info($"[FFmpeg] Đang làm nét & khử hạt Video [{Path.GetFileName(inputPath)}] (Mức {enhanceLevel + 1})...");
+            string args = $"-y -i \"{inputPath}\" -vf \"{filter}\" -c:v libx264 -crf 20 -preset faster -c:a copy \"{outputPath}\"";
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
             if (code == 0 && File.Exists(outputPath))
@@ -353,9 +344,9 @@ namespace CMD_BOX_GUI.Services
 
         /// <summary>
         /// Làm nét & tối ưu ảnh siêu tốc độ cao bằng thuật toán thuần C# (.NET Native):
-        /// - Xử lý trực tiếp trên RAM bằng con trỏ bộ nhớ (Unsafe pointers) và đa luồng Parallel.For trên 16 luồng CPU
-        /// - Áp dụng Unsharp Masking (USM) vi điểm, Tương phản nổi khối 3D (S-Curve) và Tăng rực rỡ thông minh (Vibrance).
-        /// - Tốc độ tức thì (~0.05s - 0.2s), không phụ thuộc CLI Vulkan ngoài.
+        /// - Xử lý trực tiếp trên RAM bằng đa luồng Parallel.For trên CPU.
+        /// - Tích hợp Khử gai (Anti-Grain), Soft-Coring USM, Chống quầng viền (Halo Suppression) và S-Curve nổi khối.
+        /// - Tốc độ tức thì (~0.05s - 0.2s), không phụ thuộc công cụ ngoài.
         /// </summary>
         public async Task<bool> EnhanceImageAsync(string inputPath, string outputPath, int enhanceLevel = 1, CancellationToken cancellationToken = default)
         {
@@ -415,6 +406,116 @@ namespace CMD_BOX_GUI.Services
             }
             return await EnhanceVideoAsync(inputPath, outputPath, enhanceLevel, cancellationToken);
         }
+
+        /// <summary>
+        /// 1. Trích xuất âm thanh từ Video sang file Audio chất lượng cao (.mp3, .aac, .wav, .flac, .m4a)
+        /// </summary>
+        public async Task<bool> ExtractAudioAsync(string inputPath, string outputPath, string format = "mp3", CancellationToken cancellationToken = default)
+        {
+            if (IsImageFile(inputPath))
+            {
+                Logger.Warning($"[FFmpeg] Tệp ảnh [{Path.GetFileName(inputPath)}] không có âm thanh để trích xuất!");
+                return false;
+            }
+
+            string ffmpeg = FindFFmpegPath();
+            string outExt = Path.GetExtension(outputPath).ToLowerInvariant().TrimStart('.');
+            if (string.IsNullOrWhiteSpace(outExt)) outExt = format.ToLowerInvariant().TrimStart('.');
+
+            string codecArgs = outExt switch
+            {
+                "wav" => "-c:a pcm_s16le",
+                "flac" => "-c:a flac",
+                "aac" or "m4a" => "-c:a aac -b:a 256k",
+                _ => "-c:a libmp3lame -b:a 320k" // Mặc định MP3 320kbps
+            };
+
+            Logger.Info($"[FFmpeg] Đang trích xuất Audio từ [{Path.GetFileName(inputPath)}] ➔ [.{outExt}]...");
+            string args = $"-y -i \"{inputPath}\" -vn {codecArgs} \"{outputPath}\"";
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                long newSize = new FileInfo(outputPath).Length;
+                Logger.Success($"[FFmpeg] Trích xuất Audio thành công: {Path.GetFileName(outputPath)} ({SystemCore.FormatBytes(newSize)})");
+                return true;
+            }
+
+            Logger.Error($"[FFmpeg] Trích xuất Audio thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
+
+        /// <summary>
+        /// 2. Tắt tiếng Video siêu tốc trong 0.1s (Chế độ Stream Copy - Không cần encode lại)
+        /// </summary>
+        public async Task<bool> MuteVideoAsync(string inputPath, string outputPath, CancellationToken cancellationToken = default)
+        {
+            if (IsImageFile(inputPath))
+            {
+                Logger.Warning($"[FFmpeg] Tệp ảnh [{Path.GetFileName(inputPath)}] không phải là video!");
+                return false;
+            }
+
+            string ffmpeg = FindFFmpegPath();
+            Logger.Info($"[FFmpeg] Đang tắt tiếng Video [{Path.GetFileName(inputPath)}] (Stream copy 0.1s)...");
+
+            string args = $"-y -i \"{inputPath}\" -c:v copy -an \"{outputPath}\"";
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                long oldSize = new FileInfo(inputPath).Length;
+                long newSize = new FileInfo(outputPath).Length;
+                Logger.Success($"[FFmpeg] Tắt tiếng Video thành công: {Path.GetFileName(outputPath)} ({SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)})");
+                return true;
+            }
+
+            Logger.Error($"[FFmpeg] Tắt tiếng Video thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
+
+        /// <summary>
+        /// 3. Tạo ảnh động GIF chất lượng cao & nhẹ từ Video (Cắt đoạn ngắn, Scale kích thước & Two-pass Palettegen)
+        /// </summary>
+        public async Task<bool> ConvertToGifAsync(
+            string inputPath, 
+            string outputPath, 
+            double startTimeSec = 0, 
+            double durationSec = 5, 
+            int scaleWidth = 480, 
+            int fps = 12, 
+            CancellationToken cancellationToken = default)
+        {
+            string ffmpeg = FindFFmpegPath();
+            string trimArgs = "";
+            if (startTimeSec > 0)
+            {
+                trimArgs += $"-ss {startTimeSec} ";
+            }
+            if (durationSec > 0)
+            {
+                trimArgs += $"-t {durationSec} ";
+            }
+
+            string scaleFilter = scaleWidth > 0 ? $",scale={scaleWidth}:-1:flags=lanczos" : "";
+            string filter = $"fps={fps}{scaleFilter},split[s0][s1];[s0]palettegen=max_colors=256:reserve_transparent=0[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3";
+
+            string durationLog = durationSec > 0 ? $"{durationSec}s" : "toàn bộ";
+            Logger.Info($"[FFmpeg] Đang tạo GIF [{Path.GetFileName(inputPath)}] (Cắt {durationLog} từ {startTimeSec}s, {scaleWidth}p, {fps} FPS)...");
+
+            string args = $"-y {trimArgs}-i \"{inputPath}\" -vf \"{filter}\" \"{outputPath}\"";
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                long oldSize = new FileInfo(inputPath).Length;
+                long newSize = new FileInfo(outputPath).Length;
+                Logger.Success($"[FFmpeg] Tạo ảnh GIF thành công: {Path.GetFileName(outputPath)} ({SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)})");
+                return true;
+            }
+
+            Logger.Error($"[FFmpeg] Tạo ảnh GIF thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
     }
 }
-

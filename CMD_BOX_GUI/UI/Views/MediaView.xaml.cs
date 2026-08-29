@@ -92,16 +92,20 @@ namespace CMD_BOX_GUI.UI.Views
         // ================= DROPDOWN CHỌN TÍNH NĂNG (TÁC VỤ) =================
         private void CmbActionFeature_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (PnlOptionCompress == null || PnlOptionConvert == null || PnlOptionEnhance == null) return;
+            if (PnlOptionCompress == null || PnlOptionConvert == null || PnlOptionEnhance == null ||
+                PnlOptionExtractAudio == null || PnlOptionMuteVideo == null || PnlOptionMakeGif == null) return;
 
             PnlOptionCompress.Visibility = Visibility.Collapsed;
             PnlOptionConvert.Visibility = Visibility.Collapsed;
             PnlOptionEnhance.Visibility = Visibility.Collapsed;
+            PnlOptionExtractAudio.Visibility = Visibility.Collapsed;
+            PnlOptionMuteVideo.Visibility = Visibility.Collapsed;
+            PnlOptionMakeGif.Visibility = Visibility.Collapsed;
 
             int index = CmbActionFeature.SelectedIndex;
             switch (index)
             {
-                case 0: // Nén tệp cố định ~30%
+                case 0: // Nén tệp cố định ~40%
                     PnlOptionCompress.Visibility = Visibility.Visible;
                     break;
                 case 1: // Đổi định dạng
@@ -109,6 +113,15 @@ namespace CMD_BOX_GUI.UI.Views
                     break;
                 case 2: // Làm nét theo n mức độ
                     PnlOptionEnhance.Visibility = Visibility.Visible;
+                    break;
+                case 3: // Trích xuất Audio
+                    PnlOptionExtractAudio.Visibility = Visibility.Visible;
+                    break;
+                case 4: // Tắt tiếng Video
+                    PnlOptionMuteVideo.Visibility = Visibility.Visible;
+                    break;
+                case 5: // Tạo ảnh động GIF
+                    PnlOptionMakeGif.Visibility = Visibility.Visible;
                     break;
             }
         }
@@ -289,6 +302,34 @@ namespace CMD_BOX_GUI.UI.Views
                 _ => 1  // Tiêu chuẩn
             };
 
+            int audioFormatIndex = CmbAudioFormat?.SelectedIndex ?? 0;
+            string audioFormat = audioFormatIndex switch
+            {
+                1 => "aac",
+                2 => "wav",
+                3 => "flac",
+                4 => "m4a",
+                _ => "mp3"
+            };
+
+            // Cấu hình GIF (Mặc định 480p @ 12 FPS, hỗ trợ cắt đoạn ngắn)
+            double gifStartSec = 0;
+            if (TxtGifStart != null && double.TryParse(TxtGifStart.Text.Trim(), out double parsedStart) && parsedStart >= 0)
+            {
+                gifStartSec = parsedStart;
+            }
+
+            double gifDurationSec = CmbGifDuration?.SelectedIndex switch
+            {
+                0 => 3,   // 3 giây
+                1 => 5,   // 5 giây (Chuẩn)
+                2 => 10,  // 10 giây
+                _ => 5
+            };
+
+            const int gifScaleWidth = 480; // Chuẩn 480p nhẹ & nét
+            const int gifFps = 12;        // Chuẩn 12 FPS mượt mà
+
             await Task.Run(async () =>
             {
                 for (int i = 0; i < _mediaItems.Count; i++)
@@ -319,7 +360,7 @@ namespace CMD_BOX_GUI.UI.Views
                     {
                         switch (actionIndex)
                         {
-                            case 0: // Nén tệp cố định ~30%
+                            case 0: // Nén tệp cố định ~40%
                                 outPath = Path.Combine(outDir, $"{baseName}_compressed{origExt}");
                                 ok = await _media.CompressMediaAsync(item.FilePath, outPath, 1, token);
                                 break;
@@ -329,9 +370,24 @@ namespace CMD_BOX_GUI.UI.Views
                                 ok = await _media.ConvertMediaFormatAsync(item.FilePath, outPath, token);
                                 break;
 
-                            case 2: // Làm nét theo n cấp độ (Hybrid AI FFmpeg + Vulkan)
+                            case 2: // Làm nét theo n cấp độ
                                 outPath = Path.Combine(outDir, $"{baseName}_enhanced{targetExt}");
                                 ok = await _media.EnhanceMediaAsync(item.FilePath, outPath, enhanceLevel, token);
+                                break;
+
+                            case 3: // 1. Trích xuất âm thanh (Video ➔ MP3/AAC/WAV/FLAC/M4A)
+                                outPath = Path.Combine(outDir, $"{baseName}_audio.{audioFormat}");
+                                ok = await _media.ExtractAudioAsync(item.FilePath, outPath, audioFormat, token);
+                                break;
+
+                            case 4: // 2. Tắt tiếng Video (Stream Copy 0.1s)
+                                outPath = Path.Combine(outDir, $"{baseName}_muted{origExt}");
+                                ok = await _media.MuteVideoAsync(item.FilePath, outPath, token);
+                                break;
+
+                            case 5: // 3. Tạo ảnh động GIF (Cắt đoạn ngắn + 480p @ 12 FPS)
+                                outPath = Path.Combine(outDir, $"{baseName}_anim.gif");
+                                ok = await _media.ConvertToGifAsync(item.FilePath, outPath, gifStartSec, gifDurationSec, gifScaleWidth, gifFps, token);
                                 break;
 
                             default:
@@ -416,6 +472,9 @@ namespace CMD_BOX_GUI.UI.Views
             BtnBrowseFfmpeg.IsEnabled = !running;
             CmbActionFeature.IsEnabled = !running;
             CmbEnhanceLevel.IsEnabled = !running;
+            if (CmbAudioFormat != null) CmbAudioFormat.IsEnabled = !running;
+            if (TxtGifStart != null) TxtGifStart.IsEnabled = !running;
+            if (CmbGifDuration != null) CmbGifDuration.IsEnabled = !running;
             DgMediaFiles.IsEnabled = !running;
         }
     }

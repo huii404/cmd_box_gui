@@ -16,25 +16,29 @@ namespace CMD_BOX_GUI.Core
             CancellationToken cancellationToken = default,
             bool runAsAdmin = false)
         {
+            bool elevate = runAsAdmin && !SystemCore.IsAdministrator();
+
             var psi = new ProcessStartInfo
             {
                 FileName = fileName,
-                Arguments = arguments,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8
+                Arguments = arguments
             };
 
-            if (runAsAdmin && !SystemCore.IsAdministrator())
+            if (elevate)
             {
                 psi.Verb = "runas";
                 psi.UseShellExecute = true;
-                psi.RedirectStandardOutput = false;
-                psi.RedirectStandardError = false;
-                psi.CreateNoWindow = false;
+                psi.CreateNoWindow = true;
+                psi.WindowStyle = ProcessWindowStyle.Hidden;
+            }
+            else
+            {
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
+                psi.StandardOutputEncoding = Encoding.UTF8;
+                psi.StandardErrorEncoding = Encoding.UTF8;
             }
 
             using var process = new Process { StartInfo = psi };
