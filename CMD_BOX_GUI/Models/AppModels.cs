@@ -1,44 +1,25 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.CompilerServices;
+using CMD_BOX_GUI.Core;
+
 namespace CMD_BOX_GUI.Models
 {
-    public class CleanCategory
-    {
-        public string Title { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public bool IsSelected { get; set; } = true;
-        public string TargetPath { get; set; } = string.Empty;
-        public long EstimatedBytes { get; set; }
-    }
-
-    public class DriveStorageInfo
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Label { get; set; } = string.Empty;
-        public string DriveType { get; set; } = string.Empty;
-        public string Format { get; set; } = string.Empty;
-        public long TotalBytes { get; set; }
-        public long FreeBytes { get; set; }
-        public long UsedBytes { get; set; }
-        public double UsedPercent { get; set; }
-        public string TotalFormatted { get; set; } = string.Empty;
-        public string FreeFormatted { get; set; } = string.Empty;
-        public string UsedFormatted { get; set; } = string.Empty;
-        public string SummaryText { get; set; } = string.Empty;
-        public string StatusColor { get; set; } = "#06B6D4";
-    }
-
-    public class MediaBatchItem : System.ComponentModel.INotifyPropertyChanged
+    public class MediaBatchItem : INotifyPropertyChanged
     {
         public string FilePath { get; set; } = string.Empty;
-        public string FileName => System.IO.Path.GetFileName(FilePath);
-        public string FileExtension => System.IO.Path.GetExtension(FilePath).ToUpperInvariant();
+        public string FileName => Path.GetFileName(FilePath);
+        public string FileExtension => Path.GetExtension(FilePath).ToUpperInvariant();
         public long FileSizeBytes { get; set; }
-        public string FileSizeFormatted => Core.SystemCore.FormatBytes(FileSizeBytes);
+        public string FileSizeFormatted => SystemCore.FormatBytes(FileSizeBytes);
 
         public bool IsImage { get; set; }
         public bool IsVideo { get; set; }
         public string MediaTypeText => IsImage ? "Ảnh 🖼️" : (IsVideo ? "Video 🎥" : "Tệp 📄");
 
-        public System.Collections.Generic.List<string> AvailableExtensions { get; set; } = new();
+        public List<string> AvailableExtensions { get; set; } = new();
 
         private string _targetExtension = string.Empty;
         public string TargetExtension
@@ -47,7 +28,7 @@ namespace CMD_BOX_GUI.Models
             set { _targetExtension = value; OnPropertyChanged(); }
         }
 
-        private long _processedSizeBytes = 0;
+        private long _processedSizeBytes;
         public long ProcessedSizeBytes
         {
             get => _processedSizeBytes;
@@ -60,7 +41,7 @@ namespace CMD_BOX_GUI.Models
             }
         }
 
-        public string ProcessedSizeFormatted => _processedSizeBytes > 0 ? Core.SystemCore.FormatBytes(_processedSizeBytes) : "--";
+        public string ProcessedSizeFormatted => _processedSizeBytes > 0 ? SystemCore.FormatBytes(_processedSizeBytes) : "--";
 
         public string CompressionRatio
         {
@@ -86,30 +67,16 @@ namespace CMD_BOX_GUI.Models
             set { _statusColor = value; OnPropertyChanged(); }
         }
 
-        private double _progressPercent = 0;
-        public double ProgressPercent
-        {
-            get => _progressPercent;
-            set { _progressPercent = value; OnPropertyChanged(); }
-        }
-
         private string _outputPath = string.Empty;
         public string OutputPath
         {
             get => _outputPath;
-            set
-            {
-                _outputPath = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CanCompare));
-            }
+            set { _outputPath = value; OnPropertyChanged(); }
         }
 
-        public bool CanCompare => IsImage && !string.IsNullOrWhiteSpace(_outputPath) && System.IO.File.Exists(_outputPath);
-
-        public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? name = null)
-            => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(name));
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
     public class AppSettings
@@ -117,9 +84,6 @@ namespace CMD_BOX_GUI.Models
         public bool IsDarkMode { get; set; } = true;
         public bool AllowAdminCmd { get; set; } = true;
         public string LastSelectedTab { get; set; } = "Optimizer";
-        public string CustomOutputDir { get; set; } = string.Empty;
-        public int DefaultCrf { get; set; } = 26;
-        public int AutoRefreshIntervalSec { get; set; } = 3;
         public DateTime LastSavedTime { get; set; } = DateTime.Now;
     }
 }

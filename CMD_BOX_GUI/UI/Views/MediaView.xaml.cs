@@ -21,7 +21,6 @@ namespace CMD_BOX_GUI.UI.Views
         private string _lastOutputDir = string.Empty;
         private CancellationTokenSource? _batchCts;
         private bool _isBatchRunning = false;
-
         private bool _isFfmpegChecked = false;
 
         public MediaView()
@@ -36,36 +35,16 @@ namespace CMD_BOX_GUI.UI.Views
             if (!_isFfmpegChecked)
             {
                 _isFfmpegChecked = true;
-                // Chạy kiểm tra nền không làm block luồng UI khi chuyển tab (0ms lag)
                 _ = Task.Run(async () =>
                 {
-                    var (ffmpegOk, ffmpegPath, ffmpegInfo) = await _media.GetFFmpegStatusAsync();
+                    var (ok, path, info) = await _media.GetFFmpegStatusAsync();
                     Dispatcher.Invoke(() =>
                     {
-                        if (ffmpegOk)
-                        {
-                            BtnBrowseFfmpeg.ToolTip = $"FFmpeg: Sẵn sàng hoạt động\n{ffmpegInfo}\nĐường dẫn: {ffmpegPath}";
-                        }
-                        else
-                        {
-                            BtnBrowseFfmpeg.ToolTip = "FFmpeg: Chưa tìm thấy!\nBấm vào đây để chỉ định tệp ffmpeg.exe thủ công (Dùng cho Nén & Video)";
-                        }
+                        BtnBrowseFfmpeg.ToolTip = ok
+                            ? $"FFmpeg: Sẵn sàng\n{info}\nĐường dẫn: {path}"
+                            : "FFmpeg: Chưa tìm thấy!\nBấm để chọn file ffmpeg.exe thủ công";
                     });
                 });
-            }
-        }
-
-        // ================= KIỂM TRA & DÒ TÌM FFMPEG =================
-        private async Task CheckFFmpegStatusAsync(bool forceRefresh = false)
-        {
-            var (ffmpegOk, ffmpegPath, ffmpegInfo) = await _media.GetFFmpegStatusAsync(forceRefresh);
-            if (ffmpegOk)
-            {
-                BtnBrowseFfmpeg.ToolTip = $"FFmpeg: Sẵn sàng hoạt động\n{ffmpegInfo}\nĐường dẫn: {ffmpegPath}";
-            }
-            else
-            {
-                BtnBrowseFfmpeg.ToolTip = "FFmpeg: Chưa tìm thấy!\nBấm vào đây để chỉ định tệp ffmpeg.exe thủ công (Dùng cho Nén & Video)";
             }
         }
 
@@ -74,22 +53,18 @@ namespace CMD_BOX_GUI.UI.Views
             var dlg = new OpenFileDialog
             {
                 Title = "Chọn tệp thực thi ffmpeg.exe",
-                Filter = "FFmpeg Executable (ffmpeg.exe)|ffmpeg.exe|All Files (*.*)|*.*"
+                Filter = "FFmpeg (ffmpeg.exe)|ffmpeg.exe|All Files (*.*)|*.*"
             };
 
-            if (dlg.ShowDialog() == true)
+            if (dlg.ShowDialog() == true && File.Exists(dlg.FileName))
             {
-                string chosen = dlg.FileName;
-                if (File.Exists(chosen))
-                {
-                    _media.SetManualFfmpegPath(chosen);
-                    await CheckFFmpegStatusAsync(forceRefresh: true);
-                    MessageBox.Show($"Đã cấu hình FFmpeg thành công:\n{chosen}", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
+                _media.SetManualFfmpegPath(dlg.FileName);
+                var (ok, path, info) = await _media.GetFFmpegStatusAsync(true);
+                BtnBrowseFfmpeg.ToolTip = ok ? $"FFmpeg: Sẵn sàng\n{info}\nĐường dẫn: {path}" : "FFmpeg lỗi";
+                MessageBox.Show($"Đã cấu hình FFmpeg thành công:\n{dlg.FileName}", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
-        // ================= DROPDOWN CHỌN TÍNH NĂNG (TÁC VỤ) =================
         private void CmbActionFeature_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (PnlOptionCompress == null || PnlOptionConvert == null || PnlOptionEnhance == null ||
@@ -102,112 +77,65 @@ namespace CMD_BOX_GUI.UI.Views
             PnlOptionMuteVideo.Visibility = Visibility.Collapsed;
             PnlOptionMakeGif.Visibility = Visibility.Collapsed;
 
-            int index = CmbActionFeature.SelectedIndex;
-            switch (index)
+            switch (CmbActionFeature.SelectedIndex)
             {
-                case 0: // Nén tệp cố định ~40%
-                    PnlOptionCompress.Visibility = Visibility.Visible;
-                    break;
-                case 1: // Đổi định dạng
-                    PnlOptionConvert.Visibility = Visibility.Visible;
-                    break;
-                case 2: // Làm nét theo n mức độ
-                    PnlOptionEnhance.Visibility = Visibility.Visible;
-                    break;
-                case 3: // Trích xuất Audio
-                    PnlOptionExtractAudio.Visibility = Visibility.Visible;
-                    break;
-                case 4: // Tắt tiếng Video
-                    PnlOptionMuteVideo.Visibility = Visibility.Visible;
-                    break;
-                case 5: // Tạo ảnh động GIF
-                    PnlOptionMakeGif.Visibility = Visibility.Visible;
-                    break;
+                case 0: PnlOptionCompress.Visibility = Visibility.Visible; break;
+                case 1: PnlOptionConvert.Visibility = Visibility.Visible; break;
+                case 2: PnlOptionEnhance.Visibility = Visibility.Visible; break;
+                case 3: PnlOptionExtractAudio.Visibility = Visibility.Visible; break;
+                case 4: PnlOptionMuteVideo.Visibility = Visibility.Visible; break;
+                case 5: PnlOptionMakeGif.Visibility = Visibility.Visible; break;
             }
         }
 
-        // ================= QUẢN LÝ DANH SÁCH BẢNG MEDIA =================
         private void BtnAddFiles_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new OpenFileDialog
             {
-                Title = "Chọn các tệp Ảnh hoặc Video cần xử lý",
-                Filter = "Media Files (*.mp4;*.mkv;*.avi;*.mov;*.webm;*.jpg;*.jpeg;*.png;*.webp;*.bmp;*.gif)|*.mp4;*.mkv;*.avi;*.mov;*.webm;*.jpg;*.jpeg;*.png;*.webp;*.bmp;*.gif|Image Files (*.jpg;*.jpeg;*.png;*.webp;*.bmp;*.ico;*.gif)|*.jpg;*.jpeg;*.png;*.webp;*.bmp;*.ico;*.gif|Video Files (*.mp4;*.mkv;*.avi;*.mov;*.webm;*.flv;*.wmv)|*.mp4;*.mkv;*.avi;*.mov;*.webm;*.flv;*.wmv|All Files (*.*)|*.*",
+                Title = "Chọn các tệp Media",
+                Filter = "Media Files|*.mp4;*.mkv;*.avi;*.mov;*.webm;*.jpg;*.jpeg;*.png;*.webp;*.bmp;*.gif|All Files (*.*)|*.*",
                 Multiselect = true
             };
 
             if (dlg.ShowDialog() == true)
             {
-                foreach (var file in dlg.FileNames)
-                {
-                    AddMediaFile(file);
-                }
+                foreach (var file in dlg.FileNames) AddMediaFile(file);
                 UpdateTableNotice();
             }
         }
 
         private void BtnAddFolder_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new OpenFolderDialog
-            {
-                Title = "Chọn thư mục chứa các tệp Media (Ảnh & Video)"
-            };
-
+            var dlg = new OpenFolderDialog { Title = "Chọn thư mục Media" };
             if (dlg.ShowDialog() == true)
             {
-                string folder = dlg.FolderName;
-                if (Directory.Exists(folder))
-                {
-                    var files = Directory.GetFiles(folder)
-                        .Where(f => MediaService.IsImageFile(f) || MediaService.IsVideoFile(f));
-
-                    foreach (var file in files)
-                    {
-                        AddMediaFile(file);
-                    }
-                    UpdateTableNotice();
-                }
+                var files = Directory.GetFiles(dlg.FolderName, "*.*", SearchOption.TopDirectoryOnly)
+                    .Where(f => MediaService.IsImageFile(f) || MediaService.IsVideoFile(f));
+                foreach (var file in files) AddMediaFile(file);
+                UpdateTableNotice();
             }
         }
 
         private void MediaGrid_DragOver(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                e.Effects = DragDropEffects.Copy;
-            }
-            else
-            {
-                e.Effects = DragDropEffects.None;
-            }
+            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
             e.Handled = true;
         }
 
         private void MediaGrid_Drop(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            if (e.Data.GetDataPresent(DataFormats.FileDrop) && e.Data.GetData(DataFormats.FileDrop) is string[] files)
             {
-                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                if (files != null && files.Length > 0)
+                foreach (var path in files)
                 {
-                    foreach (var path in files)
+                    if (File.Exists(path)) AddMediaFile(path);
+                    else if (Directory.Exists(path))
                     {
-                        if (File.Exists(path))
-                        {
-                            AddMediaFile(path);
-                        }
-                        else if (Directory.Exists(path))
-                        {
-                            var dirFiles = Directory.GetFiles(path)
-                                .Where(f => MediaService.IsImageFile(f) || MediaService.IsVideoFile(f));
-                            foreach (var df in dirFiles)
-                            {
-                                AddMediaFile(df);
-                            }
-                        }
+                        var dirFiles = Directory.GetFiles(path).Where(f => MediaService.IsImageFile(f) || MediaService.IsVideoFile(f));
+                        foreach (var df in dirFiles) AddMediaFile(df);
                     }
-                    UpdateTableNotice();
                 }
+                UpdateTableNotice();
             }
         }
 
@@ -218,18 +146,15 @@ namespace CMD_BOX_GUI.UI.Views
 
             bool isImg = MediaService.IsImageFile(filePath);
             bool isVid = MediaService.IsVideoFile(filePath);
-            var availableExts = MediaService.GetAvailableExtensions(filePath);
-            string defaultTargetExt = isImg ? ".png" : (isVid ? ".mp4" : Path.GetExtension(filePath).ToLowerInvariant());
 
-            var info = new FileInfo(filePath);
             _mediaItems.Add(new MediaBatchItem
             {
                 FilePath = filePath,
-                FileSizeBytes = info.Length,
+                FileSizeBytes = new FileInfo(filePath).Length,
                 IsImage = isImg,
                 IsVideo = isVid,
-                AvailableExtensions = availableExts,
-                TargetExtension = defaultTargetExt,
+                AvailableExtensions = MediaService.GetAvailableExtensions(filePath),
+                TargetExtension = MediaService.GetDefaultTargetExtension(filePath),
                 Status = "⚪ Sẵn sàng",
                 StatusColor = "#9CA3AF"
             });
@@ -237,12 +162,7 @@ namespace CMD_BOX_GUI.UI.Views
 
         private void BtnRemoveItem_Click(object sender, RoutedEventArgs e)
         {
-            if (_isBatchRunning)
-            {
-                MessageBox.Show("Tác vụ đang chạy, không thể xóa dòng lúc này!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
+            if (_isBatchRunning) return;
             if (sender is Button btn && btn.DataContext is MediaBatchItem item)
             {
                 _mediaItems.Remove(item);
@@ -252,12 +172,7 @@ namespace CMD_BOX_GUI.UI.Views
 
         private void BtnClearTable_Click(object sender, RoutedEventArgs e)
         {
-            if (_isBatchRunning)
-            {
-                MessageBox.Show("Tác vụ đang chạy, không thể xóa bảng lúc này!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
+            if (_isBatchRunning) return;
             _mediaItems.Clear();
             UpdateTableNotice();
         }
@@ -269,7 +184,6 @@ namespace CMD_BOX_GUI.UI.Views
             PnlEmptyNotice.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        // ================= THỰC THI XỬ LÝ HÀNG LOẠT =================
         private async void BtnStartBatch_Click(object sender, RoutedEventArgs e)
         {
             if (_isBatchRunning)
@@ -281,7 +195,7 @@ namespace CMD_BOX_GUI.UI.Views
 
             if (_mediaItems.Count == 0)
             {
-                MessageBox.Show("Vui lòng thêm ít nhất một tệp Ảnh hoặc Video vào danh sách!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Vui lòng thêm ít nhất một tệp Media vào danh sách!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -296,14 +210,13 @@ namespace CMD_BOX_GUI.UI.Views
             int actionIndex = CmbActionFeature.SelectedIndex;
             int enhanceLevel = CmbEnhanceLevel?.SelectedIndex switch
             {
-                0 => 0, // Nhẹ
-                2 => 2, // Cao
-                3 => 3, // Siêu nét
-                _ => 1  // Tiêu chuẩn
+                0 => 0,
+                2 => 2,
+                3 => 3,
+                _ => 1
             };
 
-            int audioFormatIndex = CmbAudioFormat?.SelectedIndex ?? 0;
-            string audioFormat = audioFormatIndex switch
+            string audioFormat = (CmbAudioFormat?.SelectedIndex ?? 0) switch
             {
                 1 => "aac",
                 2 => "wav",
@@ -312,7 +225,6 @@ namespace CMD_BOX_GUI.UI.Views
                 _ => "mp3"
             };
 
-            // Cấu hình GIF (Mặc định 480p @ 12 FPS, hỗ trợ cắt đoạn ngắn)
             double gifStartSec = 0;
             if (TxtGifStart != null && double.TryParse(TxtGifStart.Text.Trim(), out double parsedStart) && parsedStart >= 0)
             {
@@ -321,23 +233,20 @@ namespace CMD_BOX_GUI.UI.Views
 
             double gifDurationSec = CmbGifDuration?.SelectedIndex switch
             {
-                0 => 3,   // 3 giây
-                1 => 5,   // 5 giây (Chuẩn)
-                2 => 10,  // 10 giây
+                0 => 3,
+                1 => 5,
+                2 => 10,
                 _ => 5
             };
 
-            const int gifScaleWidth = 480; // Chuẩn 480p nhẹ & nét
-            const int gifFps = 12;        // Chuẩn 12 FPS mượt mà
+            const int gifScaleWidth = 480;
+            const int gifFps = 12;
 
             await Task.Run(async () =>
             {
                 for (int i = 0; i < _mediaItems.Count; i++)
                 {
-                    if (token.IsCancellationRequested || SystemCore.CheckEmergencyStop())
-                    {
-                        break;
-                    }
+                    if (token.IsCancellationRequested || SystemCore.CheckEmergencyStop()) break;
 
                     var item = _mediaItems[i];
                     Dispatcher.Invoke(() =>
@@ -360,36 +269,30 @@ namespace CMD_BOX_GUI.UI.Views
                     {
                         switch (actionIndex)
                         {
-                            case 0: // Nén tệp cố định ~40%
+                            case 0:
                                 outPath = Path.Combine(outDir, $"{baseName}_compressed{origExt}");
                                 ok = await _media.CompressMediaAsync(item.FilePath, outPath, 1, token);
                                 break;
-
-                            case 1: // Đổi định dạng
+                            case 1:
                                 outPath = Path.Combine(outDir, $"{baseName}_converted{targetExt}");
                                 ok = await _media.ConvertMediaFormatAsync(item.FilePath, outPath, token);
                                 break;
-
-                            case 2: // Làm nét theo n cấp độ
+                            case 2:
                                 outPath = Path.Combine(outDir, $"{baseName}_enhanced{targetExt}");
                                 ok = await _media.EnhanceMediaAsync(item.FilePath, outPath, enhanceLevel, token);
                                 break;
-
-                            case 3: // 1. Trích xuất âm thanh (Video ➔ MP3/AAC/WAV/FLAC/M4A)
+                            case 3:
                                 outPath = Path.Combine(outDir, $"{baseName}_audio.{audioFormat}");
                                 ok = await _media.ExtractAudioAsync(item.FilePath, outPath, audioFormat, token);
                                 break;
-
-                            case 4: // 2. Tắt tiếng Video (Stream Copy 0.1s)
+                            case 4:
                                 outPath = Path.Combine(outDir, $"{baseName}_muted{origExt}");
                                 ok = await _media.MuteVideoAsync(item.FilePath, outPath, token);
                                 break;
-
-                            case 5: // 3. Tạo ảnh động GIF (Cắt đoạn ngắn + 480p @ 12 FPS)
+                            case 5:
                                 outPath = Path.Combine(outDir, $"{baseName}_anim.gif");
                                 ok = await _media.ConvertToGifAsync(item.FilePath, outPath, gifStartSec, gifDurationSec, gifScaleWidth, gifFps, token);
                                 break;
-
                             default:
                                 outPath = Path.Combine(outDir, $"{baseName}_output{origExt}");
                                 ok = false;
@@ -421,7 +324,6 @@ namespace CMD_BOX_GUI.UI.Views
                             item.Status = "❌ Thất bại";
                             item.StatusColor = "#EF4444";
                         }
-
                         PbBatchTotal.Value = i + 1;
                     });
                 }
@@ -434,7 +336,6 @@ namespace CMD_BOX_GUI.UI.Views
         private void BtnOpenResultFolder_Click(object sender, RoutedEventArgs e)
         {
             string dirToOpen = _lastOutputDir;
-
             if (string.IsNullOrWhiteSpace(dirToOpen) || !Directory.Exists(dirToOpen))
             {
                 if (_mediaItems.Count > 0 && File.Exists(_mediaItems[0].FilePath))
@@ -445,11 +346,7 @@ namespace CMD_BOX_GUI.UI.Views
 
             if (!string.IsNullOrWhiteSpace(dirToOpen) && Directory.Exists(dirToOpen))
             {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = dirToOpen,
-                    UseShellExecute = true
-                });
+                Process.Start(new ProcessStartInfo { FileName = dirToOpen, UseShellExecute = true });
             }
             else
             {
@@ -460,11 +357,8 @@ namespace CMD_BOX_GUI.UI.Views
         private void SetBatchRunning(bool running)
         {
             PbBatchTotal.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
-
             BtnStartBatch.Content = running ? "🛑 Dừng Lại" : "🚀 Bắt Đầu";
-            BtnStartBatch.Style = running 
-                ? (Style)FindResource("DangerButton") 
-                : (Style)FindResource("PrimaryButton");
+            BtnStartBatch.Style = (Style)FindResource(running ? "DangerButton" : "PrimaryButton");
 
             BtnAddFiles.IsEnabled = !running;
             BtnAddFolder.IsEnabled = !running;
@@ -479,9 +373,3 @@ namespace CMD_BOX_GUI.UI.Views
         }
     }
 }
-
-
-
-
-
-

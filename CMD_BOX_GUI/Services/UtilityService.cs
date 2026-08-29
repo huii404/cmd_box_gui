@@ -4,9 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Xml.Linq;
 using CMD_BOX_GUI.Core;
-using CMD_BOX_GUI.Models;
 
 namespace CMD_BOX_GUI.Services
 {
@@ -15,14 +13,13 @@ namespace CMD_BOX_GUI.Services
         private CancellationTokenSource? _autoClickCts;
         private CancellationTokenSource? _spamCts;
 
-        // 1. AUTO CLICKER
         public async Task StartAutoClickAsync(int x, int y, int clickCount, int intervalMs, IProgress<int>? progress = null)
         {
             _autoClickCts?.Cancel();
             _autoClickCts = new CancellationTokenSource();
             var token = _autoClickCts.Token;
 
-            Logger.Info($"Bắt đầu Auto Click tại ({x}, {y}) | {clickCount} lần | {intervalMs}ms. [ESC/F6 ngắt]");
+            Logger.Info($"Auto Click tại ({x}, {y}) | {clickCount} lần | {intervalMs}ms. [ESC/F6 ngắt]");
 
             await Task.Run(async () =>
             {
@@ -51,7 +48,6 @@ namespace CMD_BOX_GUI.Services
 
         public void StopAutoClick() => _autoClickCts?.Cancel();
 
-        // 2. SPAM TEXT
         public async Task SpamTextAsync(string content, int count, int delayMs, bool autoPressEnter = true)
         {
             _spamCts?.Cancel();
@@ -64,7 +60,6 @@ namespace CMD_BOX_GUI.Services
             await Task.Run(async () =>
             {
                 SafeSetClipboardText(content);
-
                 int executed = 0;
                 for (int i = 0; i < count; i++)
                 {
@@ -92,7 +87,6 @@ namespace CMD_BOX_GUI.Services
 
         public void StopSpamText() => _spamCts?.Cancel();
 
-        // 3. AUTO PASTE MULTI-LINES
         public async Task AutoPasteMultiLinesAsync(string multiLineContent, int delayMs)
         {
             var lines = multiLineContent.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -117,7 +111,6 @@ namespace CMD_BOX_GUI.Services
                     }
 
                     SafeSetClipboardText(line);
-
                     SystemCore.SimulateCtrlV();
                     await Task.Delay(15);
                     SystemCore.SimulateEnter();
@@ -137,10 +130,7 @@ namespace CMD_BOX_GUI.Services
             {
                 try
                 {
-                    Application.Current?.Dispatcher?.Invoke(() =>
-                    {
-                        Clipboard.SetDataObject(text, true);
-                    });
+                    Application.Current?.Dispatcher?.Invoke(() => Clipboard.SetDataObject(text, true));
                     return;
                 }
                 catch
@@ -150,11 +140,10 @@ namespace CMD_BOX_GUI.Services
             }
         }
 
-        // 4. BÁO CÁO PIN LAPTOP (HTML)
         public async Task OpenBatteryReportHtmlAsync()
         {
             string htmlPath = Path.Combine(Path.GetTempPath(), "cmd_battery_report.html");
-            Logger.Info("Đang khởi tạo báo cáo pin HTML từ hệ thống...");
+            Logger.Info("Đang xuất báo cáo pin HTML...");
             await ProcessRunner.RunProcessAsync("powercfg", $"/batteryreport /output \"{htmlPath}\"");
             if (File.Exists(htmlPath))
             {
@@ -163,19 +152,15 @@ namespace CMD_BOX_GUI.Services
             }
         }
 
-        // 5. GỠ BLOATWARE
         public async Task UninstallBloatwareAsync()
         {
             Logger.Info("Đang gỡ bỏ ứng dụng rác Windows...");
-            string psScript = @"
-$apps = @('Microsoft.BingNews','Microsoft.BingWeather','Microsoft.GetHelp','Microsoft.Getstarted','Microsoft.MicrosoftSolitaireCollection','Microsoft.People','Microsoft.SkypeApp','Microsoft.Todos','Microsoft.YourPhone','Microsoft.XboxApp','Microsoft.ZuneMusic','Microsoft.ZuneVideo','Clipchamp.Clipchamp')
-foreach ($app in $apps) { Get-AppxPackage -Name $app -AllUsers | Remove-AppxPackage -EA SilentlyContinue }
-";
-            await ProcessRunner.RunProcessAsync("powershell", $"-NoProfile -Command \"{psScript.Replace(Environment.NewLine, " ")}\"", runAsAdmin: true);
+            string psScript = "$apps = @('Microsoft.BingNews','Microsoft.BingWeather','Microsoft.GetHelp','Microsoft.Getstarted','Microsoft.MicrosoftSolitaireCollection','Microsoft.People','Microsoft.SkypeApp','Microsoft.Todos','Microsoft.YourPhone','Microsoft.XboxApp','Microsoft.ZuneMusic','Microsoft.ZuneVideo','Clipchamp.Clipchamp'); " +
+                              "foreach ($app in $apps) { Get-AppxPackage -Name $app -AllUsers | Remove-AppxPackage -EA SilentlyContinue }";
+            await ProcessRunner.RunProcessAsync("powershell", $"-NoProfile -Command \"{psScript}\"", runAsAdmin: true);
             Logger.Success("Đã gỡ sạch Bloatware!");
         }
 
-        // 6. CÀI PHẦN MỀM NHANH QUA WINGET
         public async Task InstallQuickAppAsync(string appName, string wingetId)
         {
             Logger.Info($"Đang cài đặt phần mềm {appName}...");
