@@ -139,19 +139,22 @@
                 </Expander>
 
                 <!-- MỤC 5: TRUNG TÂM XỬ LÝ MEDIA -->
-                <Expander x:Name="CardMedia" Style="{StaticResource ModernExpander}" Tag="MEDIA FFMPEG VIDEO ANH NEN H264 PNG MP4 CONVERT DOI DUOI TEP">
+                <Expander x:Name="CardMedia" Style="{StaticResource ModernExpander}" Tag="MEDIA FFMPEG VULKAN REAL-ESRGAN AI VIDEO ANH NEN LAM NET H264 PNG MP4 CONVERT DOI DUOI TEP">
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="🎬" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="5. Studio Xử Lý Media: Nén Ảnh / Video &amp; Đổi Đuôi Tệp Tự Nhận Diện" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="5. Studio Xử Lý Media: Nén, Đổi Đuôi &amp; Làm Nét Hybrid AI (FFmpeg + Vulkan)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel>
-                        <TextBlock Text="• Tự động dò tìm FFmpeg đa tầng thông minh:" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Hệ thống tự động quét tìm công cụ ffmpeg.exe trong thư mục ứng dụng hiện tại, các thư mục mẹ cùng cấp (lên đến 5 cấp), các thư mục con (cmd_box_gui, bin, tools, ffmpeg) và biến môi trường PATH. Bạn cũng có thể bấm 'Chọn FFmpeg...' để chỉ định tệp thủ công." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="• Tự động dò tìm FFmpeg &amp; Vulkan Real-ESRGAN đa tầng thông minh:" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Hệ thống tự động quét tìm công cụ ffmpeg.exe và realesrgan-ncnn-vulkan.exe trong Cli_mediaEXE, thư mục ứng dụng hiện tại, các thư mục mẹ cùng cấp (lên đến ổ đĩa gốc), các thư mục con và biến môi trường PATH. Bạn cũng có thể bấm 'FFmpeg' hoặc 'Vulkan AI' để chỉ định tệp thủ công." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+
+                        <TextBlock Text="• Thuật toán Làm Nét Ảnh Hybrid AI (FFmpeg + Vulkan Real-ESRGAN GPU):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Quy trình 3 giai đoạn tối ưu đỉnh cao: 1. FFmpeg tiền xử lý khử nhiễu (hqdn3d), cân bằng màu sắc và tăng tương phản nổi khối 3D; 2. Vulkan GPU (Real-ESRGAN) tái tạo và bổ sung hàng triệu pixel siêu phân giải, khôi phục kết cấu vi mô; 3. FFmpeg hoàn thiện chi tiết vi điểm và mã hóa chất lượng cao nhất." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
                         <TextBlock Text="• Nén Ảnh &amp; Video hàng loạt (Mặc định giảm ~30% dung lượng):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Tự động nhận diện Ảnh hoặc Video: Video được nén bằng thuật toán H.264/AAC với CRF tối ưu, Ảnh được tối ưu hóa theo định dạng (JPG, PNG, WebP). Giảm trung bình 30% dung lượng tệp mà mắt thường gần như không nhận ra sự suy giảm độ nét. Hỗ trợ các mức nén: Nhẹ (~15%), Tiêu chuẩn (~30%), Cao (~50%), Siêu nén (~70%)." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+                        <TextBlock Text="Tự động nhận diện Ảnh hoặc Video: Video được nén bằng thuật toán H.264/AAC với CRF tối ưu, Ảnh được tối ưu hóa theo định dạng (JPG, PNG, WebP). Giảm trung bình 30% dung lượng tệp mà mắt thường gần như không nhận ra sự suy giảm độ nét." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
                         <TextBlock Text="• Đổi đuôi tệp hàng loạt (Tự động nhận diện Ảnh ➔ .png | Video ➔ .mp4):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPurple}" Margin="0,0,0,4"/>
                         <TextBlock Text="Khi thêm file vào danh sách, hệ thống tự động phân loại: nếu là Ảnh sẽ mặc định chuyển sang .png (hoặc chọn .jpg, .webp, .bmp, .ico...), nếu là Video sẽ mặc định chuyển sang .mp4 (hoặc chọn .mkv, .avi, .mov, .webm...). Quá trình chuyển đổi đảm bảo tương thích mọi nền tảng." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>

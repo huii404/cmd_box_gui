@@ -30,7 +30,7 @@
                     <Button x:Name="BtnAddFiles" Content="➕ Thêm Ảnh / Video" Style="{StaticResource PrimaryButton}" Margin="0,0,8,0" Padding="12,6" FontSize="11" Click="BtnAddFiles_Click"/>
                     <Button x:Name="BtnAddFolder" Content="📁 Thêm Cả Thư Mục" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Padding="10,6" FontSize="11" Click="BtnAddFolder_Click"/>
                     <Button x:Name="BtnClearTable" Content="🗑️ Xóa Hết" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Padding="10,6" FontSize="11" Click="BtnClearTable_Click"/>
-                    <Button x:Name="BtnBrowseFfmpeg" Content="⚙️ Chọn FFmpeg..." Style="{StaticResource SecondaryButton}" Padding="10,6" FontSize="11" Click="BtnBrowseFfmpeg_Click" ToolTip="Chỉ định vị trí tệp ffmpeg.exe thủ công nếu cần"/>
+                    <Button x:Name="BtnBrowseFfmpeg" Content="⚙️ Chọn FFmpeg..." Style="{StaticResource SecondaryButton}" Padding="10,6" FontSize="11" Click="BtnBrowseFfmpeg_Click" ToolTip="Cấu hình vị trí ffmpeg.exe (dùng cho Video, Nén file &amp; Đổi đuôi)"/>
                 </StackPanel>
 
                 <!-- Thống kê số lượng tệp -->
@@ -141,12 +141,13 @@
                             <!-- 3. Cấu hình cho LÀM NÉT (Dropdown n mức độ) -->
                             <StackPanel x:Name="PnlOptionEnhance" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
                                 <TextBlock Text="Mức độ làm nét:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <ComboBox x:Name="CmbEnhanceLevel" Style="{StaticResource FlatComboBox}" Width="270" Height="28">
-                                    <ComboBoxItem Content="Mức 1: Nhẹ (Khử mờ nhẹ, nét tự nhiên)"/>
-                                    <ComboBoxItem Content="Mức 2: Tiêu chuẩn (Khử nhiễu &amp; Làm nét chuẩn)" IsSelected="True"/>
-                                    <ComboBoxItem Content="Mức 3: Cao (Tăng nét mạnh, tương phản rõ)"/>
-                                    <ComboBoxItem Content="Mức 4: Siêu nét (Làm nét tối đa + Chi tiết cao)"/>
+                                <ComboBox x:Name="CmbEnhanceLevel" Style="{StaticResource FlatComboBox}" Width="310" Height="28">
+                                    <ComboBoxItem Content="Mức 1: Nhẹ (Làm nét tự nhiên, vi điểm)"/>
+                                    <ComboBoxItem Content="Mức 2: Tiêu chuẩn (Nổi khối 3D + Tương phản S-Curve)" IsSelected="True"/>
+                                    <ComboBoxItem Content="Mức 3: Cao (Tăng nét đậm + Tăng rực rỡ màu)"/>
+                                    <ComboBoxItem Content="Mức 4: Siêu nét (Chi tiết cao + Tương phản tối đa)"/>
                                 </ComboBox>
+                                <TextBlock Text="⚡ Thuật toán Native C#: Nổi khối 3D + Unsharp vi điểm siêu tốc (~0.1s)" FontSize="11" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center" Margin="10,0,0,0"/>
                             </StackPanel>
                         </Grid>
                     </Border>

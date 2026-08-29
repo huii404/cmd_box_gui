@@ -22,6 +22,8 @@ namespace CMD_BOX_GUI.UI.Views
         private CancellationTokenSource? _batchCts;
         private bool _isBatchRunning = false;
 
+        private bool _isFfmpegChecked = false;
+
         public MediaView()
         {
             InitializeComponent();
@@ -29,28 +31,41 @@ namespace CMD_BOX_GUI.UI.Views
             UpdateTableNotice();
         }
 
-        private async void MediaView_Loaded(object sender, RoutedEventArgs e)
+        private void MediaView_Loaded(object sender, RoutedEventArgs e)
         {
-            await CheckFFmpegStatusAsync();
+            if (!_isFfmpegChecked)
+            {
+                _isFfmpegChecked = true;
+                // Chạy kiểm tra nền không làm block luồng UI khi chuyển tab (0ms lag)
+                _ = Task.Run(async () =>
+                {
+                    var (ffmpegOk, ffmpegPath, ffmpegInfo) = await _media.GetFFmpegStatusAsync();
+                    Dispatcher.Invoke(() =>
+                    {
+                        if (ffmpegOk)
+                        {
+                            BtnBrowseFfmpeg.ToolTip = $"FFmpeg: Sẵn sàng hoạt động\n{ffmpegInfo}\nĐường dẫn: {ffmpegPath}";
+                        }
+                        else
+                        {
+                            BtnBrowseFfmpeg.ToolTip = "FFmpeg: Chưa tìm thấy!\nBấm vào đây để chỉ định tệp ffmpeg.exe thủ công (Dùng cho Nén & Video)";
+                        }
+                    });
+                });
+            }
         }
 
         // ================= KIỂM TRA & DÒ TÌM FFMPEG =================
         private async Task CheckFFmpegStatusAsync(bool forceRefresh = false)
         {
-            if (forceRefresh)
+            var (ffmpegOk, ffmpegPath, ffmpegInfo) = await _media.GetFFmpegStatusAsync(forceRefresh);
+            if (ffmpegOk)
             {
-                _media.FindFFmpegPath(forceRefresh: true);
-            }
-
-            var (isAvailable, path, info) = await _media.GetFFmpegStatusAsync();
-
-            if (isAvailable)
-            {
-                BtnBrowseFfmpeg.ToolTip = $"FFmpeg: Sẵn sàng hoạt động\n{info}\nĐường dẫn: {path}";
+                BtnBrowseFfmpeg.ToolTip = $"FFmpeg: Sẵn sàng hoạt động\n{ffmpegInfo}\nĐường dẫn: {ffmpegPath}";
             }
             else
             {
-                BtnBrowseFfmpeg.ToolTip = "FFmpeg: Chưa tìm thấy!\nBấm vào đây để chọn tệp ffmpeg.exe thủ công";
+                BtnBrowseFfmpeg.ToolTip = "FFmpeg: Chưa tìm thấy!\nBấm vào đây để chỉ định tệp ffmpeg.exe thủ công (Dùng cho Nén & Video)";
             }
         }
 
@@ -68,7 +83,7 @@ namespace CMD_BOX_GUI.UI.Views
                 if (File.Exists(chosen))
                 {
                     _media.SetManualFfmpegPath(chosen);
-                    await CheckFFmpegStatusAsync();
+                    await CheckFFmpegStatusAsync(forceRefresh: true);
                     MessageBox.Show($"Đã cấu hình FFmpeg thành công:\n{chosen}", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
@@ -314,8 +329,8 @@ namespace CMD_BOX_GUI.UI.Views
                                 ok = await _media.ConvertMediaFormatAsync(item.FilePath, outPath, token);
                                 break;
 
-                            case 2: // Làm nét theo n cấp độ
-                                outPath = Path.Combine(outDir, $"{baseName}_enhanced{origExt}");
+                            case 2: // Làm nét theo n cấp độ (Hybrid AI FFmpeg + Vulkan)
+                                outPath = Path.Combine(outDir, $"{baseName}_enhanced{targetExt}");
                                 ok = await _media.EnhanceMediaAsync(item.FilePath, outPath, enhanceLevel, token);
                                 break;
 
