@@ -78,6 +78,9 @@
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel>
+                        <TextBlock Text="• Master Make Win (1-Click Tinh Chỉnh Toàn Diện):" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Chuỗi tự động hóa N-trong-1: Tự động kiểm tra &amp; tắt BitLocker khôi phục tốc độ SSD, gỡ tận gốc gói WebExperience (Widgets ngầm), tắt Search/Copilot trên Taskbar, tắt tìm kiếm Bing Online, xóa lịch sử Recent Files chống soi, khôi phục Menu chuột phải Win 10, tăng tuổi thọ SSD (tắt Last Access Timestamp), tắt tiếng bíp lỗi hệ thống, kích hoạt Storage Sense dọn file tạm, bỏ qua màn hình Welcome sau Update, chặn Windows tự Reboot khi Update, tắt chớp đen UAC, tắt cảnh báo đầy ổ đĩa, gỡ sạch 15+ ứng dụng rác UWP (Cortana, Solitaire, 3D Builder, Maps...), tắt toàn bộ Services Telemetry &amp; Game thừa (chừa lại quay màn hình BcastDVR), tối ưu phản hồi 0ms và tự động khởi động lại Explorer ngay lập tức." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+
                         <TextBlock Text="• Quick Clean (Xóa rác nhanh):" FontWeight="SemiBold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
                         <TextBlock Text="Tự động dọn sạch thư mục %temp%, C:\Windows\Temp, Recent, WER Temp, DirectX Shader Cache, làm sạch Thùng rác và Flush DNS." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 

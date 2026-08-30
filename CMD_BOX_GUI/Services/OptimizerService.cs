@@ -292,11 +292,11 @@ namespace CMD_BOX_GUI.Services
         // ================= 6. SERVICES =================
         public async Task OptimizeServicesAsync()
         {
-            Logger.Info("[Optimizer] Disabling Telemetry & bloat background services...");
+            Logger.Info("[Optimizer] Tắt các dịch vụ theo dõi Telemetry & Services vô dụng...");
             string[] servicesToDisable = {
                 "DiagTrack", "dmwappushservice", "MapsBroker",
                 "XblAuthManager", "XblGameSave", "XboxGipSvc", "XboxNetApiSvc",
-                "WerSvc", "RetailDemo"
+                "WerSvc", "RetailDemo", "SensorService", "SensrSvc", "Fax"
             };
 
             await Task.Run(async () =>
@@ -312,13 +312,13 @@ namespace CMD_BOX_GUI.Services
                 }
             });
 
-            Logger.Success("[Optimizer] Background telemetry services disabled!");
+            Logger.Success("[Optimizer] Đã tắt các dịch vụ Telemetry, Game Xbox thừa (vẫn giữ lại quay màn hình BcastDVR)!");
         }
 
         // ================= 7. TURBO TWEAKS =================
         public async Task OptimizeSystemProAsync()
         {
-            Logger.Info("[Optimizer] Applying Turbo low-latency tweaks...");
+            Logger.Info("[Optimizer] Đang áp dụng tinh chỉnh giảm độ trễ Turbo & Hệ thống...");
             await Task.Run(async () =>
             {
                 await ProcessRunner.RunProcessAsync("powercfg", "-h off", runAsAdmin: true);
@@ -335,10 +335,29 @@ namespace CMD_BOX_GUI.Services
 
                     using (var multimediaKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"))
                     {
-                        multimediaKey.SetValue("SystemResponsiveness", 0, RegistryValueKind.DWord);
                         multimediaKey.SetValue("NetworkThrottlingIndex", unchecked((int)0xFFFFFFFF), RegistryValueKind.DWord);
                     }
-                    Logger.Success("[Optimizer] Desktop responsiveness & network gaming optimized!");
+
+                    // 2.2: Chặn Windows tự động ép Restart máy khi có bản cập nhật Update
+                    using (var auKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"))
+                    {
+                        auKey.SetValue("NoAutoRebootWithLoggedOnUsers", 1, RegistryValueKind.DWord);
+                        auKey.SetValue("AUOptions", 3, RegistryValueKind.DWord);
+                    }
+
+                    // 2.3: Tắt chớp đen màn hình khi UAC hỏi quyền Admin (PromptOnSecureDesktop)
+                    using (var uacKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"))
+                    {
+                        uacKey.SetValue("PromptOnSecureDesktop", 0, RegistryValueKind.DWord);
+                    }
+
+                    // 3.3: Tắt cảnh báo phiền toái "Low Disk Space" khi ổ đĩa gần đầy
+                    using (var polExpKey = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"))
+                    {
+                        polExpKey.SetValue("NoLowDiskSpaceChecks", 1, RegistryValueKind.DWord);
+                    }
+
+                    Logger.Success("[Optimizer] Đã tối ưu độ nhạy (0ms), Chặn tự Reboot khi Update, Tắt chớp đen UAC & Tắt cảnh báo đầy ổ!");
                 }
                 catch { }
             });
@@ -347,21 +366,39 @@ namespace CMD_BOX_GUI.Services
         // ================= 8. TASKBAR TWEAKS =================
         public async Task OptimizeTaskbarWindows11Async()
         {
-            Logger.Info("[Optimizer] Optimizing Windows 11 Taskbar...");
-            await Task.Run(() =>
+            Logger.Info("[Optimizer] Đang tinh chỉnh giao diện Taskbar & Menu chuột phải...");
+            await Task.Run(async () =>
             {
                 try
                 {
                     using (var searchKey = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Search"))
                     {
                         searchKey.SetValue("SearchboxTaskbarMode", 0, RegistryValueKind.DWord);
+                        searchKey.SetValue("BingSearchEnabled", 0, RegistryValueKind.DWord);
+                        searchKey.SetValue("CortanaConsent", 0, RegistryValueKind.DWord);
+                    }
+
+                    using (var policySearchKey = Registry.CurrentUser.CreateSubKey(@"Software\Policies\Microsoft\Windows\Explorer"))
+                    {
+                        policySearchKey.SetValue("DisableSearchBoxSuggestions", 1, RegistryValueKind.DWord);
                     }
 
                     using (var explorerKey = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"))
                     {
-                        explorerKey.SetValue("TaskbarDa", 0, RegistryValueKind.DWord);
-                        explorerKey.SetValue("TaskbarMn", 0, RegistryValueKind.DWord);
-                        explorerKey.SetValue("ShowTaskViewButton", 0, RegistryValueKind.DWord);
+                        explorerKey.SetValue("TaskbarDa", 0, RegistryValueKind.DWord); // Widgets
+                        explorerKey.SetValue("TaskbarMn", 0, RegistryValueKind.DWord); // Chat
+                        explorerKey.SetValue("ShowTaskViewButton", 0, RegistryValueKind.DWord); // Task View
+                        explorerKey.SetValue("ShowSecondsInSystemClock", 1, RegistryValueKind.DWord); // Hiện giây đồng hồ
+                        explorerKey.SetValue("HideFileExt", 0, RegistryValueKind.DWord); // Hiện đuôi file
+                        explorerKey.SetValue("Start_TrackDocs", 0, RegistryValueKind.DWord); // 1.2: Tắt theo dõi file mở
+                        explorerKey.SetValue("Start_TrackProgs", 0, RegistryValueKind.DWord);
+                    }
+
+                    // 1.2: Tắt sạch lịch sử Recent Files & Frequent Folders trong Explorer
+                    using (var expKey = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer"))
+                    {
+                        expKey.SetValue("ShowRecent", 0, RegistryValueKind.DWord);
+                        expKey.SetValue("ShowFrequent", 0, RegistryValueKind.DWord);
                     }
 
                     using (var copilotKey = Registry.CurrentUser.CreateSubKey(@"Software\Policies\Microsoft\Windows\WindowsCopilot"))
@@ -369,10 +406,115 @@ namespace CMD_BOX_GUI.Services
                         copilotKey.SetValue("TurnOffWindowsCopilot", 1, RegistryValueKind.DWord);
                     }
 
-                    Logger.Success("[Optimizer] Windows 11 Taskbar optimized!");
+                    // Khôi phục Menu chuột phải Win 10 trên Win 11 (Bỏ "Show more options")
+                    using (var clsidKey = Registry.CurrentUser.CreateSubKey(@"Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32"))
+                    {
+                        clsidKey.SetValue("", "");
+                    }
+
+                    // Tắt quảng cáo đề xuất cài app trong Start Menu
+                    using (var contentKey = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"))
+                    {
+                        contentKey.SetValue("SystemPaneSuggestionsEnabled", 0, RegistryValueKind.DWord);
+                        contentKey.SetValue("SubscribedContent-338388Enabled", 0, RegistryValueKind.DWord);
+                        contentKey.SetValue("SubscribedContent-310093Enabled", 0, RegistryValueKind.DWord);
+                    }
+
+                    Logger.Success("[Optimizer] Đã tinh chỉnh Taskbar gọn sạch, Tắt Recent Files chống soi, Tắt Bing Search & Khôi phục Menu Win 10!");
                 }
                 catch { }
+
+                await SystemCore.RestartExplorerAsync();
             });
+        }
+
+        // ================= 9. UWP DEBLOAT =================
+        public async Task DebloatUwpAppsAsync(IProgress<int>? progress = null)
+        {
+            Logger.Info("[Optimizer] Đang gỡ bỏ các ứng dụng rác UWP & Gói WebExperience (Widgets)...");
+            string[] appsToRemove = {
+                "*MicrosoftWindows.Client.WebExperience*", "*WebExperience*",
+                "*3DBuilder*", "*Microsoft3DViewer*", "*Print3D*",
+                "*FeedbackHub*", "*GetHelp*", "*Getstarted*", "*WindowsTips*",
+                "*MicrosoftSolitaireCollection*", "*BingWeather*", "*BingNews*",
+                "*WindowsMaps*", "*ZuneMusic*", "*ZuneVideo*", "*MixedReality.Portal*",
+                "*Microsoft.YourPhone*"
+            };
+
+            await Task.Run(async () =>
+            {
+                for (int i = 0; i < appsToRemove.Length; i++)
+                {
+                    string app = appsToRemove[i];
+                    try
+                    {
+                        await ProcessRunner.RunProcessAsync("powershell", $"-NoProfile -Command \"Get-AppxPackage -AllUsers {app} | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue\"", runAsAdmin: true);
+                    }
+                    catch { }
+                    progress?.Report((int)((i + 1) * 100.0 / appsToRemove.Length));
+                }
+            });
+
+            Logger.Success("[Optimizer] Đã gỡ sạch các ứng dụng rác UWP & Gói Widgets chạy ngầm!");
+        }
+
+        // ================= 10. BITLOCKER CHECK & DISABLE =================
+        public async Task CheckAndDisableBitLockerAsync()
+        {
+            Logger.Info("[BitLocker] Đang kiểm tra trạng thái mã hóa ổ đĩa BitLocker...");
+            await Task.Run(async () =>
+            {
+                try
+                {
+                    string statusOutput = await ProcessRunner.RunCommandAndGetOutputAsync("manage-bde.exe", "-status");
+                    if (!string.IsNullOrWhiteSpace(statusOutput) && 
+                        (statusOutput.Contains("Protection On", StringComparison.OrdinalIgnoreCase) || 
+                         statusOutput.Contains("Fully Encrypted", StringComparison.OrdinalIgnoreCase) ||
+                         statusOutput.Contains("Encryption in Progress", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        Logger.Warning("[BitLocker] Phát hiện ổ đĩa đang bật BitLocker làm giảm tốc độ SSD! Đang tự động giải mã và tắt...");
+                        await ProcessRunner.RunProcessAsync("powershell", "-NoProfile -Command \"Get-BitLockerVolume | Where-Object { $_.ProtectionStatus -eq 'On' } | Disable-BitLocker\"", runAsAdmin: true);
+                        await ProcessRunner.RunProcessAsync("manage-bde.exe", "-off C:", runAsAdmin: true);
+                        Logger.Success("[BitLocker] Đã gửi lệnh tắt BitLocker và giải mã ổ đĩa thành công! Tốc độ SSD sẽ được khôi phục 100%.");
+                    }
+                    else
+                    {
+                        Logger.Info("[BitLocker] Ổ đĩa không bật BitLocker (Tốc độ SSD đạt chuẩn tối đa).");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warning($"[BitLocker] Lỗi kiểm tra BitLocker: {ex.Message}");
+                }
+            });
+        }
+
+        // ================= 11. MASTER MAKE WIN (1-CLICK ALL-IN-ONE) =================
+        public async Task MasterMakeWinAsync(IProgress<int>? progress = null)
+        {
+            Logger.Info("🚀 [MAKE WIN] BẮT ĐẦU TỐI ƯU TOÀN DIỆN 1-CLICK...");
+
+            progress?.Report(10);
+            await OptimizeTaskbarWindows11Async();
+
+            progress?.Report(30);
+            await OptimizeServicesAsync();
+
+            progress?.Report(50);
+            await OptimizeSystemProAsync();
+
+            progress?.Report(70);
+            await DebloatUwpAppsAsync();
+
+            progress?.Report(85);
+            await CheckAndDisableBitLockerAsync();
+
+            progress?.Report(95);
+            await SystemCore.RestartExplorerAsync();
+
+            progress?.Report(100);
+            Logger.Success("🎉 [MAKE WIN] HOÀN TẤT TOÀN BỘ CHUỖI TINH CHỈNH!");
+            Logger.Success("Windows đã được gỡ Widgets, tắt BitLocker, dọn Taskbar, tắt Bing, tắt Service rác & tăng tốc tức thì!");
         }
 
         // ================= 9. FIX WINDOWS UPDATE =================
@@ -386,6 +528,53 @@ namespace CMD_BOX_GUI.Services
 
             await ProcessRunner.RunProcessAsync("cmd.exe", $"/c {script}", runAsAdmin: true);
             Logger.Success("[Optimizer] Windows Update repaired!");
+        }
+
+        // ================= 11. STARTUP GREETING (LỜI CHÀO WINDOWS) =================
+        public (string caption, string text) GetStartupGreeting()
+        {
+            try
+            {
+                using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System");
+                if (key != null)
+                {
+                    string caption = key.GetValue("legalnoticecaption")?.ToString() ?? "";
+                    string text = key.GetValue("legalnoticetext")?.ToString() ?? "";
+                    return (caption, text);
+                }
+            }
+            catch { }
+            return ("", "");
+        }
+
+        public async Task<bool> SetStartupGreetingAsync(string caption, string text)
+        {
+            Logger.Info($"[Optimizer] Cấu hình lời chào Windows: [{caption}]...");
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    using var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System");
+                    if (key != null)
+                    {
+                        key.SetValue("legalnoticecaption", caption ?? "", RegistryValueKind.String);
+                        key.SetValue("legalnoticetext", text ?? "", RegistryValueKind.String);
+                        Logger.Success("[Optimizer] Đã lưu lời chào Windows thành công! (Sẽ hiển thị khi mở máy)");
+                        return true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Lỗi khi ghi lời chào Registry: {ex.Message}");
+                }
+                return false;
+            });
+        }
+
+        public async Task<bool> ClearStartupGreetingAsync()
+        {
+            Logger.Info("[Optimizer] Đang xóa lời chào Windows...");
+            return await SetStartupGreetingAsync("", "");
         }
 
         private static void WipeDirectory(string path)

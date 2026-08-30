@@ -150,7 +150,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="🚀 KHÔI PHỤC TOÀN DIỆN 1-CLICK (ALL-IN-ONE REPAIR)" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}"/>
+                                <TextBlock Text="🚀 KHÔI PHỤC TOÀN DIỆN" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}"/>
                                 <TextBlock Text="Tự động thực hiện tuần tự: Xóa cache DNS ➔ Cấp lại IP ➔ Đặt lại TCP/IP Winsock ➔ Khôi phục Firewall" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,2,0,0"/>
                             </StackPanel>
                             <Button x:Name="BtnRepairAll" Grid.Column="1" Content="🚀 Chạy Toàn Bộ" Style="{StaticResource PrimaryButton}" Padding="16,8" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" Click="BtnRepairAll_Click"/>

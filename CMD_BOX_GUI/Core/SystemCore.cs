@@ -106,6 +106,23 @@ namespace CMD_BOX_GUI.Core
             NativeMethods.SendInput((uint)inputs.Length, inputs, MarshalSize());
         }
 
+        public static async Task RestartExplorerAsync()
+        {
+            try
+            {
+                foreach (var p in Process.GetProcessesByName("explorer"))
+                {
+                    try { p.Kill(); await p.WaitForExitAsync(); } catch { }
+                }
+            }
+            catch { }
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = "explorer.exe", UseShellExecute = true });
+            }
+            catch { }
+        }
+
         private static int MarshalSize() => Marshal.SizeOf<NativeMethods.INPUT>();
     }
 }

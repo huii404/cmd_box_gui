@@ -7,6 +7,23 @@
              d:DesignHeight="600" d:DesignWidth="850">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="16">
+            <!-- MASTER 1-CLICK MAKE WIN HERO CARD -->
+            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,14" Padding="14" BorderBrush="{DynamicResource AccentCyan}" BorderThickness="1.5">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="🚀" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="MAKE WIN" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Button x:Name="BtnMasterMakeWin" Grid.Column="1" Content="⚡ THỰC THI NGAY" Style="{StaticResource PrimaryButton}" Padding="18,10" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" Margin="14,0,0,0" Click="BtnMasterMakeWin_Click" ToolTip="Áp dụng trọn gói toàn bộ chuỗi tinh chỉnh Windows và khởi động lại Explorer ngay lập tức."/>
+                </Grid>
+            </Border>
+
             <!-- Section 1: Disk Cleanup & Cache Purge -->
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
                 <StackPanel>
@@ -40,6 +57,37 @@
                     <WrapPanel>
                         <Button x:Name="BtnFixWU" Content="🔄 Fix Windows Update" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnFixWU_Click" ToolTip="Stops update services, resets SoftwareDistribution/catroot2 corrupted caches and restarts services."/>
                     </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Section 4: Custom Windows Startup Greeting (Lời Chào Windows Khi Mở Máy) -->
+            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="CÁ NHÂN HÓA LỜI CHÀO WINDOWS (STARTUP GREETING)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                    <TextBlock Text="Thông điệp sẽ xuất hiện ở màn hình chào mừng mỗi khi bật máy tính (trước khi vào màn hình nhập mật khẩu)." FontSize="11" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,8"/>
+                    
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Tiêu đề lời chào (Caption):" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
+                        <TextBox x:Name="TxtGreetingCaption" Grid.Column="1" Style="{StaticResource FlatTextBox}" Height="28" Padding="6,2" FontSize="11" ToolTip="Ví dụ: Chào mừng trở lại, CMD BOX Workstation, Cảnh báo bảo mật..."/>
+                    </Grid>
+
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Nội dung thông điệp (Text):" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Top" Margin="0,4,0,0"/>
+                        <TextBox x:Name="TxtGreetingText" Grid.Column="1" Style="{StaticResource FlatTextBox}" Height="48" Padding="6,4" FontSize="11" TextWrapping="Wrap" AcceptsReturn="True" ToolTip="Ví dụ: Chúc bạn một ngày làm việc hiệu quả! / Thiết bị bảo mật cá nhân."/>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="BtnSaveGreeting" Content="💾 Lưu Lời Chào" Style="{StaticResource PrimaryButton}" Margin="0,0,8,0" Padding="14,6" FontSize="11" FontWeight="SemiBold" Click="BtnSaveGreeting_Click"/>
+                        <Button x:Name="BtnClearGreeting" Content="🗑️ Xóa Lời Chào" Style="{StaticResource SecondaryButton}" Padding="12,6" FontSize="11" Click="BtnClearGreeting_Click"/>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

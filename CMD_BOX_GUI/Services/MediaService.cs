@@ -131,26 +131,111 @@ namespace CMD_BOX_GUI.Services
             return _cachedFfmpegStatus.Value;
         }
 
+        public async Task<(double durationSec, int bitrateKbps)> ProbeMediaInfoAsync(string inputPath, string ffmpegPath)
+        {
+            try
+            {
+                string output = await ProcessRunner.RunCommandAndGetOutputAsync(ffmpegPath, $"-i \"{inputPath}\"");
+                double duration = 0;
+                int bitrate = 0;
+
+                var durationMatch = System.Text.RegularExpressions.Regex.Match(output, @"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                if (durationMatch.Success)
+                {
+                    double hours = double.Parse(durationMatch.Groups[1].Value);
+                    double minutes = double.Parse(durationMatch.Groups[2].Value);
+                    double seconds = double.Parse(durationMatch.Groups[3].Value, System.Globalization.CultureInfo.InvariantCulture);
+                    duration = hours * 3600 + minutes * 60 + seconds;
+                }
+
+                var bitrateMatch = System.Text.RegularExpressions.Regex.Match(output, @"bitrate:\s*(\d+)\s*kb/s", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                if (bitrateMatch.Success)
+                {
+                    int.TryParse(bitrateMatch.Groups[1].Value, out bitrate);
+                }
+
+                if (bitrate <= 0 && duration > 0)
+                {
+                    long fileSize = new FileInfo(inputPath).Length;
+                    bitrate = (int)((fileSize * 8.0) / (duration * 1000.0));
+                }
+
+                return (duration, bitrate);
+            }
+            catch
+            {
+                return (0, 0);
+            }
+        }
+
         public async Task<bool> CompressVideoAsync(string inputPath, string outputPath, int compressionLevel = 1, CancellationToken cancellationToken = default)
         {
             string ffmpeg = FindFFmpegPath();
+            long oldSize = new FileInfo(inputPath).Length;
+            var (durationSec, origBitrateKbps) = await ProbeMediaInfoAsync(inputPath, ffmpeg);
+
+            // Mức CRF chuẩn điện ảnh: CRF 23 là mốc "Visually Lossless" (mắt thường không phân biệt được với bản gốc)
             int crf = compressionLevel switch
             {
-                0 => 24,
-                2 => 32,
-                3 => 36,
-                _ => 28
+                0 => 21, // Chất lượng cực cao
+                2 => 26, // Nén khá
+                3 => 29, // Nén sâu
+                _ => 23  // Mặc định: Giữ độ nét tối đa, giảm ~35-45% dung lượng
             };
-            int audioBitrate = compressionLevel == 0 ? 128 : (compressionLevel >= 2 ? 80 : 96);
 
-            Logger.Info($"[FFmpeg] Nén Video [{Path.GetFileName(inputPath)}] (CRF {crf})...");
-            string args = $"-y -i \"{inputPath}\" -vcodec libx264 -crf {crf} -preset faster -c:a aac -b:a {audioBitrate}k \"{outputPath}\"";
+            double targetRatio = compressionLevel switch
+            {
+                0 => 0.80,
+                2 => 0.50,
+                3 => 0.38,
+                _ => 0.65
+            };
+
+            int audioBitrate = compressionLevel == 0 ? 160 : (compressionLevel >= 2 ? 96 : 128);
+
+            string args;
+            if (origBitrateKbps > 0)
+            {
+                int targetTotalKbps = Math.Max(200, (int)(origBitrateKbps * targetRatio));
+                int targetAudioKbps = Math.Min(audioBitrate, Math.Max(64, (int)(targetTotalKbps * 0.12)));
+                int maxVideoBitrate = Math.Max(150, targetTotalKbps - targetAudioKbps);
+
+                Logger.Info($"[FFmpeg] Nén Video Chuẩn HD [{Path.GetFileName(inputPath)}] (Gốc: {origBitrateKbps} kbps, MaxRate: {maxVideoBitrate} kbps, CRF {crf}, Tune: Film)...");
+                // Dùng -preset slow + -tune film + -profile:v high để tối ưu thuật toán tìm vector chuyển động, giữ trọn chi tiết vi mô (da, tóc, vân vải) mà không dùng filter làm sai màu
+                args = $"-y -i \"{inputPath}\" -c:v libx264 -profile:v high -preset slow -tune film -crf {crf} -maxrate {maxVideoBitrate}k -bufsize {maxVideoBitrate * 2}k -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a {targetAudioKbps}k \"{outputPath}\"";
+            }
+            else
+            {
+                Logger.Info($"[FFmpeg] Nén Video Chuẩn HD [{Path.GetFileName(inputPath)}] (CRF {crf}, Tune: Film)...");
+                args = $"-y -i \"{inputPath}\" -c:v libx264 -profile:v high -preset slow -tune film -crf {crf} -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a {audioBitrate}k \"{outputPath}\"";
+            }
+
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
             if (code == 0 && File.Exists(outputPath))
             {
-                long oldSize = new FileInfo(inputPath).Length;
                 long newSize = new FileInfo(outputPath).Length;
+
+                // Tự động kiểm tra: Nếu sau khi nén mà file vẫn lớn hơn hoặc bằng file gốc -> Chạy Pass 2 an toàn
+                if (newSize >= oldSize)
+                {
+                    Logger.Warning($"[FFmpeg] File sau khi encode ({SystemCore.FormatBytes(newSize)}) >= File gốc ({SystemCore.FormatBytes(oldSize)}). Tự động kích hoạt nén thích ứng (Safe Bitrate)...");
+                    
+                    double dur = durationSec > 0 ? durationSec : 10;
+                    long targetSizeBytes = (long)(oldSize * 0.65); // Ép mục tiêu dung lượng ~65%
+                    int strictTotalKbps = Math.Max(160, (int)((targetSizeBytes * 8.0) / (dur * 1000.0)));
+                    int strictAudioKbps = Math.Min(96, Math.Max(48, (int)(strictTotalKbps * 0.12)));
+                    int strictVideoKbps = Math.Max(120, strictTotalKbps - strictAudioKbps);
+
+                    string pass2Args = $"-y -i \"{inputPath}\" -c:v libx264 -profile:v high -b:v {strictVideoKbps}k -maxrate {strictVideoKbps}k -bufsize {strictVideoKbps * 2}k -preset slow -tune film -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a {strictAudioKbps}k \"{outputPath}\"";
+                    int code2 = await ProcessRunner.RunProcessAsync(ffmpeg, pass2Args, cancellationToken: cancellationToken);
+
+                    if (code2 == 0 && File.Exists(outputPath))
+                    {
+                        newSize = new FileInfo(outputPath).Length;
+                    }
+                }
+
                 Logger.Success($"[FFmpeg] Nén xong Video [{Path.GetFileName(inputPath)}]: {SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)}");
                 return true;
             }
@@ -164,23 +249,44 @@ namespace CMD_BOX_GUI.Services
             string ffmpeg = FindFFmpegPath();
             string ext = Path.GetExtension(inputPath).ToLowerInvariant();
             string outExt = Path.GetExtension(outputPath).ToLowerInvariant();
+            long oldSize = new FileInfo(inputPath).Length;
 
             Logger.Info($"[FFmpeg] Nén Ảnh [{Path.GetFileName(inputPath)}]...");
 
             string args = (outExt, ext) switch
             {
-                (".jpg" or ".jpeg", _) or (_, ".jpg" or ".jpeg") => $"-y -i \"{inputPath}\" -q:v {(compressionLevel == 0 ? 3 : (compressionLevel >= 2 ? 8 : 5))} \"{outputPath}\"",
-                (".webp", _) or (_, ".webp") => $"-y -i \"{inputPath}\" -c:v libwebp -quality {(compressionLevel == 0 ? 80 : (compressionLevel >= 2 ? 55 : 68))} \"{outputPath}\"",
+                (".jpg" or ".jpeg", _) or (_, ".jpg" or ".jpeg") => $"-y -i \"{inputPath}\" -q:v {(compressionLevel == 0 ? 4 : (compressionLevel >= 2 ? 8 : 6))} -pix_fmt yuvj420p \"{outputPath}\"",
+                (".webp", _) or (_, ".webp") => $"-y -i \"{inputPath}\" -c:v libwebp -quality {(compressionLevel == 0 ? 78 : (compressionLevel >= 2 ? 50 : 65))} -preset default \"{outputPath}\"",
                 (".png", _) or (_, ".png") => $"-y -i \"{inputPath}\" -c:v png -compression_level {(compressionLevel == 0 ? 7 : 9)} \"{outputPath}\"",
-                _ => $"-y -i \"{inputPath}\" -q:v 5 \"{outputPath}\""
+                _ => $"-y -i \"{inputPath}\" -q:v 6 \"{outputPath}\""
             };
 
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
             if (code == 0 && File.Exists(outputPath))
             {
-                long oldSize = new FileInfo(inputPath).Length;
                 long newSize = new FileInfo(outputPath).Length;
+
+                // Nếu ảnh xuất ra bị phình to hơn ảnh gốc
+                if (newSize >= oldSize)
+                {
+                    if (outExt == ".jpg" || outExt == ".jpeg")
+                    {
+                        string fallbackArgs = $"-y -i \"{inputPath}\" -q:v 10 -pix_fmt yuvj420p \"{outputPath}\"";
+                        await ProcessRunner.RunProcessAsync(ffmpeg, fallbackArgs, cancellationToken: cancellationToken);
+                    }
+                    else if (outExt == ".webp")
+                    {
+                        string fallbackArgs = $"-y -i \"{inputPath}\" -c:v libwebp -quality 48 -preset default \"{outputPath}\"";
+                        await ProcessRunner.RunProcessAsync(ffmpeg, fallbackArgs, cancellationToken: cancellationToken);
+                    }
+
+                    if (File.Exists(outputPath))
+                    {
+                        newSize = new FileInfo(outputPath).Length;
+                    }
+                }
+
                 Logger.Success($"[FFmpeg] Nén xong Ảnh [{Path.GetFileName(inputPath)}]: {SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)}");
                 return true;
             }

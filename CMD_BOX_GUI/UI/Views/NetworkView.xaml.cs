@@ -20,7 +20,12 @@ namespace CMD_BOX_GUI.UI.Views
         public NetworkView()
         {
             InitializeComponent();
-            Loaded += async (_, _) => await LoadNetworkInfoAsync();
+            _isIpMasked = SettingsService.Current.IsIpMasked;
+            Loaded += async (_, _) =>
+            {
+                _isIpMasked = SettingsService.Current.IsIpMasked;
+                await LoadNetworkInfoAsync();
+            };
         }
 
         private async Task LoadNetworkInfoAsync()
@@ -47,6 +52,7 @@ namespace CMD_BOX_GUI.UI.Views
         private void BtnToggleMaskIp_Click(object sender, RoutedEventArgs e)
         {
             _isIpMasked = !_isIpMasked;
+            SettingsService.UpdateIpMasked(_isIpMasked);
             UpdateIpDisplay();
         }
 
@@ -59,7 +65,8 @@ namespace CMD_BOX_GUI.UI.Views
                 TxtLocalIp.Text = MaskIpAddress(_rawLocalIp);
                 TxtGateway.Text = MaskIpAddress(_rawGateway);
                 TxtPublicIp.Text = MaskIpAddress(_rawPublicIp);
-                BtnToggleMaskIp.Content = "👁️‍🗨️ Hiện IP";
+                BtnToggleMaskIp.Content = "👁️‍🗨️ Đang Che IP";
+                BtnToggleMaskIp.Style = (Style)FindResource("PrimaryButton");
                 BtnToggleMaskIp.ToolTip = "Đang bật chế độ ẩn IP riêng tư. Bấm để hiển thị đầy đủ IP.";
             }
             else
@@ -68,6 +75,7 @@ namespace CMD_BOX_GUI.UI.Views
                 TxtGateway.Text = _rawGateway;
                 TxtPublicIp.Text = _rawPublicIp;
                 BtnToggleMaskIp.Content = "👁️ Che IP";
+                BtnToggleMaskIp.Style = (Style)FindResource("SecondaryButton");
                 BtnToggleMaskIp.ToolTip = "Bật / Tắt che địa chỉ IP để bảo vệ quyền riêng tư khi stream hoặc chụp ảnh.";
             }
         }

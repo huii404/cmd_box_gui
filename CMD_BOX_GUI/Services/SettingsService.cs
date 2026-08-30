@@ -76,6 +76,12 @@ namespace CMD_BOX_GUI.Services
             SaveSettings();
         }
 
+        public static void UpdateIpMasked(bool masked)
+        {
+            Current.IsIpMasked = masked;
+            SaveSettings();
+        }
+
         public static void ResetToDefaults()
         {
             lock (_lock)

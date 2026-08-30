@@ -83,6 +83,7 @@ namespace CMD_BOX_GUI.Models
     {
         public bool IsDarkMode { get; set; } = true;
         public bool AllowAdminCmd { get; set; } = true;
+        public bool IsIpMasked { get; set; } = false;
         public string LastSelectedTab { get; set; } = "Optimizer";
         public DateTime LastSavedTime { get; set; } = DateTime.Now;
     }
