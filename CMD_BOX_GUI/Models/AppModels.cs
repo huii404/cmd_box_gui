@@ -87,4 +87,15 @@ namespace CMD_BOX_GUI.Models
         public string LastSelectedTab { get; set; } = "Optimizer";
         public DateTime LastSavedTime { get; set; } = DateTime.Now;
     }
+
+    public class LanDeviceItem
+    {
+        public string IpAddress { get; set; } = string.Empty;
+        public string MacAddress { get; set; } = string.Empty;
+        public string HostName { get; set; } = string.Empty;
+        public string DeviceType { get; set; } = "Thiết bị kết nối 📱";
+        public string Status { get; set; } = "Online 🟢";
+        public bool IsLocalDevice { get; set; }
+        public bool IsGateway { get; set; }
+    }
 }

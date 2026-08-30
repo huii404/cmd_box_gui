@@ -151,12 +151,29 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                 <TextBlock Text="🚀 KHÔI PHỤC TOÀN DIỆN" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}"/>
-                                <TextBlock Text="Tự động thực hiện tuần tự: Xóa cache DNS ➔ Cấp lại IP ➔ Đặt lại TCP/IP Winsock ➔ Khôi phục Firewall" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,2,0,0"/>
                             </StackPanel>
                             <Button x:Name="BtnRepairAll" Grid.Column="1" Content="🚀 Chạy Toàn Bộ" Style="{StaticResource PrimaryButton}" Padding="16,8" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" Click="BtnRepairAll_Click"/>
                         </Grid>
                     </Border>
                 </StackPanel>
+            </Border>
+
+            <!-- 3. KHỐI QUÉT THIẾT BỊ CÙNG MẠNG (LAN & WI-FI SCANNER) -->
+            <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                            <TextBlock Text="📡" FontSize="15" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="QUÉT THIẾT BỊ CÙNG MẠNG LAN / WI-FI" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        
+                    </StackPanel>
+                    <Button x:Name="BtnScanLan" Grid.Column="1" Content="🔍 Quét Thiết Bị" Style="{StaticResource PrimaryButton}" Padding="16,8" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" Click="BtnScanLan_Click" ToolTip="Quét toàn bộ dải IP trong mạng LAN và in chi tiết ra Log Console"/>
+                </Grid>
             </Border>
 
         </StackPanel>

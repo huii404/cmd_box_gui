@@ -146,6 +146,28 @@ namespace CMD_BOX_GUI.UI.Views
             });
         }
 
+        // 6. Quét Thiết Bị Mạng LAN / Wi-Fi
+        private async void BtnScanLan_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isBusy) return;
+            SetButtonsState(false);
+            _isBusy = true;
+
+            try
+            {
+                await _network.ScanLanDevicesAsync();
+            }
+            catch (Exception ex)
+            {
+                Core.Logger.Warning($"Lỗi quét mạng LAN: {ex.Message}");
+            }
+            finally
+            {
+                _isBusy = false;
+                SetButtonsState(true);
+            }
+        }
+
         private async Task ExecuteNetworkTaskAsync(Func<Task> taskAction)
         {
             if (_isBusy) return;
@@ -172,6 +194,7 @@ namespace CMD_BOX_GUI.UI.Views
             BtnRepairAll.IsEnabled = isEnabled;
             BtnRefreshNetInfo.IsEnabled = isEnabled;
             BtnToggleMaskIp.IsEnabled = isEnabled;
+            BtnScanLan.IsEnabled = isEnabled;
         }
     }
 }

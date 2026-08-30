@@ -123,7 +123,10 @@
                         <TextBlock Text="Xóa toàn bộ các rule chặn mạng rác và đưa tường lửa Windows về cấu hình mặc định an toàn của Microsoft." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
                         <TextBlock Text="• 🚀 Khôi Phục Toàn Diện 1-Click (All-in-One Repair):" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Tự động thực hiện tuần tự và tối ưu toàn bộ 4 bước: Xóa Cache DNS ➔ Cấp lại IP ➔ Reset TCP/IP Winsock ➔ Khôi phục Firewall gốc." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
+                        <TextBlock Text="Tự động thực hiện tuần tự và tối ưu toàn bộ 4 bước: Xóa Cache DNS ➔ Cấp lại IP ➔ Reset TCP/IP Winsock ➔ Khôi phục Firewall gốc." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
+
+                        <TextBlock Text="• 📡 Quét Thiết Bị Cùng Mạng LAN / Wi-Fi (Who's On My Wi-Fi?):" FontWeight="Bold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
+                        <TextBlock Text="Quét song song toàn bộ 254 địa chỉ IP trong mạng nội bộ để nhận diện danh sách tất cả các thiết bị đang kết nối Wi-Fi (IP, Địa chỉ MAC, Hostname, Router, Apple/Samsung/TP-Link...) giúp phát hiện tức thì ai đang dùng trộm Wi-Fi." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,0"/>
                     </StackPanel>
                 </Expander>
 
