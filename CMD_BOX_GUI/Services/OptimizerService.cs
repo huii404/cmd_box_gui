@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using CMD_BOX_GUI.Core;
 using Microsoft.Win32;
@@ -299,19 +300,14 @@ namespace CMD_BOX_GUI.Services
                 "WerSvc", "RetailDemo", "SensorService", "SensrSvc", "Fax"
             };
 
-            await Task.Run(async () =>
+            var commands = new List<string>();
+            foreach (var svc in servicesToDisable)
             {
-                foreach (var svc in servicesToDisable)
-                {
-                    try
-                    {
-                        await ProcessRunner.RunProcessAsync("sc.exe", $"stop \"{svc}\"", runAsAdmin: true);
-                        await ProcessRunner.RunProcessAsync("sc.exe", $"config \"{svc}\" start=disabled", runAsAdmin: true);
-                    }
-                    catch { }
-                }
-            });
+                commands.Add($"sc stop \"{svc}\" >nul 2>&1");
+                commands.Add($"sc config \"{svc}\" start=disabled >nul 2>&1");
+            }
 
+            await SystemCore.RunBatchScriptAsync(commands, "optimize_services");
             Logger.Success("[Optimizer] Đã tắt các dịch vụ Telemetry, Game Xbox thừa (vẫn giữ lại quay màn hình BcastDVR)!");
         }
 
@@ -441,19 +437,12 @@ namespace CMD_BOX_GUI.Services
                 "*Microsoft.YourPhone*"
             };
 
-            await Task.Run(async () =>
-            {
-                for (int i = 0; i < appsToRemove.Length; i++)
-                {
-                    string app = appsToRemove[i];
-                    try
-                    {
-                        await ProcessRunner.RunProcessAsync("powershell", $"-NoProfile -Command \"Get-AppxPackage -AllUsers {app} | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue\"", runAsAdmin: true);
-                    }
-                    catch { }
-                    progress?.Report((int)((i + 1) * 100.0 / appsToRemove.Length));
-                }
-            });
+            progress?.Report(20);
+            string appsList = string.Join(",", appsToRemove.Select(a => $"'{a}'"));
+            string psScript = $"$apps = @({appsList}); foreach ($app in $apps) {{ Get-AppxPackage -AllUsers -Name $app -EA SilentlyContinue | Remove-AppxPackage -AllUsers -EA SilentlyContinue }}";
+
+            await SystemCore.RunPowerShellScriptAsync(psScript, "debloat_uwp");
+            progress?.Report(100);
 
             Logger.Success("[Optimizer] Đã gỡ sạch các ứng dụng rác UWP & Gói Widgets chạy ngầm!");
         }
@@ -473,8 +462,8 @@ namespace CMD_BOX_GUI.Services
                          statusOutput.Contains("Encryption in Progress", StringComparison.OrdinalIgnoreCase)))
                     {
                         Logger.Warning("[BitLocker] Phát hiện ổ đĩa đang bật BitLocker làm giảm tốc độ SSD! Đang tự động giải mã và tắt...");
-                        await ProcessRunner.RunProcessAsync("powershell", "-NoProfile -Command \"Get-BitLockerVolume | Where-Object { $_.ProtectionStatus -eq 'On' } | Disable-BitLocker\"", runAsAdmin: true);
-                        await ProcessRunner.RunProcessAsync("manage-bde.exe", "-off C:", runAsAdmin: true);
+                        string bitLockerScript = "Get-BitLockerVolume | Where-Object { $_.ProtectionStatus -eq 'On' } | Disable-BitLocker -EA SilentlyContinue; manage-bde.exe -off C:";
+                        await SystemCore.RunPowerShellScriptAsync(bitLockerScript, "disable_bitlocker");
                         Logger.Success("[BitLocker] Đã gửi lệnh tắt BitLocker và giải mã ổ đĩa thành công! Tốc độ SSD sẽ được khôi phục 100%.");
                     }
                     else
