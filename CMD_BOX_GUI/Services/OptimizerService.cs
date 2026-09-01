@@ -424,27 +424,78 @@ namespace CMD_BOX_GUI.Services
             });
         }
 
-        // ================= 9. UWP DEBLOAT =================
+        // ================= 9. UWP DEBLOAT & ONEDRIVE =================
         public async Task DebloatUwpAppsAsync(IProgress<int>? progress = null)
         {
-            Logger.Info("[Optimizer] Đang gỡ bỏ các ứng dụng rác UWP & Gói WebExperience (Widgets)...");
+            Logger.Info("[Optimizer] Đang gỡ sạch ứng dụng rác UWP, Gói Sticky Notes, Xbox, OneDrive & WebExperience...");
             string[] appsToRemove = {
                 "*MicrosoftWindows.Client.WebExperience*", "*WebExperience*",
-                "*3DBuilder*", "*Microsoft3DViewer*", "*Print3D*",
-                "*FeedbackHub*", "*GetHelp*", "*Getstarted*", "*WindowsTips*",
-                "*MicrosoftSolitaireCollection*", "*BingWeather*", "*BingNews*",
-                "*WindowsMaps*", "*ZuneMusic*", "*ZuneVideo*", "*MixedReality.Portal*",
-                "*Microsoft.YourPhone*"
+                "*MicrosoftStickyNotes*", "*StickyNotes*",
+                "*Microsoft.GamingApp*", "*XboxApp*", "*XboxGamingOverlay*", "*XboxSpeechToTextOverlay*", "*XboxIdentityProvider*", "*Xbox*",
+                "*Microsoft.OutlookForWindows*", "*OutlookForWindows*",
+                "*LinkedIn*", "*Clipchamp*",
+                "*Microsoft.Todos*", "*Todos*",
+                "*Microsoft.People*", "*People*",
+                "*Microsoft.SkypeApp*", "*SkypeApp*",
+                "*Microsoft.GetHelp*", "*GetHelp*", "*Getstarted*", "*WindowsTips*",
+                "*Microsoft.BingNews*", "*Microsoft.BingWeather*", "*Microsoft.BingFinance*", "*Microsoft.BingSports*", "*BingSearch*",
+                "*Microsoft.MicrosoftSolitaireCollection*", "*Solitaire*",
+                "*Microsoft.YourPhone*", "*YourPhone*",
+                "*Microsoft.WindowsMaps*", "*WindowsMaps*",
+                "*Microsoft.ZuneMusic*", "*Microsoft.ZuneVideo*",
+                "*3DBuilder*", "*Microsoft3DViewer*", "*Print3D*", "*Paint3D*",
+                "*FeedbackHub*", "*WindowsFeedbackHub*",
+                "*MixedReality.Portal*", "*MixedReality*",
+                "*Microsoft.Windows.DevHome*", "*DevHome*",
+                "*MicrosoftCorporationII.MicrosoftFamily*", "*MicrosoftFamily*",
+                "*MicrosoftCorporationII.QuickAssist*", "*QuickAssist*",
+                "*Cortana*",
+                "*Spotify*", "*Disney*", "*TikTok*", "*Instagram*", "*Facebook*", "*Amazon*"
             };
 
-            progress?.Report(20);
+            progress?.Report(10);
             string appsList = string.Join(",", appsToRemove.Select(a => $"'{a}'"));
-            string psScript = $"$apps = @({appsList}); foreach ($app in $apps) {{ Get-AppxPackage -AllUsers -Name $app -EA SilentlyContinue | Remove-AppxPackage -AllUsers -EA SilentlyContinue }}";
+            
+            string psScript = $@"
+$ErrorActionPreference = 'SilentlyContinue'
+$apps = @({appsList})
 
-            await SystemCore.RunPowerShellScriptAsync(psScript, "debloat_uwp");
+# 1. Gỡ bỏ Packages của người dùng và Provisioned Packages (gốc hệ thống)
+foreach ($app in $apps) {{
+    Get-AppxPackage -AllUsers | Where-Object {{ $_.Name -like $app -or $_.PackageFullName -like $app }} | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue
+    Get-AppxProvisionedPackage -Online | Where-Object {{ $_.DisplayName -like $app -or $_.PackageName -like $app }} | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
+}}
+
+# 2. Gỡ bỏ hoàn toàn OneDrive
+taskkill /f /im OneDrive.exe 2>$null
+if (Test-Path ""$env:SystemRoot\SysWOW64\OneDriveSetup.exe"") {{
+    Start-Process ""$env:SystemRoot\SysWOW64\OneDriveSetup.exe"" -ArgumentList ""/uninstall /silent"" -Wait -NoNewWindow
+}} elseif (Test-Path ""$env:SystemRoot\System32\OneDriveSetup.exe"") {{
+    Start-Process ""$env:SystemRoot\System32\OneDriveSetup.exe"" -ArgumentList ""/uninstall /silent"" -Wait -NoNewWindow
+}}
+Remove-Item -Recurse -Force ""$env:UserProfile\OneDrive"" 2>$null
+Remove-Item -Recurse -Force ""$env:LocalAppData\Microsoft\OneDrive"" 2>$null
+Remove-Item -Recurse -Force ""$env:ProgramData\Microsoft OneDrive"" 2>$null
+Remove-Item -Path ""HKCR:\CLSID\{{018D5C66-4533-4307-9B53-224DE2ED1FE6}}"" -Recurse -Force 2>$null
+Remove-Item -Path ""HKCR:\Wow6432Node\CLSID\{{018D5C66-4533-4307-9B53-224DE2ED1FE6}}"" -Recurse -Force 2>$null
+
+# 3. Tắt sạch cài ngầm app rác/quảng cáo Start Menu của Windows 11
+$cdmPath = ""HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager""
+Set-ItemProperty -Path $cdmPath -Name ""ContentDeliveryAllowed"" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $cdmPath -Name ""OemPreInstalledAppsEnabled"" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $cdmPath -Name ""PreInstalledAppsEnabled"" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $cdmPath -Name ""PreInstalledAppsEverEnabled"" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $cdmPath -Name ""SilentInstalledAppsEnabled"" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $cdmPath -Name ""SubscribedContent-338388Enabled"" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $cdmPath -Name ""SubscribedContent-338389Enabled"" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $cdmPath -Name ""SubscribedContent-353698Enabled"" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+Set-ItemProperty -Path $cdmPath -Name ""SystemPaneSuggestionsEnabled"" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+";
+
+            await SystemCore.RunPowerShellScriptAsync(psScript, "debloat_master");
             progress?.Report(100);
 
-            Logger.Success("[Optimizer] Đã gỡ sạch các ứng dụng rác UWP & Gói Widgets chạy ngầm!");
+            Logger.Success("[Optimizer] Đã gỡ sạch Bloatware (OneDrive, Sticky Notes, Xbox, Get Started, News, Widgets...)!");
         }
 
         // ================= 10. BITLOCKER CHECK & DISABLE =================

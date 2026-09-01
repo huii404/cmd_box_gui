@@ -96,7 +96,7 @@
                 <StackPanel x:Name="PnlEmptyNotice" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <TextBlock Text="📁" FontSize="36" HorizontalAlignment="Center" Margin="0,0,0,6"/>
                     <TextBlock Text="Kéo thả tệp Ảnh / Video hoặc bấm 'Thêm Ảnh / Video' vào đây" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Sau đó chọn tính năng (Nén ~40% / Đổi định dạng / Làm nét) ở dropdown phía dưới" FontSize="11" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                    <TextBlock Text="Sau đó chọn tính năng ở dropdown phía dưới" FontSize="11" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -114,8 +114,8 @@
 
                     <!-- Nhãn Dropdown -->
                     <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,12,0">
-                        <TextBlock Text="CHỌN TÍNH NĂNG (TÁC VỤ):" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}"/>
-                        <TextBlock Text="Áp dụng cho tất cả tệp trong bảng" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
+                        <TextBlock Text="CHỌN TÍNH NĂNG" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}"/>
+                       
                     </StackPanel>
 
                     <!-- Dropdown Sổ Ra Chọn Tính Năng -->
@@ -144,13 +144,13 @@
                             <!-- 3. Cấu hình cho LÀM NÉT (Dropdown n mức độ) -->
                             <StackPanel x:Name="PnlOptionEnhance" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
                                 <TextBlock Text="Mức độ làm nét:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <ComboBox x:Name="CmbEnhanceLevel" Style="{StaticResource FlatComboBox}" Width="310" Height="28">
-                                    <ComboBoxItem Content="Mức 1: Nhẹ (Làm nét tự nhiên, khử gai tối đa)"/>
-                                    <ComboBoxItem Content="Mức 2: Tiêu chuẩn (Nổi khối 3D + Chống quầng sáng/tối viền)" IsSelected="True"/>
-                                    <ComboBoxItem Content="Mức 3: Cao (Tăng chi tiết vi mô + Tăng rực rỡ)"/>
-                                    <ComboBoxItem Content="Mức 4: Siêu nét (Nổi khối mạnh mẽ + Tương phản S-Curve)"/>
+                                <ComboBox x:Name="CmbEnhanceLevel" Style="{StaticResource FlatComboBox}" Width="330" Height="28">
+                                    <ComboBoxItem Content="Mức 1: Tự nhiên (Scale 100% - Khử mờ nhẹ, mịn da)"/>
+                                    <ComboBoxItem Content="Mức 2: Tiêu chuẩn (Scale 140% - CAS nét căng, chống halo)" IsSelected="True"/>
+                                    <ComboBoxItem Content="Mức 3: Nổi khối cao (Scale 175% - Chi tiết vi mô + Rực rỡ)"/>
+                                    <ComboBoxItem Content="Mức 4: Siêu nét Ultra 2x (Scale 200% - Phục hồi chi tiết sâu)"/>
                                 </ComboBox>
-                                <TextBlock Text="⚡ Thuật toán Native C#: Nổi khối 3D + Khử gai Soft-Coring (~0.1s)" FontSize="11" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                <TextBlock Text="⚡ Thuật toán YCbCr + Super-Sampling Bicubic + CAS Anti-Halo (~0.1s)" FontSize="11" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center" Margin="10,0,0,0"/>
                             </StackPanel>
 
                             <!-- 4. Cấu hình cho TRÍCH XUẤT ÂM THANH -->

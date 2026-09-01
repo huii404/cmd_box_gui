@@ -154,11 +154,10 @@ namespace CMD_BOX_GUI.Services
 
         public async Task UninstallBloatwareAsync()
         {
-            Logger.Info("Đang gỡ bỏ ứng dụng rác Windows...");
-            string psScript = "$apps = @('Microsoft.BingNews','Microsoft.BingWeather','Microsoft.GetHelp','Microsoft.Getstarted','Microsoft.MicrosoftSolitaireCollection','Microsoft.People','Microsoft.SkypeApp','Microsoft.Todos','Microsoft.YourPhone','Microsoft.XboxApp','Microsoft.ZuneMusic','Microsoft.ZuneVideo','Clipchamp.Clipchamp'); " +
-                              "foreach ($app in $apps) { Get-AppxPackage -Name $app -AllUsers | Remove-AppxPackage -EA SilentlyContinue }";
-            await ProcessRunner.RunProcessAsync("powershell", $"-NoProfile -Command \"{psScript}\"", runAsAdmin: true);
-            Logger.Success("Đã gỡ sạch Bloatware!");
+            Logger.Info("Đang gỡ bỏ ứng dụng rác Windows & OneDrive...");
+            var opt = new OptimizerService();
+            await opt.DebloatUwpAppsAsync();
+            await SystemCore.RestartExplorerAsync();
         }
 
         public async Task InstallQuickAppAsync(string appName, string wingetId)

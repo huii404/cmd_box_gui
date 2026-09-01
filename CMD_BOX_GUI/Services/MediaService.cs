@@ -40,7 +40,11 @@ namespace CMD_BOX_GUI.Services
 
         public static string GetDefaultTargetExtension(string path)
         {
-            if (IsImageFile(path)) return ".png";
+            if (IsImageFile(path))
+            {
+                string ext = Path.GetExtension(path).ToLowerInvariant();
+                return string.IsNullOrWhiteSpace(ext) ? ".jpg" : ext;
+            }
             if (IsVideoFile(path)) return ".mp4";
             return Path.GetExtension(path);
         }

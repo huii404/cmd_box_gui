@@ -57,6 +57,15 @@ namespace CMD_BOX_GUI.UI.Views
         {
             SetRunning(true, "🚀 Đang thực thi Master Make Win (Chuỗi tinh chỉnh tự động N-trong-1)...");
             var progress = new Progress<int>(v => PbOptimizer.Value = v);
+
+            // Tự động nhận diện: Nếu người dùng có nhập lời chào thì lưu vào Registry, nếu để trống thì bỏ qua
+            string caption = TxtGreetingCaption?.Text?.Trim() ?? "";
+            string text = TxtGreetingText?.Text?.Trim() ?? "";
+            if (!string.IsNullOrWhiteSpace(caption) || !string.IsNullOrWhiteSpace(text))
+            {
+                await _optimizer.SetStartupGreetingAsync(caption, text);
+            }
+
             await _optimizer.MasterMakeWinAsync(progress);
             SetRunning(false, "🎉 Master Make Win hoàn tất! Toàn bộ tinh chỉnh Taskbar, Services, Bing & Debloat đã được áp dụng!");
         }
