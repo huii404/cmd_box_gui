@@ -136,6 +136,68 @@ namespace CMD_BOX_GUI.UI.Views
             SetRunning(false, "✅ Windows Update components repaired successfully!");
         }
 
+        private async void BtnCleanWindowsOld_Click(object sender, RoutedEventArgs e)
+        {
+            var res = MessageBox.Show(
+                "Bạn có chắc chắn muốn xóa thư mục Windows.old và các tệp cài đặt nâng cấp cũ không?\n" +
+                "Lưu ý: Sau khi xóa, bạn sẽ không thể hạ cấp (roll back) về bản Windows trước đó!",
+                "Xác nhận dọn dẹp Windows.old",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (res != MessageBoxResult.Yes) return;
+
+            SetRunning(true, "🗑️ Đang quét và dọn sạch Windows.old & các tệp nâng cấp cũ...");
+            var progress = new Progress<int>(v => PbOptimizer.Value = v);
+            long freed = await _optimizer.CleanWindowsOldAsync(progress);
+            SetRunning(false, $"✅ Đã dọn dẹp Windows.old thành công! Dung lượng giải phóng: {SystemCore.FormatBytes(freed)}");
+        }
+
+        private async void BtnPrivacyGameDvr_Click(object sender, RoutedEventArgs e)
+        {
+            SetRunning(true, "🔒 Đang cấu hình Quyền riêng tư & Tắt Xbox Game DVR ngốn FPS...");
+            await _optimizer.OptimizePrivacyAndGameDvrAsync();
+            SetRunning(false, "✅ Đã tối ưu Quyền riêng tư (Tắt Timeline, Ad ID, Định vị) và tắt Xbox Game DVR!");
+        }
+
+        private async void BtnCreateRestorePoint_Click(object sender, RoutedEventArgs e)
+        {
+            SetRunning(true, "💾 Đang khởi tạo System Restore Point (Điểm khôi phục hệ thống)...");
+            bool ok = await _optimizer.CreateRestorePointAsync();
+            if (ok)
+            {
+                SetRunning(false, "✅ Đã tạo System Restore Point 'CMD_BOX_SafeBackup' thành công!");
+                MessageBox.Show("Đã tạo điểm khôi phục (Restore Point) an toàn thành công!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                SetRunning(false, "⚠️ Không thể tạo Restore Point. Vui lòng kiểm tra quyền Administrator hoặc dung lượng ổ đĩa.");
+            }
+        }
+
+        private async void BtnRepairIntegrity_Click(object sender, RoutedEventArgs e)
+        {
+            SetRunning(true, "🩺 Đang quét và tự vá file hệ thống với DISM & SFC (có thể mất 3-8 phút)...");
+            var progress = new Progress<int>(v => PbOptimizer.Value = v);
+            await _optimizer.RepairSystemIntegrityAsync(progress);
+            SetRunning(false, "✅ Quá trình quét và vá file hệ thống hoàn tất!");
+            MessageBox.Show("Quá trình quét và sửa chữa file hệ thống bằng DISM & SFC đã hoàn tất!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private async void BtnPauseWU_Click(object sender, RoutedEventArgs e)
+        {
+            SetRunning(true, "⏸️ Đang cấu hình tạm dừng Windows Update...");
+            await _optimizer.PauseWindowsUpdateAsync();
+            SetRunning(false, "✅ Đã tạm dừng Windows Update (hoãn đến 2038 và tắt service ngầm)!");
+        }
+
+        private async void BtnResumeWU_Click(object sender, RoutedEventArgs e)
+        {
+            SetRunning(true, "▶️ Đang khôi phục lại trạng thái Windows Update ban đầu...");
+            await _optimizer.ResumeWindowsUpdateAsync();
+            SetRunning(false, "✅ Đã khôi phục dịch vụ Windows Update hoạt động bình thường!");
+        }
+
         private void SetRunning(bool running, string statusText)
         {
             PbOptimizer.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
@@ -145,13 +207,19 @@ namespace CMD_BOX_GUI.UI.Views
             BtnMasterMakeWin.IsEnabled = !running;
             BtnCleanQuick.IsEnabled = !running;
             BtnCleanPro.IsEnabled = !running;
+            BtnCleanWindowsOld.IsEnabled = !running;
             BtnCleanDev.IsEnabled = !running;
             BtnCleanBrowser.IsEnabled = !running;
             BtnDisableStartup.IsEnabled = !running;
             BtnOptimizeServices.IsEnabled = !running;
+            BtnPrivacyGameDvr.IsEnabled = !running;
             BtnTaskbar.IsEnabled = !running;
             BtnSystemPro.IsEnabled = !running;
             BtnFixWU.IsEnabled = !running;
+            BtnCreateRestorePoint.IsEnabled = !running;
+            BtnRepairIntegrity.IsEnabled = !running;
+            BtnPauseWU.IsEnabled = !running;
+            BtnResumeWU.IsEnabled = !running;
         }
     }
 }

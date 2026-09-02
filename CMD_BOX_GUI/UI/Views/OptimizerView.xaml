@@ -68,6 +68,7 @@
                     <WrapPanel>
                         <Button x:Name="BtnCleanQuick" Content="⚡ Quick Clean" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="14,8" FontSize="11.5" FontWeight="SemiBold" Click="BtnCleanQuick_Click" ToolTip="Quickly purges User Temp, System Temp, WER, DirectX Shader, Flush DNS &amp; Recycle Bin."/>
                         <Button x:Name="BtnCleanPro" Content="🔥 Deep Clean PRO" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="14,8" FontSize="11.5" FontWeight="SemiBold" Click="BtnCleanPro_Click" ToolTip="Exhaustive deep scan: Prefetch, WinSxS Component Store, Delivery Optimization, GPU Shaders, Event Logs &amp; 20+ hidden system paths."/>
+                        <Button x:Name="BtnCleanWindowsOld" Content="🗑️ Clean Windows.old" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnCleanWindowsOld_Click" ToolTip="Quét và xóa sạch các thư mục nâng cấp Windows cũ (Windows.old, $Windows.~BT, $Windows.~WS) giải phóng 15-40GB dung lượng ổ C."/>
                         <Button x:Name="BtnCleanDev" Content="💻 Dev Cache Purge" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnCleanDev_Click" ToolTip="Clears local cache from NPM, Yarn, Pip, NuGet, Gradle, Cargo &amp; Composer."/>
                         <Button x:Name="BtnCleanBrowser" Content="🌐 Browser Cache Purge" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnCleanBrowser_Click" ToolTip="Purges caches of Chrome, Edge, Brave, CocCoc, Firefox, Opera, Vivaldi &amp; Arc."/>
                     </WrapPanel>
@@ -77,22 +78,27 @@
             <!-- Section 2: Windows Tuning & Startup Optimization -->
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
                 <StackPanel>
-                    <TextBlock Text="PERFORMANCE TURBO &amp; STARTUP" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
+                    <TextBlock Text="PERFORMANCE TURBO &amp; PRIVACY" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
                     <WrapPanel>
                         <Button x:Name="BtnDisableStartup" Content="🛑 Startup Optimizer" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnDisableStartup_Click" ToolTip="Scans and disables unnecessary background startup applications while preserving essential GPU/Audio/OEM drivers."/>
                         <Button x:Name="BtnOptimizeServices" Content="🛡️ Disable Telemetry" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnOptimizeServices_Click" ToolTip="Disables Diagnostic Tracking (DiagTrack), dmwappush, Xbox services, and MapsBroker background services."/>
+                        <Button x:Name="BtnPrivacyGameDvr" Content="🔒 Privacy &amp; Game DVR" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnPrivacyGameDvr_Click" ToolTip="Tắt Activity History/Timeline, Advertising ID, Định vị ngầm và tắt ghi ngầm Xbox Game DVR tăng FPS cho GPU."/>
                         <Button x:Name="BtnTaskbar" Content="🪟 Win 11 Taskbar Tweaks" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnTaskbar_Click" ToolTip="Cleans Windows 11 Taskbar by hiding Searchbox, Widgets, TaskView, Chat and Copilot icons."/>
                         <Button x:Name="BtnSystemPro" Content="⚡ Low Latency Turbo" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnSystemPro_Click" ToolTip="Optimizes Desktop responsiveness, Network gaming throttling (0xFFFFFFFF), MenuShowDelay &amp; disables Hibernation."/>
                     </WrapPanel>
                 </StackPanel>
             </Border>
 
-            <!-- Section 3: System Diagnostics & Repair -->
+            <!-- Section 3: System Diagnostics, Repair & Rescue -->
             <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="12">
                 <StackPanel>
-                    <TextBlock Text="SYSTEM DIAGNOSTICS &amp; REPAIR" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
+                    <TextBlock Text="SYSTEM RESCUE &amp; DIAGNOSTICS" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
                     <WrapPanel>
+                        <Button x:Name="BtnCreateRestorePoint" Content="💾 Tạo Restore Point" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="14,8" FontSize="11.5" FontWeight="SemiBold" Click="BtnCreateRestorePoint_Click" ToolTip="Kích hoạt System Protection và tạo 1 điểm khôi phục an toàn cho Windows trước khi tinh chỉnh."/>
+                        <Button x:Name="BtnRepairIntegrity" Content="🩺 SFC &amp; DISM Repair" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnRepairIntegrity_Click" ToolTip="Quét và tự động sửa chữa toàn bộ file hệ thống bị lỗi bằng bộ đôi DISM RestoreHealth và SFC Scannow."/>
                         <Button x:Name="BtnFixWU" Content="🔄 Fix Windows Update" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnFixWU_Click" ToolTip="Stops update services, resets SoftwareDistribution/catroot2 corrupted caches and restarts services."/>
+                        <Button x:Name="BtnPauseWU" Content="⏸️ Tạm Dừng Update" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnPauseWU_Click" ToolTip="Tạm dừng dịch vụ và hoãn lịch Windows Update đến năm 2038, chống bị ép tải ngầm hoặc tự động restart."/>
+                        <Button x:Name="BtnResumeWU" Content="▶️ Khôi Phục Update" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,8" FontSize="11.5" Click="BtnResumeWU_Click" ToolTip="Khôi phục lại dịch vụ Windows Update về trạng thái mặc định ban đầu để cập nhật các bản vá bảo mật."/>
                     </WrapPanel>
                 </StackPanel>
             </Border>

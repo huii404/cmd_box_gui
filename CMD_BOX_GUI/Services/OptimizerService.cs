@@ -443,7 +443,7 @@ namespace CMD_BOX_GUI.Services
                 "*Microsoft.YourPhone*", "*YourPhone*",
                 "*Microsoft.WindowsMaps*", "*WindowsMaps*",
                 "*Microsoft.ZuneMusic*", "*Microsoft.ZuneVideo*",
-                "*3DBuilder*", "*Microsoft3DViewer*", "*Print3D*", "*Paint3D*",
+                "*3DBuilder*", "*Microsoft3DViewer*",
                 "*FeedbackHub*", "*WindowsFeedbackHub*",
                 "*MixedReality.Portal*", "*MixedReality*",
                 "*Microsoft.Windows.DevHome*", "*DevHome*",
@@ -615,6 +615,245 @@ Set-ItemProperty -Path $cdmPath -Name ""SystemPaneSuggestionsEnabled"" -Value 0 
         {
             Logger.Info("[Optimizer] Đang xóa lời chào Windows...");
             return await SetStartupGreetingAsync("", "");
+        }
+
+        // ================= 12. PRIVACY & GAME DVR HARDENING =================
+        public async Task OptimizePrivacyAndGameDvrAsync()
+        {
+            Logger.Info("[Optimizer] Tinh chỉnh Quyền riêng tư & Tắt Xbox Game DVR ngốn FPS...");
+            await Task.Run(() =>
+            {
+                try
+                {
+                    // 1. Tắt Activity History / Timeline
+                    using (var sysKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\System"))
+                    {
+                        sysKey.SetValue("PublishUserActivities", 0, RegistryValueKind.DWord);
+                        sysKey.SetValue("UploadUserActivities", 0, RegistryValueKind.DWord);
+                        sysKey.SetValue("EnableActivityFeed", 0, RegistryValueKind.DWord);
+                    }
+
+                    // 2. Tắt Advertising ID
+                    using (var adKey = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo"))
+                    {
+                        adKey.SetValue("Enabled", 0, RegistryValueKind.DWord);
+                    }
+                    using (var adPolKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo"))
+                    {
+                        adPolKey.SetValue("DisabledByGroupPolicy", 1, RegistryValueKind.DWord);
+                    }
+
+                    // 3. Tắt Location Tracking (Định vị chạy ngầm)
+                    using (var locKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors"))
+                    {
+                        locKey.SetValue("DisableLocation", 1, RegistryValueKind.DWord);
+                        locKey.SetValue("DisableLocationScripting", 1, RegistryValueKind.DWord);
+                    }
+
+                    // 4. Giảm Diagnostic Data & Feedback
+                    using (var siufKey = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Siuf\Rules"))
+                    {
+                        siufKey.SetValue("NumberOfSIUFInPeriod", 0, RegistryValueKind.DWord);
+                    }
+                    using (var dataKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection"))
+                    {
+                        dataKey.SetValue("AllowTelemetry", 0, RegistryValueKind.DWord);
+                        dataKey.SetValue("MaxTelemetryAllowed", 0, RegistryValueKind.DWord);
+                    }
+
+                    // 5. Tắt Xbox Game Bar DVR Background Recording (Gỡ gánh nặng FPS cho GPU)
+                    using (var gameCfg = Registry.CurrentUser.CreateSubKey(@"System\GameConfigStore"))
+                    {
+                        gameCfg.SetValue("GameDVR_Enabled", 0, RegistryValueKind.DWord);
+                    }
+                    using (var dvrPol = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\GameDVR"))
+                    {
+                        dvrPol.SetValue("AllowGameDVR", 0, RegistryValueKind.DWord);
+                    }
+                    using (var dvrKey = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\GameDVR"))
+                    {
+                        dvrKey.SetValue("AppCaptureEnabled", 0, RegistryValueKind.DWord);
+                        dvrKey.SetValue("HistoricalCaptureEnabled", 0, RegistryValueKind.DWord);
+                    }
+
+                    Logger.Success("[Optimizer] Đã tắt Activity History, Advertising ID, Định vị ngầm & Xbox Game DVR thành công!");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Lỗi khi tối ưu Privacy/GameDVR: {ex.Message}");
+                }
+            });
+        }
+
+        // ================= 13. CREATE RESTORE POINT =================
+        public async Task<bool> CreateRestorePointAsync()
+        {
+            Logger.Info("[Optimizer] Đang tạo System Restore Point (Điểm khôi phục hệ thống)...");
+            return await Task.Run(async () =>
+            {
+                try
+                {
+                    string psScript = @"
+try {
+    Set-Service -Name sr -StartupType Automatic -ErrorAction SilentlyContinue
+    Start-Service -Name sr -ErrorAction SilentlyContinue
+    Enable-ComputerRestore -Drive 'C:\' -ErrorAction SilentlyContinue
+    Checkpoint-Computer -Description 'CMD_BOX_SafeBackup' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop
+    Write-Output 'SUCCESS'
+} catch {
+    Write-Output $_.Exception.Message
+}
+";
+                    string output = await ProcessRunner.RunCommandAndGetOutputAsync("powershell.exe", $"-NoProfile -ExecutionPolicy Bypass -Command \"{psScript}\"");
+                    if (output.Contains("SUCCESS", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Logger.Success("[Optimizer] Đã tạo System Restore Point 'CMD_BOX_SafeBackup' thành công!");
+                        return true;
+                    }
+                    else
+                    {
+                        Logger.Warning($"[Optimizer] Kết quả tạo Restore Point: {output.Trim()}");
+                        return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"[Optimizer] Không thể tạo Restore Point: {ex.Message}");
+                    return false;
+                }
+            });
+        }
+
+        // ================= 14. SYSTEM INTEGRITY REPAIR (SFC & DISM) =================
+        public async Task RepairSystemIntegrityAsync(IProgress<int>? progress = null)
+        {
+            Logger.Info("[Optimizer] Bắt đầu quét và tự sửa lỗi file hệ thống (DISM & SFC)...");
+            progress?.Report(10);
+
+            // 1. DISM RestoreHealth
+            Logger.Info("[Optimizer] Bước 1/2: Đang chạy DISM RestoreHealth (khôi phục kho tệp gốc từ Windows Update)...");
+            await ProcessRunner.RunProcessAsync(
+                "dism.exe",
+                "/Online /Cleanup-Image /RestoreHealth",
+                onOutputLine: line => { if (!string.IsNullOrWhiteSpace(line)) Logger.Info($"[DISM] {line}"); },
+                runAsAdmin: true
+            );
+            progress?.Report(60);
+
+            // 2. SFC Scannow
+            Logger.Info("[Optimizer] Bước 2/2: Đang chạy SFC Scannow (kiểm tra và tự vá các file hỏng)...");
+            await ProcessRunner.RunProcessAsync(
+                "sfc.exe",
+                "/scannow",
+                onOutputLine: line => { if (!string.IsNullOrWhiteSpace(line)) Logger.Info($"[SFC] {line}"); },
+                runAsAdmin: true
+            );
+            progress?.Report(100);
+
+            Logger.Success("[Optimizer] Quá trình quét và vá file hệ thống hoàn tất! Kiểm tra chi tiết log ở trên.");
+        }
+
+        // ================= 15. WINDOWS UPDATE CONTROLLER =================
+        public async Task PauseWindowsUpdateAsync()
+        {
+            Logger.Info("[Optimizer] Đang tạm dừng dịch vụ Windows Update...");
+            await Task.Run(async () =>
+            {
+                try
+                {
+                    using (var auKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"))
+                    {
+                        auKey.SetValue("NoAutoUpdate", 1, RegistryValueKind.DWord);
+                        auKey.SetValue("AUOptions", 2, RegistryValueKind.DWord);
+                    }
+
+                    using (var uxKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\WindowsUpdate\UX\Settings"))
+                    {
+                        uxKey.SetValue("PauseFeatureUpdatesEndTime", "2038-01-01T00:00:00Z", RegistryValueKind.String);
+                        uxKey.SetValue("PauseQualityUpdatesEndTime", "2038-01-01T00:00:00Z", RegistryValueKind.String);
+                        uxKey.SetValue("PauseUpdatesExpiryTime", "2038-01-01T00:00:00Z", RegistryValueKind.String);
+                    }
+
+                    await ProcessRunner.RunProcessAsync("cmd.exe", "/c sc stop wuauserv >nul 2>&1 & sc config wuauserv start=disabled >nul 2>&1 & sc stop UsoSvc >nul 2>&1 & sc config UsoSvc start=disabled >nul 2>&1", runAsAdmin: true);
+
+                    Logger.Success("[Optimizer] Đã tạm dừng Windows Update! Máy tính sẽ không tự tải hay ép reboot.");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Lỗi khi tạm dừng Windows Update: {ex.Message}");
+                }
+            });
+        }
+
+        public async Task ResumeWindowsUpdateAsync()
+        {
+            Logger.Info("[Optimizer] Đang khôi phục lại dịch vụ Windows Update...");
+            await Task.Run(async () =>
+            {
+                try
+                {
+                    using (var auKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU"))
+                    {
+                        auKey.SetValue("NoAutoUpdate", 0, RegistryValueKind.DWord);
+                        auKey.SetValue("AUOptions", 3, RegistryValueKind.DWord);
+                    }
+
+                    using (var uxKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\WindowsUpdate\UX\Settings"))
+                    {
+                        try { uxKey.DeleteValue("PauseFeatureUpdatesEndTime", false); } catch { }
+                        try { uxKey.DeleteValue("PauseQualityUpdatesEndTime", false); } catch { }
+                        try { uxKey.DeleteValue("PauseUpdatesExpiryTime", false); } catch { }
+                    }
+
+                    await ProcessRunner.RunProcessAsync("cmd.exe", "/c sc config wuauserv start=auto >nul 2>&1 & sc start wuauserv >nul 2>&1 & sc config UsoSvc start=delayed-auto >nul 2>&1 & sc start UsoSvc >nul 2>&1", runAsAdmin: true);
+
+                    Logger.Success("[Optimizer] Đã khôi phục Windows Update hoạt động bình thường!");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Lỗi khi khôi phục Windows Update: {ex.Message}");
+                }
+            });
+        }
+
+        // ================= 16. EXTENDED DISK CLEANING: WINDOWS.OLD =================
+        public async Task<long> CleanWindowsOldAsync(IProgress<int>? progress = null)
+        {
+            Logger.Info("[Optimizer] Đang quét và dọn sạch các thư mục nâng cấp Windows cũ (Windows.old)...");
+            long initialFree = GetDriveFreeSpace();
+
+            await Task.Run(async () =>
+            {
+                progress?.Report(20);
+                string[] oldPaths = {
+                    @"C:\Windows.old",
+                    @"C:\$Windows.~BT",
+                    @"C:\$Windows.~WS"
+                };
+
+                for (int i = 0; i < oldPaths.Length; i++)
+                {
+                    string path = oldPaths[i];
+                    if (Directory.Exists(path))
+                    {
+                        Logger.Info($"[Optimizer] Đang xóa thư mục: {path}...");
+                        await ProcessRunner.RunProcessAsync("cmd.exe", $"/c takeown /F \"{path}\" /A /R /D Y >nul 2>&1 & icacls \"{path}\" /grant *S-1-5-32-544:F /T /C /Q >nul 2>&1 & rd /s /q \"{path}\" >nul 2>&1", runAsAdmin: true);
+                    }
+                    progress?.Report(20 + (int)((i + 1) * 60.0 / oldPaths.Length));
+                }
+
+                try
+                {
+                    await ProcessRunner.RunProcessAsync("dism.exe", "/online /cleanup-image /spsuperseded", runAsAdmin: true);
+                }
+                catch { }
+
+                progress?.Report(100);
+            });
+
+            long freed = Math.Max(0, GetDriveFreeSpace() - initialFree);
+            Logger.Success($"[Optimizer] Đã dọn dẹp Windows.old và tệp nâng cấp cũ! Dung lượng giải phóng: {SystemCore.FormatBytes(freed)}");
+            return freed;
         }
 
         private static void WipeDirectory(string path)
