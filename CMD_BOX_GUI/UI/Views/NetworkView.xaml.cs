@@ -10,93 +10,10 @@ namespace CMD_BOX_GUI.UI.Views
     {
         private readonly NetworkService _network = new();
         private bool _isBusy = false;
-        private bool _isIpMasked = false;
-
-        private string _rawAdapterName = "...";
-        private string _rawLocalIp = "...";
-        private string _rawGateway = "...";
-        private string _rawPublicIp = "...";
 
         public NetworkView()
         {
             InitializeComponent();
-            _isIpMasked = SettingsService.Current.IsIpMasked;
-            Loaded += async (_, _) =>
-            {
-                _isIpMasked = SettingsService.Current.IsIpMasked;
-                await LoadNetworkInfoAsync();
-            };
-        }
-
-        private async Task LoadNetworkInfoAsync()
-        {
-            BtnRefreshNetInfo.IsEnabled = false;
-            try
-            {
-                var (localIp, gateway, dns, adapterName) = await _network.GetCurrentNetworkInfoAsync();
-                _rawAdapterName = adapterName;
-                _rawLocalIp = localIp;
-                _rawGateway = gateway;
-
-                string publicIp = await _network.GetPublicIpAsync();
-                _rawPublicIp = publicIp;
-
-                UpdateIpDisplay();
-            }
-            finally
-            {
-                BtnRefreshNetInfo.IsEnabled = true;
-            }
-        }
-
-        private void BtnToggleMaskIp_Click(object sender, RoutedEventArgs e)
-        {
-            _isIpMasked = !_isIpMasked;
-            SettingsService.UpdateIpMasked(_isIpMasked);
-            UpdateIpDisplay();
-        }
-
-        private void UpdateIpDisplay()
-        {
-            TxtAdapterName.Text = _rawAdapterName;
-
-            if (_isIpMasked)
-            {
-                TxtLocalIp.Text = MaskIpAddress(_rawLocalIp);
-                TxtGateway.Text = MaskIpAddress(_rawGateway);
-                TxtPublicIp.Text = MaskIpAddress(_rawPublicIp);
-                BtnToggleMaskIp.Content = "👁️‍🗨️ Đang Che IP";
-                BtnToggleMaskIp.Style = (Style)FindResource("PrimaryButton");
-                BtnToggleMaskIp.ToolTip = "Đang bật chế độ ẩn IP riêng tư. Bấm để hiển thị đầy đủ IP.";
-            }
-            else
-            {
-                TxtLocalIp.Text = _rawLocalIp;
-                TxtGateway.Text = _rawGateway;
-                TxtPublicIp.Text = _rawPublicIp;
-                BtnToggleMaskIp.Content = "👁️ Che IP";
-                BtnToggleMaskIp.Style = (Style)FindResource("SecondaryButton");
-                BtnToggleMaskIp.ToolTip = "Bật / Tắt che địa chỉ IP để bảo vệ quyền riêng tư khi stream hoặc chụp ảnh.";
-            }
-        }
-
-        private static string MaskIpAddress(string ip)
-        {
-            if (string.IsNullOrWhiteSpace(ip) || ip == "..." || ip == "Không có" || ip == "N/A" || ip == "Lỗi kết nối")
-                return ip;
-
-            var parts = ip.Split('.');
-            if (parts.Length == 4)
-            {
-                return $"{parts[0]}.{parts[1]}.***.***";
-            }
-
-            return "••••••••";
-        }
-
-        private async void BtnRefreshNetInfo_Click(object sender, RoutedEventArgs e)
-        {
-            await LoadNetworkInfoAsync();
         }
 
         // 1. Xóa Cache DNS
@@ -114,7 +31,6 @@ namespace CMD_BOX_GUI.UI.Views
             await ExecuteNetworkTaskAsync(async () =>
             {
                 await _network.RenewIpAddressAsync();
-                await LoadNetworkInfoAsync();
             });
         }
 
@@ -142,30 +58,16 @@ namespace CMD_BOX_GUI.UI.Views
             await ExecuteNetworkTaskAsync(async () =>
             {
                 await _network.RepairAllNetworkAsync();
-                await LoadNetworkInfoAsync();
             });
         }
 
         // 6. Quét Thiết Bị Mạng LAN / Wi-Fi
         private async void BtnScanLan_Click(object sender, RoutedEventArgs e)
         {
-            if (_isBusy) return;
-            SetButtonsState(false);
-            _isBusy = true;
-
-            try
+            await ExecuteNetworkTaskAsync(async () =>
             {
                 await _network.ScanLanDevicesAsync();
-            }
-            catch (Exception ex)
-            {
-                Core.Logger.Warning($"Lỗi quét mạng LAN: {ex.Message}");
-            }
-            finally
-            {
-                _isBusy = false;
-                SetButtonsState(true);
-            }
+            });
         }
 
         private async Task ExecuteNetworkTaskAsync(Func<Task> taskAction)
@@ -177,6 +79,10 @@ namespace CMD_BOX_GUI.UI.Views
             try
             {
                 await taskAction();
+            }
+            catch (Exception ex)
+            {
+                Core.Logger.Warning($"Lỗi tác vụ mạng: {ex.Message}");
             }
             finally
             {
@@ -192,8 +98,6 @@ namespace CMD_BOX_GUI.UI.Views
             BtnResetWinsock.IsEnabled = isEnabled;
             BtnResetFirewall.IsEnabled = isEnabled;
             BtnRepairAll.IsEnabled = isEnabled;
-            BtnRefreshNetInfo.IsEnabled = isEnabled;
-            BtnToggleMaskIp.IsEnabled = isEnabled;
             BtnScanLan.IsEnabled = isEnabled;
         }
     }

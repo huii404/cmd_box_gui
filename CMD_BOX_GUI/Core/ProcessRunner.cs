@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using CMD_BOX_GUI.Services;
 
 namespace CMD_BOX_GUI.Core
 {
@@ -16,7 +17,13 @@ namespace CMD_BOX_GUI.Core
             CancellationToken cancellationToken = default,
             bool runAsAdmin = false)
         {
-            bool elevate = runAsAdmin && !SystemCore.IsAdministrator();
+            bool allowAdmin = SettingsService.Current.AllowAdminCmd;
+            bool elevate = runAsAdmin && allowAdmin && !SystemCore.IsAdministrator();
+
+            if (runAsAdmin && !allowAdmin && !SystemCore.IsAdministrator())
+            {
+                Logger.Info($"[Standard Mode] Đang chạy '{fileName}' với quyền thường (Lệnh Admin đang TẮT).");
+            }
 
             var psi = new ProcessStartInfo
             {

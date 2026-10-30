@@ -12,56 +12,84 @@ namespace CMD_BOX_GUI.Services
 
         private static readonly Dictionary<string, Color> DarkPalette = new()
         {
-            { "BgPrimary", (Color)ColorConverter.ConvertFromString("#0B0F19") },
-            { "BgSecondary", (Color)ColorConverter.ConvertFromString("#111827") },
-            { "BgCard", (Color)ColorConverter.ConvertFromString("#1F2937") },
-            { "BgCardHover", (Color)ColorConverter.ConvertFromString("#283548") },
-            { "BgInput", (Color)ColorConverter.ConvertFromString("#151E2E") },
+            { "BgPrimary", (Color)ColorConverter.ConvertFromString("#1E1E1E") },
+            { "BgSecondary", (Color)ColorConverter.ConvertFromString("#252526") },
+            { "ActivityBarBg", (Color)ColorConverter.ConvertFromString("#333333") },
+            { "ActivityBarFg", (Color)ColorConverter.ConvertFromString("#858585") },
+            { "ActivityBarActiveFg", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
+            { "ActivityBarActiveBorder", (Color)ColorConverter.ConvertFromString("#007ACC") },
 
-            { "BorderSubtle", (Color)ColorConverter.ConvertFromString("#374151") },
-            { "BorderActive", (Color)ColorConverter.ConvertFromString("#4B5563") },
+            { "EditorTabBg", (Color)ColorConverter.ConvertFromString("#2D2D2D") },
+            { "EditorTabActiveBg", (Color)ColorConverter.ConvertFromString("#1E1E1E") },
+            { "EditorTabBorder", (Color)ColorConverter.ConvertFromString("#252526") },
+            { "BreadcrumbsBg", (Color)ColorConverter.ConvertFromString("#1E1E1E") },
 
-            { "TextPrimary", (Color)ColorConverter.ConvertFromString("#F9FAFB") },
-            { "TextSecondary", (Color)ColorConverter.ConvertFromString("#9CA3AF") },
-            { "TextMuted", (Color)ColorConverter.ConvertFromString("#6B7280") },
+            { "StatusBarBg", (Color)ColorConverter.ConvertFromString("#007ACC") },
+            { "StatusBarFg", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
+            { "StatusBarSubtle", (Color)ColorConverter.ConvertFromString("#005A9E") },
 
-            { "AccentPrimary", (Color)ColorConverter.ConvertFromString("#3B82F6") },
-            { "AccentPrimaryHover", (Color)ColorConverter.ConvertFromString("#2563EB") },
-            { "AccentSuccess", (Color)ColorConverter.ConvertFromString("#10B981") },
-            { "AccentWarning", (Color)ColorConverter.ConvertFromString("#F59E0B") },
-            { "AccentDanger", (Color)ColorConverter.ConvertFromString("#EF4444") },
-            { "AccentCyan", (Color)ColorConverter.ConvertFromString("#06B6D4") },
-            { "AccentPurple", (Color)ColorConverter.ConvertFromString("#8B5CF6") },
+            { "BgCard", (Color)ColorConverter.ConvertFromString("#252526") },
+            { "BgCardHover", (Color)ColorConverter.ConvertFromString("#2A2D2E") },
+            { "BgInput", (Color)ColorConverter.ConvertFromString("#3C3C3C") },
 
-            { "TerminalBg", (Color)ColorConverter.ConvertFromString("#030712") },
-            { "TerminalText", (Color)ColorConverter.ConvertFromString("#10B981") }
+            { "BorderSubtle", (Color)ColorConverter.ConvertFromString("#3C3C3C") },
+            { "BorderActive", (Color)ColorConverter.ConvertFromString("#007ACC") },
+
+            { "TextPrimary", (Color)ColorConverter.ConvertFromString("#CCCCCC") },
+            { "TextSecondary", (Color)ColorConverter.ConvertFromString("#969696") },
+            { "TextMuted", (Color)ColorConverter.ConvertFromString("#6A737D") },
+
+            { "AccentPrimary", (Color)ColorConverter.ConvertFromString("#0E639C") },
+            { "AccentPrimaryHover", (Color)ColorConverter.ConvertFromString("#1177BB") },
+            { "AccentSuccess", (Color)ColorConverter.ConvertFromString("#89D185") },
+            { "AccentWarning", (Color)ColorConverter.ConvertFromString("#CCA700") },
+            { "AccentDanger", (Color)ColorConverter.ConvertFromString("#F14C4C") },
+            { "AccentCyan", (Color)ColorConverter.ConvertFromString("#4FC1FF") },
+            { "AccentPurple", (Color)ColorConverter.ConvertFromString("#C586C0") },
+
+            { "TerminalBg", (Color)ColorConverter.ConvertFromString("#181818") },
+            { "TerminalText", (Color)ColorConverter.ConvertFromString("#4EC9B0") }
         };
 
         private static readonly Dictionary<string, Color> LightPalette = new()
         {
-            { "BgPrimary", (Color)ColorConverter.ConvertFromString("#F1F5F9") },
-            { "BgSecondary", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
-            { "BgCard", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
-            { "BgCardHover", (Color)ColorConverter.ConvertFromString("#F8FAFC") },
-            { "BgInput", (Color)ColorConverter.ConvertFromString("#F8FAFC") },
+            { "BgPrimary", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
+            { "BgSecondary", (Color)ColorConverter.ConvertFromString("#F3F3F3") },
+            { "ActivityBarBg", (Color)ColorConverter.ConvertFromString("#2C2C2C") },
+            { "ActivityBarFg", (Color)ColorConverter.ConvertFromString("#999999") },
+            { "ActivityBarActiveFg", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
+            { "ActivityBarActiveBorder", (Color)ColorConverter.ConvertFromString("#007ACC") },
 
-            { "BorderSubtle", (Color)ColorConverter.ConvertFromString("#E2E8F0") },
-            { "BorderActive", (Color)ColorConverter.ConvertFromString("#CBD5E1") },
+            { "EditorTabBg", (Color)ColorConverter.ConvertFromString("#ECECEC") },
+            { "EditorTabActiveBg", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
+            { "EditorTabBorder", (Color)ColorConverter.ConvertFromString("#E5E5E5") },
+            { "BreadcrumbsBg", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
 
-            { "TextPrimary", (Color)ColorConverter.ConvertFromString("#0F172A") },
-            { "TextSecondary", (Color)ColorConverter.ConvertFromString("#475569") },
-            { "TextMuted", (Color)ColorConverter.ConvertFromString("#94A3B8") },
+            { "StatusBarBg", (Color)ColorConverter.ConvertFromString("#007ACC") },
+            { "StatusBarFg", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
+            { "StatusBarSubtle", (Color)ColorConverter.ConvertFromString("#005A9E") },
 
-            { "AccentPrimary", (Color)ColorConverter.ConvertFromString("#2563EB") },
-            { "AccentPrimaryHover", (Color)ColorConverter.ConvertFromString("#1D4ED8") },
-            { "AccentSuccess", (Color)ColorConverter.ConvertFromString("#059669") },
-            { "AccentWarning", (Color)ColorConverter.ConvertFromString("#D97706") },
-            { "AccentDanger", (Color)ColorConverter.ConvertFromString("#DC2626") },
-            { "AccentCyan", (Color)ColorConverter.ConvertFromString("#0284C7") },
-            { "AccentPurple", (Color)ColorConverter.ConvertFromString("#7C3AED") },
+            { "BgCard", (Color)ColorConverter.ConvertFromString("#F8F8F8") },
+            { "BgCardHover", (Color)ColorConverter.ConvertFromString("#ECECEC") },
+            { "BgInput", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
 
-            { "TerminalBg", (Color)ColorConverter.ConvertFromString("#E2E8F0") },
-            { "TerminalText", (Color)ColorConverter.ConvertFromString("#0F172A") }
+            { "BorderSubtle", (Color)ColorConverter.ConvertFromString("#E5E5E5") },
+            { "BorderActive", (Color)ColorConverter.ConvertFromString("#007ACC") },
+
+            { "TextPrimary", (Color)ColorConverter.ConvertFromString("#333333") },
+            { "TextSecondary", (Color)ColorConverter.ConvertFromString("#616161") },
+            { "TextMuted", (Color)ColorConverter.ConvertFromString("#888888") },
+
+            { "AccentPrimary", (Color)ColorConverter.ConvertFromString("#007ACC") },
+            { "AccentPrimaryHover", (Color)ColorConverter.ConvertFromString("#005FB8") },
+            { "AccentSuccess", (Color)ColorConverter.ConvertFromString("#16825D") },
+            { "AccentWarning", (Color)ColorConverter.ConvertFromString("#BF8803") },
+            { "AccentDanger", (Color)ColorConverter.ConvertFromString("#CD3131") },
+            { "AccentCyan", (Color)ColorConverter.ConvertFromString("#007ACC") },
+            { "AccentPurple", (Color)ColorConverter.ConvertFromString("#6F42C1") },
+
+            { "TerminalBg", (Color)ColorConverter.ConvertFromString("#F8F8F8") },
+            { "TerminalText", (Color)ColorConverter.ConvertFromString("#333333") }
         };
 
         /// <summary>

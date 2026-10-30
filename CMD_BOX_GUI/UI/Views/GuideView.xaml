@@ -74,13 +74,10 @@
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="🧹" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="2. Hệ Thống Tối Ưu &amp; Dọn Rác Windows (System Optimizer)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="1. Hệ Thống Tối Ưu &amp; Dọn Rác Windows (System Optimizer)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel>
-                        <TextBlock Text="• Master Make Win (1-Click Tinh Chỉnh Toàn Diện):" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Chuỗi tự động hóa N-trong-1: Tự động kiểm tra &amp; tắt BitLocker khôi phục tốc độ SSD, gỡ tận gốc gói WebExperience (Widgets ngầm), tắt Search/Copilot trên Taskbar, tắt tìm kiếm Bing Online, xóa lịch sử Recent Files chống soi, khôi phục Menu chuột phải Win 10, tăng tuổi thọ SSD (tắt Last Access Timestamp), tắt tiếng bíp lỗi hệ thống, kích hoạt Storage Sense dọn file tạm, bỏ qua màn hình Welcome sau Update, chặn Windows tự Reboot khi Update, tắt chớp đen UAC, tắt cảnh báo đầy ổ đĩa, gỡ sạch 15+ ứng dụng rác UWP (Cortana, Solitaire, 3D Builder, Maps...), tắt toàn bộ Services Telemetry &amp; Game thừa (chừa lại quay màn hình BcastDVR), tối ưu phản hồi 0ms và tự động khởi động lại Explorer ngay lập tức." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
-
                         <TextBlock Text="• Quick Clean (Xóa rác nhanh):" FontWeight="SemiBold" Foreground="{DynamicResource AccentSuccess}" Margin="0,0,0,4"/>
                         <TextBlock Text="Tự động dọn sạch thư mục %temp%, C:\Windows\Temp, Recent, WER Temp, DirectX Shader Cache, làm sạch Thùng rác và Flush DNS." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
@@ -103,13 +100,10 @@
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="🌐" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="3. Thông Tin Kết Nối Mạng &amp; Bộ Công Cụ Cứu Hộ Internet (Network Repair)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="2. Bộ Công Cụ Cứu Hộ Internet &amp; Quét Mạng LAN (Network Repair)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel>
-                        <TextBlock Text="• Thông tin mạng thời gian thực &amp; Chế độ Che IP Riêng Tư (Mask IP):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimary}" Margin="0,0,0,4"/>
-                        <TextBlock Text="Tự động nhận diện Card mạng, IP nội bộ (LAN), Router Gateway và IP công cộng (Public IP). Nút '👁️ Che IP' cho phép ẩn giấu các dải IP nhạy cảm (192.168.***.***) chỉ bằng 1 cú click để chống lộ thông tin khi quay màn hình, live stream hoặc chụp ảnh chia sẻ." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
-
                         <TextBlock Text="• 1. Xóa Cache DNS (Flush DNS):" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimary}" Margin="0,0,0,4"/>
                         <TextBlock Text="Xóa bộ nhớ đệm phân giải tên miền — sửa triệt để lỗi website không tải được, lỗi đổi IP máy chủ hoặc không vào được mạng dù vẫn kết nối Wi-Fi." Foreground="{DynamicResource TextPrimary}" TextWrapping="Wrap" Margin="12,0,0,8"/>
 
@@ -130,12 +124,12 @@
                     </StackPanel>
                 </Expander>
 
-                <!-- MỤC 4: TIỆN ÍCH & TỰ ĐỘNG -->
+                <!-- MỤC 3: TIỆN ÍCH & TỰ ĐỘNG -->
                 <Expander x:Name="CardUtilities" Style="{StaticResource ModernExpander}" Tag="UTILITIES AUTO CLICK SPAM TEXT PIN LAPTOP BATTERY BLOATWARE CAI APP 7ZIP VSCODE">
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="⚡" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="4. Công Cụ Tự Động Hóa &amp; Tiện Ích Đa Năng (Utilities)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="3. Công Cụ Tự Động Hóa &amp; Tiện Ích Đa Năng (Utilities)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel>
@@ -153,12 +147,12 @@
                     </StackPanel>
                 </Expander>
 
-                <!-- MỤC 5: TRUNG TÂM XỬ LÝ MEDIA -->
+                <!-- MỤC 4: TRUNG TÂM XỬ LÝ MEDIA -->
                 <Expander x:Name="CardMedia" Style="{StaticResource ModernExpander}" Tag="MEDIA FFMPEG MP3 AAC WAV FLAC GIF MUTE TAT TIENG TRICH XUAT AM THANH ANH NEN LAM NET H264 PNG MP4 CONVERT DOI DUOI TEP">
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="🎬" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="5. Studio Xử Lý Media Đa Năng (Nén, Làm Nét, Đổi Đuôi, Tách Audio, Mute, GIF)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="4. Studio Xử Lý Media Đa Năng (Nén, Làm Nét, Đổi Đuôi, Tách Audio, Mute, GIF)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel>
@@ -185,12 +179,12 @@
                     </StackPanel>
                 </Expander>
 
-                <!-- MỤC 6: PHÍM TẮT & THAO TÁC TIỆN ÍCH -->
-                <Expander x:Name="CardHotkeys" Style="{StaticResource ModernExpander}" Tag="HOTKEYS PHIM TAT ESC F6 TERMINAL LOG CONSOLE THEME DARK LIGHT SANG TOI">
+                <!-- MỤC 5: PHÍM TẮT & THAO TÁC TIỆN ÍCH -->
+                <Expander x:Name="CardHotkeys" Style="{StaticResource ModernExpander}" Tag="HOTKEYS PHIM TAT ESC F6 TERMINAL LOG CONSOLE THEME DARK LIGHT SANG TOI TAB FILE IMPORT">
                     <Expander.Header>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="⌨️" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="6. Phím Tắt Khẩn Cấp, Console Log &amp; Đổi Giao Diện Sáng/Tối" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="5. Phím Tắt Khẩn Cấp, Quản Lý Tab, Nhập File &amp; Giao Diện" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Expander.Header>
                     <StackPanel>

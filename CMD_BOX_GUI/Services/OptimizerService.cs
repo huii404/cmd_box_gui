@@ -498,66 +498,7 @@ Set-ItemProperty -Path $cdmPath -Name ""SystemPaneSuggestionsEnabled"" -Value 0 
             Logger.Success("[Optimizer] Đã gỡ sạch Bloatware (OneDrive, Sticky Notes, Xbox, Get Started, News, Widgets...)!");
         }
 
-        // ================= 10. BITLOCKER CHECK & DISABLE =================
-        public async Task CheckAndDisableBitLockerAsync()
-        {
-            Logger.Info("[BitLocker] Đang kiểm tra trạng thái mã hóa ổ đĩa BitLocker...");
-            await Task.Run(async () =>
-            {
-                try
-                {
-                    string statusOutput = await ProcessRunner.RunCommandAndGetOutputAsync("manage-bde.exe", "-status");
-                    if (!string.IsNullOrWhiteSpace(statusOutput) && 
-                        (statusOutput.Contains("Protection On", StringComparison.OrdinalIgnoreCase) || 
-                         statusOutput.Contains("Fully Encrypted", StringComparison.OrdinalIgnoreCase) ||
-                         statusOutput.Contains("Encryption in Progress", StringComparison.OrdinalIgnoreCase)))
-                    {
-                        Logger.Warning("[BitLocker] Phát hiện ổ đĩa đang bật BitLocker làm giảm tốc độ SSD! Đang tự động giải mã và tắt...");
-                        string bitLockerScript = "Get-BitLockerVolume | Where-Object { $_.ProtectionStatus -eq 'On' } | Disable-BitLocker -EA SilentlyContinue; manage-bde.exe -off C:";
-                        await SystemCore.RunPowerShellScriptAsync(bitLockerScript, "disable_bitlocker");
-                        Logger.Success("[BitLocker] Đã gửi lệnh tắt BitLocker và giải mã ổ đĩa thành công! Tốc độ SSD sẽ được khôi phục 100%.");
-                    }
-                    else
-                    {
-                        Logger.Info("[BitLocker] Ổ đĩa không bật BitLocker (Tốc độ SSD đạt chuẩn tối đa).");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warning($"[BitLocker] Lỗi kiểm tra BitLocker: {ex.Message}");
-                }
-            });
-        }
-
-        // ================= 11. MASTER MAKE WIN (1-CLICK ALL-IN-ONE) =================
-        public async Task MasterMakeWinAsync(IProgress<int>? progress = null)
-        {
-            Logger.Info("🚀 [MAKE WIN] BẮT ĐẦU TỐI ƯU TOÀN DIỆN 1-CLICK...");
-
-            progress?.Report(10);
-            await OptimizeTaskbarWindows11Async();
-
-            progress?.Report(30);
-            await OptimizeServicesAsync();
-
-            progress?.Report(50);
-            await OptimizeSystemProAsync();
-
-            progress?.Report(70);
-            await DebloatUwpAppsAsync();
-
-            progress?.Report(85);
-            await CheckAndDisableBitLockerAsync();
-
-            progress?.Report(95);
-            await SystemCore.RestartExplorerAsync();
-
-            progress?.Report(100);
-            Logger.Success("🎉 [MAKE WIN] HOÀN TẤT TOÀN BỘ CHUỖI TINH CHỈNH!");
-            Logger.Success("Windows đã được gỡ Widgets, tắt BitLocker, dọn Taskbar, tắt Bing, tắt Service rác & tăng tốc tức thì!");
-        }
-
-        // ================= 9. FIX WINDOWS UPDATE =================
+        // ================= 10. FIX WINDOWS UPDATE =================
         public async Task FixWindowsUpdateAsync()
         {
             Logger.Info("[Optimizer] Repairing Windows Update components...");
@@ -568,53 +509,6 @@ Set-ItemProperty -Path $cdmPath -Name ""SystemPaneSuggestionsEnabled"" -Value 0 
 
             await ProcessRunner.RunProcessAsync("cmd.exe", $"/c {script}", runAsAdmin: true);
             Logger.Success("[Optimizer] Windows Update repaired!");
-        }
-
-        // ================= 11. STARTUP GREETING (LỜI CHÀO WINDOWS) =================
-        public (string caption, string text) GetStartupGreeting()
-        {
-            try
-            {
-                using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System");
-                if (key != null)
-                {
-                    string caption = key.GetValue("legalnoticecaption")?.ToString() ?? "";
-                    string text = key.GetValue("legalnoticetext")?.ToString() ?? "";
-                    return (caption, text);
-                }
-            }
-            catch { }
-            return ("", "");
-        }
-
-        public async Task<bool> SetStartupGreetingAsync(string caption, string text)
-        {
-            Logger.Info($"[Optimizer] Cấu hình lời chào Windows: [{caption}]...");
-            return await Task.Run(() =>
-            {
-                try
-                {
-                    using var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System");
-                    if (key != null)
-                    {
-                        key.SetValue("legalnoticecaption", caption ?? "", RegistryValueKind.String);
-                        key.SetValue("legalnoticetext", text ?? "", RegistryValueKind.String);
-                        Logger.Success("[Optimizer] Đã lưu lời chào Windows thành công! (Sẽ hiển thị khi mở máy)");
-                        return true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error($"Lỗi khi ghi lời chào Registry: {ex.Message}");
-                }
-                return false;
-            });
-        }
-
-        public async Task<bool> ClearStartupGreetingAsync()
-        {
-            Logger.Info("[Optimizer] Đang xóa lời chào Windows...");
-            return await SetStartupGreetingAsync("", "");
         }
 
         // ================= 12. PRIVACY & GAME DVR HARDENING =================

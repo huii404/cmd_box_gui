@@ -101,6 +101,7 @@ namespace CMD_BOX_GUI.UI.Views
             {
                 foreach (var file in dlg.FileNames) AddMediaFile(file);
                 UpdateTableNotice();
+                e.Handled = true;
             }
         }
 
@@ -113,6 +114,7 @@ namespace CMD_BOX_GUI.UI.Views
                     .Where(f => MediaService.IsImageFile(f) || MediaService.IsVideoFile(f));
                 foreach (var file in files) AddMediaFile(file);
                 UpdateTableNotice();
+                e.Handled = true;
             }
         }
 
@@ -136,7 +138,23 @@ namespace CMD_BOX_GUI.UI.Views
                     }
                 }
                 UpdateTableNotice();
+                e.Handled = true;
             }
+        }
+
+        public void ImportExternalFiles(System.Collections.Generic.IEnumerable<string> paths)
+        {
+            if (_isBatchRunning) return;
+            foreach (var path in paths)
+            {
+                if (File.Exists(path)) AddMediaFile(path);
+                else if (Directory.Exists(path))
+                {
+                    var dirFiles = Directory.GetFiles(path).Where(f => MediaService.IsImageFile(f) || MediaService.IsVideoFile(f));
+                    foreach (var df in dirFiles) AddMediaFile(df);
+                }
+            }
+            UpdateTableNotice();
         }
 
         private void AddMediaFile(string filePath)
@@ -167,6 +185,7 @@ namespace CMD_BOX_GUI.UI.Views
             {
                 _mediaItems.Remove(item);
                 UpdateTableNotice();
+                e.Handled = true;
             }
         }
 
@@ -255,7 +274,7 @@ namespace CMD_BOX_GUI.UI.Views
                         item.StatusColor = "#06B6D4";
                     });
 
-                    string outDir = Path.GetDirectoryName(item.FilePath)!;
+                    string outDir = Path.GetDirectoryName(item.FilePath) ?? AppDomain.CurrentDomain.BaseDirectory;
                     _lastOutputDir = outDir;
 
                     string baseName = Path.GetFileNameWithoutExtension(item.FilePath);

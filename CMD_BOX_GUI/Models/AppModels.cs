@@ -82,10 +82,39 @@ namespace CMD_BOX_GUI.Models
     public class AppSettings
     {
         public bool IsDarkMode { get; set; } = true;
-        public bool AllowAdminCmd { get; set; } = true;
+        public bool AllowAdminCmd { get; set; } = false;
         public bool IsIpMasked { get; set; } = false;
         public string LastSelectedTab { get; set; } = "Optimizer";
         public DateTime LastSavedTime { get; set; } = DateTime.Now;
+    }
+
+    public class WorkspaceTabItem : INotifyPropertyChanged
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Icon { get; set; } = "📄";
+
+        private string _title = string.Empty;
+        public string Title
+        {
+            get => _title;
+            set { _title = value; OnPropertyChanged(); }
+        }
+
+        public string ToolTipText { get; set; } = string.Empty;
+        public string? FilePath { get; set; }
+        public bool IsFileTab => !string.IsNullOrWhiteSpace(FilePath);
+        public System.Windows.UIElement? Content { get; set; }
+
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set { _isSelected = value; OnPropertyChanged(); }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
     public class LanDeviceItem

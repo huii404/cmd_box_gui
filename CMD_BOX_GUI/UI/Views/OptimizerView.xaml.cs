@@ -13,61 +13,6 @@ namespace CMD_BOX_GUI.UI.Views
         public OptimizerView()
         {
             InitializeComponent();
-            Loaded += (_, _) => LoadStartupGreeting();
-        }
-
-        private void LoadStartupGreeting()
-        {
-            var (caption, text) = _optimizer.GetStartupGreeting();
-            TxtGreetingCaption.Text = caption;
-            TxtGreetingText.Text = text;
-        }
-
-        private async void BtnSaveGreeting_Click(object sender, RoutedEventArgs e)
-        {
-            string caption = TxtGreetingCaption.Text.Trim();
-            string text = TxtGreetingText.Text.Trim();
-
-            if (string.IsNullOrWhiteSpace(caption) && string.IsNullOrWhiteSpace(text))
-            {
-                MessageBox.Show("Vui lòng nhập tiêu đề hoặc nội dung lời chào!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            bool ok = await _optimizer.SetStartupGreetingAsync(caption, text);
-            if (ok)
-            {
-                MessageBox.Show("Đã lưu lời chào khởi động Windows thành công!\nThông điệp sẽ xuất hiện ở màn hình chào mừng mỗi khi bật máy tính.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show("Không thể ghi vào Registry. Vui lòng đảm bảo ứng dụng có quyền Administrator.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
-        }
-
-        private async void BtnClearGreeting_Click(object sender, RoutedEventArgs e)
-        {
-            await _optimizer.ClearStartupGreetingAsync();
-            TxtGreetingCaption.Text = "";
-            TxtGreetingText.Text = "";
-            MessageBox.Show("Đã xóa bỏ lời chào khởi động Windows.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private async void BtnMasterMakeWin_Click(object sender, RoutedEventArgs e)
-        {
-            SetRunning(true, "🚀 Đang thực thi Master Make Win (Chuỗi tinh chỉnh tự động N-trong-1)...");
-            var progress = new Progress<int>(v => PbOptimizer.Value = v);
-
-            // Tự động nhận diện: Nếu người dùng có nhập lời chào thì lưu vào Registry, nếu để trống thì bỏ qua
-            string caption = TxtGreetingCaption?.Text?.Trim() ?? "";
-            string text = TxtGreetingText?.Text?.Trim() ?? "";
-            if (!string.IsNullOrWhiteSpace(caption) || !string.IsNullOrWhiteSpace(text))
-            {
-                await _optimizer.SetStartupGreetingAsync(caption, text);
-            }
-
-            await _optimizer.MasterMakeWinAsync(progress);
-            SetRunning(false, "🎉 Master Make Win hoàn tất! Toàn bộ tinh chỉnh Taskbar, Services, Bing & Debloat đã được áp dụng!");
         }
 
         private async void BtnCleanQuick_Click(object sender, RoutedEventArgs e)
@@ -204,7 +149,6 @@ namespace CMD_BOX_GUI.UI.Views
             TxtStatus.Visibility = Visibility.Visible;
             TxtStatus.Text = statusText;
 
-            BtnMasterMakeWin.IsEnabled = !running;
             BtnCleanQuick.IsEnabled = !running;
             BtnCleanPro.IsEnabled = !running;
             BtnCleanWindowsOld.IsEnabled = !running;

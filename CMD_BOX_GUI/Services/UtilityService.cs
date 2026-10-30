@@ -55,7 +55,8 @@ namespace CMD_BOX_GUI.Services
             var token = _spamCts.Token;
 
             Logger.Info($"Spam Text ({count} lần)... Bắt đầu sau 2s. [ESC/F6 ngắt]");
-            await Task.Delay(2000, token);
+            try { await Task.Delay(2000, token); }
+            catch (TaskCanceledException) { return; }
 
             await Task.Run(async () =>
             {
@@ -97,7 +98,8 @@ namespace CMD_BOX_GUI.Services
             var token = _spamCts.Token;
 
             Logger.Info($"Auto Paste {lines.Length} dòng... Bắt đầu sau 2s. [ESC/F6 ngắt]");
-            await Task.Delay(2000, token);
+            try { await Task.Delay(2000, token); }
+            catch (TaskCanceledException) { return; }
 
             await Task.Run(async () =>
             {
