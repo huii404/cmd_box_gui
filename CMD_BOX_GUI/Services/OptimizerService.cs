@@ -796,18 +796,28 @@ try {
         {
             var list = new List<Models.SystemServiceItem>
             {
+                // TELEMETRY & CHẨN ĐOÁN (SAFE)
                 new() { ServiceName = "DiagTrack", DisplayName = "Connected User Experiences & Telemetry", Category = "Telemetry", Description = "Thu thập dữ liệu chẩn đoán & gửi ẩn về máy chủ Microsoft.", Impact = "Tiết kiệm RAM & SSD I/O", RiskLevel = "Safe" },
                 new() { ServiceName = "dmwappushservice", DisplayName = "Device Management WAP Push", Category = "Telemetry", Description = "Kênh chuyển tin nhắn telemetry và định tuyến quản lý thiết bị.", Impact = "Bảo mật & Giảm tiến trình nền", RiskLevel = "Safe" },
                 new() { ServiceName = "diagnosticshub.standardcollector.service", DisplayName = "Microsoft (R) Diagnostics Hub Standard Collector", Category = "Telemetry", Description = "Thu thập sự kiện chẩn đoán thời gian thực cho Visual Studio / OEM.", Impact = "Tiết kiệm CPU", RiskLevel = "Safe" },
-                new() { ServiceName = "MapsBroker", DisplayName = "Downloaded Maps Manager", Category = "Hệ Thống", Description = "Tự động tải & cập nhật bản đồ ngoại tuyến của ứng dụng Windows Maps.", Impact = "Giảm tiêu hao SSD & Network", RiskLevel = "Safe" },
                 new() { ServiceName = "WerSvc", DisplayName = "Windows Error Reporting Service", Category = "Báo Lỗi", Description = "Ghi log khi app bị crash và gửi báo cáo lỗi lên Microsoft.", Impact = "Tiết kiệm dung lượng ổ C", RiskLevel = "Safe" },
+                new() { ServiceName = "wisvc", DisplayName = "Windows Insider Service", Category = "Telemetry", Description = "Dịch vụ thử nghiệm bản dựng beta liên tục gửi dữ liệu chẩn đoán sâu.", Impact = "Chặn tải bản dựng lỗi ngầm", RiskLevel = "Safe" },
+                new() { ServiceName = "RetailDemo", DisplayName = "Retail Demo Service", Category = "Dịch Vụ Rác", Description = "Chế độ trình chiếu demo cho máy trưng bày tại siêu thị điện máy.", Impact = "Giải phóng dịch vụ thừa", RiskLevel = "Safe" },
+                new() { ServiceName = "lfsvc", DisplayName = "Geolocation Service (Định vị)", Category = "Riêng Tư", Description = "Theo dõi vị trí thực tế của thiết bị gửi về cho Cortana và quảng cáo.", Impact = "Bảo vệ riêng tư tuyệt đối", RiskLevel = "Safe" },
+                new() { ServiceName = "PcaSvc", DisplayName = "Program Compatibility Assistant", Category = "Dịch Vụ Rác", Description = "Giám sát cài app cũ và hiện pop-up phiền toái, gửi log tương thích.", Impact = "Tăng tốc chạy file setup .exe", RiskLevel = "Safe" },
+                new() { ServiceName = "WMPNetworkSvc", DisplayName = "Windows Media Player Network Sharing", Category = "Media", Description = "Chia sẻ thư viện nhạc/video qua mạng UPnP cũ, quét ổ đĩa liên tục.", Impact = "Hạ nhiệt SSD & RAM", RiskLevel = "Safe" },
+                new() { ServiceName = "SharedRealitySvc", DisplayName = "Spatial Data Service (Windows Mixed Reality)", Category = "Dịch Vụ Rác", Description = "Dịch vụ phục vụ kính thực tế ảo WMR đã bị Microsoft khai tử trên Win 11.", Impact = "Tắt dịch vụ lỗi thời", RiskLevel = "Safe" },
+                new() { ServiceName = "MapsBroker", DisplayName = "Downloaded Maps Manager", Category = "Hệ Thống", Description = "Tự động tải & cập nhật bản đồ ngoại tuyến của ứng dụng Windows Maps.", Impact = "Giảm tiêu hao SSD & Network", RiskLevel = "Safe" },
 
+                // CAUTION: CẦN CÂN NHẮC
+                new() { ServiceName = "DPS", DisplayName = "Diagnostic Policy Service", Category = "Chẩn Đoán", Description = "Ghi log liên tục vào SRUDB.dat (tắt giúp giảm hao SSD nhưng mất Troubleshoot mạng tự động).", Impact = "Tiết kiệm hàng GB ghi đĩa", RiskLevel = "Caution" },
+                new() { ServiceName = "PhoneSvc", DisplayName = "Phone Service (Liên kết điện thoại)", Category = "Tiện Ích", Description = "Dịch vụ đồng bộ tin nhắn/cuộc gọi của Phone Link (chỉ tắt nếu không dùng).", Impact = "Tiết kiệm RAM & tiến trình", RiskLevel = "Caution" },
                 new() { ServiceName = "XblAuthManager", DisplayName = "Xbox Live Auth Manager", Category = "Xbox", Description = "Quản lý xác thực tài khoản Xbox Live (chỉ tắt nếu không chơi game Xbox Store).", Impact = "Tiết kiệm RAM", RiskLevel = "Caution" },
                 new() { ServiceName = "XblGameSave", DisplayName = "Xbox Live Game Save", Category = "Xbox", Description = "Đồng bộ lưu file save của các game trong Xbox App.", Impact = "Tiết kiệm Network & RAM", RiskLevel = "Caution" },
                 new() { ServiceName = "XboxNetApiSvc", DisplayName = "Xbox Live Networking Service", Category = "Xbox", Description = "Dịch vụ mạng hỗ trợ kết nối mạng cho Xbox Live.", Impact = "Giảm tải mạng", RiskLevel = "Caution" },
                 new() { ServiceName = "XboxGipSvc", DisplayName = "Xbox Accessory Management Service", Category = "Xbox", Description = "Quản lý phụ kiện tay cầm Xbox chuyên dụng.", Impact = "Tiết kiệm RAM", RiskLevel = "Caution" },
                 new() { ServiceName = "WSearch", DisplayName = "Windows Search Indexer", Category = "Hệ Thống", Description = "Lập chỉ mục tìm kiếm liên tục (tắt giúp giảm 100% Disk HDD/SSD yếu, nhưng tìm file sẽ lâu hơn).", Impact = "Hạ nhiệt ổ cứng & CPU", RiskLevel = "Caution" },
-                new() { ServiceName = "SysMain", DisplayName = "SysMain (Superfetch)", Category = "Hệ Thống", Description = "Tự động nạp trước ứng dụng vào RAM (tắt giúp giải phóng RAM cho game nặng, trên HDD app nạp chậm hơn xíu).", Impact = "Chống nghẽn RAM & Disk", RiskLevel = "Caution" }
+                new() { ServiceName = "SysMain", DisplayName = "SysMain (Superfetch)", Category = "Hệ Thống", Description = "Tự động nạp trước ứng dụng vào RAM (tắt giúp giải phóng RAM cho game nặng).", Impact = "Chống nghẽn RAM & Disk", RiskLevel = "Caution" }
             };
 
             foreach (var svc in list)
@@ -843,38 +853,52 @@ try {
             }, $"svc_{serviceName}");
         }
 
-        private static readonly (string AppName, string PackagePattern, string Category, string Description, string EstimatedSize, string RiskLevel)[] BloatwareCatalog = new[]
+        private static readonly (string AppName, string PackagePattern, string Category, string Description, string EstimatedSize, string RiskLevel, string Origin)[] BloatwareCatalog = new[]
         {
-            // SAFE: An toàn gỡ bỏ 100%
-            ("Cortana", "Microsoft.549981C3F5F10", "Trợ Lý Ảo", "Trợ lý ảo Cortana đã dừng hỗ trợ, chạy ngầm ngốn tài nguyên.", "~60 MB", "Safe"),
-            ("3D Viewer", "Microsoft.Microsoft3DViewer", "Đồ Họa", "Xem mô hình 3D mặc định ít người dùng phổ thông cần tới.", "~120 MB", "Safe"),
-            ("3D Builder", "Microsoft.3DBuilder", "Đồ Họa", "Tạo và in mô hình 3D mặc định.", "~85 MB", "Safe"),
-            ("MSN Weather (Thời Tiết)", "Microsoft.BingWeather", "Tin Tức", "Ứng dụng Thời tiết MSN liên tục kết nối mạng cập nhật.", "~90 MB", "Safe"),
-            ("MSN News (Tin Tức)", "Microsoft.BingNews", "Tin Tức", "Tin tức MSN cập nhật và đẩy thông báo ngầm.", "~80 MB", "Safe"),
-            ("MSN Finance (Tài Chính)", "Microsoft.BingFinance", "Tin Tức", "Theo dõi thị trường chứng khoán MSN.", "~75 MB", "Safe"),
-            ("MSN Sports (Thể Thao)", "Microsoft.BingSports", "Tin Tức", "Bản tin thể thao MSN.", "~70 MB", "Safe"),
-            ("Solitaire Collection", "Microsoft.MicrosoftSolitaireCollection", "Game Rác", "Bộ game bài Solitaire cài sẵn kèm quảng cáo.", "~140 MB", "Safe"),
-            ("Candy Crush Saga", "king.com.CandyCrush", "Game Rác", "Game tài trợ tự động cài ngầm khi cài đặt Windows.", "~250 MB", "Safe"),
-            ("Movies & TV (Zune Video)", "Microsoft.ZuneVideo", "Media", "Trình xem video mặc định của Windows.", "~80 MB", "Safe"),
-            ("People (Danh Bạ)", "Microsoft.People", "Danh Bạ", "Danh bạ liên lạc tích hợp Skype/Mail không cần thiết.", "~40 MB", "Safe"),
-            ("Feedback Hub", "Microsoft.WindowsFeedbackHub", "Telemetry", "Trung tâm gửi phản hồi và dữ liệu người dùng lên Microsoft.", "~55 MB", "Safe"),
-            ("Skype", "Microsoft.SkypeApp", "Liên Lạc", "Ứng dụng nhắn tin / gọi video Skype.", "~110 MB", "Safe"),
-            ("Microsoft To Do", "Microsoft.Todos", "Ghi Chú", "Quản lý danh sách công việc To-Do của Microsoft.", "~50 MB", "Safe"),
-            ("Clipchamp Video Editor", "Clipchamp.Clipchamp", "Media", "Trình dựng video trực tuyến mặc định trên Win 11.", "~160 MB", "Safe"),
-            ("Spotify Music", "SpotifyAB.SpotifyMusic", "Media", "Ứng dụng nghe nhạc Spotify đối tác cài sẵn.", "~150 MB", "Safe"),
-            ("Disney+", "Disney", "Đối Tác", "Ứng dụng xem phim Disney+ đối tác cài sẵn.", "~120 MB", "Safe"),
-            ("TikTok", "TikTok", "Đối Tác", "Ứng dụng mạng xã hội video TikTok cài sẵn.", "~100 MB", "Safe"),
-            ("Amazon Prime Video", "AmazonVideo", "Đối Tác", "Ứng dụng xem phim Amazon Prime Video.", "~90 MB", "Safe"),
+            // 🌟 SPONSORED: Rác đối tác tài trợ (An toàn gỡ bỏ 100%)
+            ("TikTok", "TikTok", "Mạng Xã Hội", "Ứng dụng video ngắn TikTok cài sẵn.", "~100 MB", "Safe", "Sponsored"),
+            ("Spotify Music", "SpotifyAB.SpotifyMusic", "Âm Nhạc", "Ứng dụng nghe nhạc Spotify đối tác cài sẵn.", "~150 MB", "Safe", "Sponsored"),
+            ("Disney+", "Disney", "Xem Phim", "Ứng dụng xem phim trực tuyến Disney+.", "~120 MB", "Safe", "Sponsored"),
+            ("Candy Crush Saga", "king.com.CandyCrush", "Game Rác", "Game tài trợ tự động cài ngầm khi cài đặt Windows.", "~250 MB", "Safe", "Sponsored"),
+            ("Amazon Prime Video", "AmazonVideo", "Xem Phim", "Ứng dụng xem phim Amazon Prime Video.", "~90 MB", "Safe", "Sponsored"),
+            ("Netflix", "4DF9E0F8.Netflix", "Xem Phim", "Ứng dụng xem phim Netflix đối tác cài sẵn.", "~110 MB", "Safe", "Sponsored"),
+            ("Instagram", "Facebook.InstagramBeta", "Mạng Xã Hội", "Ứng dụng mạng xã hội Instagram.", "~80 MB", "Safe", "Sponsored"),
+            ("Booking.com", "Booking.com", "Du Lịch", "Ứng dụng đặt phòng Booking.com cài sẵn.", "~45 MB", "Safe", "Sponsored"),
+            ("Solitaire Collection", "Microsoft.MicrosoftSolitaireCollection", "Game Rác", "Bộ game bài Solitaire kèm quảng cáo.", "~140 MB", "Safe", "Sponsored"),
 
-            // CAUTION: Cần cân nhắc (Chỉ gỡ nếu thực sự không dùng đến tính năng đó)
-            ("Groove Music (Media Player cũ)", "Microsoft.ZuneMusic", "Media", "Trình nghe nhạc mặc định Windows đời cũ.", "~70 MB", "Caution"),
-            ("Get Help", "Microsoft.GetHelp", "Tiện Ích", "Trung tâm trợ giúp cơ bản của Windows.", "~45 MB", "Caution"),
-            ("Tips (Mẹo Windows)", "Microsoft.Getstarted", "Mẹo Vặt", "Hướng dẫn và gợi ý sử dụng Windows.", "~35 MB", "Caution"),
-            ("Phone Link (Liên kết điện thoại)", "Microsoft.YourPhone", "Tiện Ích", "Ứng dụng đồng bộ điện thoại với PC nếu bạn không dùng.", "~95 MB", "Caution"),
-            ("Microsoft 365 (Office Hub)", "Microsoft.MicrosoftOfficeHub", "Quảng Cáo", "Cổng giới thiệu và khởi động nhanh bộ Office 365.", "~65 MB", "Caution"),
-            ("Power Automate", "Microsoft.PowerAutomateDesktop", "Nền Tảng", "Tự động hóa luồng tác vụ văn phòng và doanh nghiệp.", "~280 MB", "Caution"),
-            ("Xbox Apps & Game Bar", "Microsoft.XboxApp", "Xbox", "Ứng dụng Xbox Console Companion & dịch vụ game.", "~180 MB", "Caution"),
-            ("Voice Recorder (Ghi Âm)", "Microsoft.WindowsSoundRecorder", "Tiện Ích", "Trình ghi âm giọng nói mặc định qua microphone.", "~30 MB", "Caution")
+            // 💻 OEM: Rác cài sẵn từ hãng laptop (HP, Dell, Lenovo, Asus, Acer)
+            ("Acer Care Center", "AcerCareCenter", "Hãng Acer", "Bộ phần mềm kiểm tra và chạy nền của laptop Acer.", "~180 MB", "Safe", "OEM"),
+            ("HP Support Assistant", "HPSupportAssistant", "Hãng HP", "Phần mềm hỗ trợ tự động gửi dữ liệu và cập nhật ngầm của HP.", "~220 MB", "Safe", "OEM"),
+            ("Dell Optimizer & Command", "DellOptimizer", "Hãng Dell", "Bộ ứng dụng tối ưu hóa và telemetry ngầm của máy Dell.", "~200 MB", "Safe", "OEM"),
+            ("Lenovo Vantage", "LenovoCompanion", "Hãng Lenovo", "Bộ ứng dụng quản lý phần cứng và quảng cáo của Lenovo.", "~250 MB", "Safe", "OEM"),
+            ("ASUS Armoury Crate", "ArmouryCrate", "Hãng ASUS", "Phần mềm hiệu ứng đèn và tiện ích nặng nề của laptop ASUS.", "~300 MB", "Safe", "OEM"),
+            ("MyASUS", "MyASUS", "Hãng ASUS", "Cổng dịch vụ khách hàng và kiểm tra máy của ASUS.", "~160 MB", "Safe", "OEM"),
+            ("McAfee Security Suite", "McAfee", "Antivirus Rác", "Bản dùng thử diệt virus McAfee ngốn CPU và spam pop-up.", "~350 MB", "Safe", "OEM"),
+
+            // 🪟 MICROSOFT IN-BOX: Ứng dụng mặc định của Microsoft (An toàn)
+            ("Cortana", "Microsoft.549981C3F5F10", "Trợ Lý Ảo", "Trợ lý ảo Cortana đã dừng hỗ trợ, chạy ngầm ngốn tài nguyên.", "~60 MB", "Safe", "Microsoft"),
+            ("3D Viewer", "Microsoft.Microsoft3DViewer", "Đồ Họa", "Xem mô hình 3D mặc định ít người dùng cần tới.", "~120 MB", "Safe", "Microsoft"),
+            ("3D Builder", "Microsoft.3DBuilder", "Đồ Họa", "Tạo và in mô hình 3D mặc định.", "~85 MB", "Safe", "Microsoft"),
+            ("MSN Weather (Thời Tiết)", "Microsoft.BingWeather", "Tin Tức", "Ứng dụng Thời tiết MSN liên tục kết nối mạng cập nhật.", "~90 MB", "Safe", "Microsoft"),
+            ("MSN News (Tin Tức)", "Microsoft.BingNews", "Tin Tức", "Tin tức MSN cập nhật và đẩy thông báo ngầm.", "~80 MB", "Safe", "Microsoft"),
+            ("MSN Finance (Tài Chính)", "Microsoft.BingFinance", "Tin Tức", "Theo dõi thị trường chứng khoán MSN.", "~75 MB", "Safe", "Microsoft"),
+            ("MSN Sports (Thể Thao)", "Microsoft.BingSports", "Tin Tức", "Bản tin thể thao MSN.", "~70 MB", "Safe", "Microsoft"),
+            ("Movies & TV (Zune Video)", "Microsoft.ZuneVideo", "Media", "Trình xem video mặc định của Windows.", "~80 MB", "Safe", "Microsoft"),
+            ("People (Danh Bạ)", "Microsoft.People", "Danh Bạ", "Danh bạ liên lạc tích hợp Skype/Mail không cần thiết.", "~40 MB", "Safe", "Microsoft"),
+            ("Feedback Hub", "Microsoft.WindowsFeedbackHub", "Telemetry", "Trung tâm gửi phản hồi và dữ liệu người dùng lên Microsoft.", "~55 MB", "Safe", "Microsoft"),
+            ("Skype", "Microsoft.SkypeApp", "Liên Lạc", "Ứng dụng nhắn tin / gọi video Skype.", "~110 MB", "Safe", "Microsoft"),
+            ("Microsoft To Do", "Microsoft.Todos", "Ghi Chú", "Quản lý danh sách công việc To-Do của Microsoft.", "~50 MB", "Safe", "Microsoft"),
+            ("Clipchamp Video Editor", "Clipchamp.Clipchamp", "Media", "Trình dựng video trực tuyến mặc định trên Win 11.", "~160 MB", "Safe", "Microsoft"),
+
+            // 🟡 CAUTION: Cần cân nhắc (Chỉ gỡ nếu thực sự không dùng đến)
+            ("Groove Music (Media Player cũ)", "Microsoft.ZuneMusic", "Media", "Trình nghe nhạc mặc định Windows đời cũ.", "~70 MB", "Caution", "Microsoft"),
+            ("Get Help", "Microsoft.GetHelp", "Tiện Ích", "Trung tâm trợ giúp cơ bản của Windows.", "~45 MB", "Caution", "Microsoft"),
+            ("Tips (Mẹo Windows)", "Microsoft.Getstarted", "Mẹo Vặt", "Hướng dẫn và gợi ý sử dụng Windows.", "~35 MB", "Caution", "Microsoft"),
+            ("Phone Link (Liên kết điện thoại)", "Microsoft.YourPhone", "Tiện Ích", "Ứng dụng đồng bộ điện thoại với PC nếu bạn không dùng.", "~95 MB", "Caution", "Microsoft"),
+            ("Microsoft 365 (Office Hub)", "Microsoft.MicrosoftOfficeHub", "Quảng Cáo", "Cổng giới thiệu và khởi động nhanh bộ Office 365.", "~65 MB", "Caution", "Microsoft"),
+            ("Power Automate", "Microsoft.PowerAutomateDesktop", "Nền Tảng", "Tự động hóa luồng tác vụ văn phòng và doanh nghiệp.", "~280 MB", "Caution", "Microsoft"),
+            ("Xbox Apps & Game Bar", "Microsoft.XboxApp", "Xbox", "Ứng dụng Xbox Console Companion & dịch vụ game.", "~180 MB", "Caution", "Microsoft"),
+            ("Voice Recorder (Ghi Âm)", "Microsoft.WindowsSoundRecorder", "Tiện Ích", "Trình ghi âm giọng nói mặc định qua microphone.", "~30 MB", "Caution", "Microsoft")
         };
 
         public async Task<List<Models.BloatwareAppItem>> ScanInstalledBloatwareAsync()
@@ -884,7 +908,7 @@ try {
             {
                 var installedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                // Quét an toàn theo chuẩn optimizerDuck: Loại trừ NonRemovable và Frameworks (.NET, VCLibs, WinAppRuntime)
+                // Quét an toàn theo chuẩn optimizerDuck & Bloatynosy: Loại trừ NonRemovable và Frameworks (.NET, VCLibs, WinAppRuntime)
                 await ProcessRunner.RunProcessAsync(
                     "powershell.exe",
                     "-NoProfile -ExecutionPolicy Bypass -Command \"Get-AppxPackage | Where-Object { $_.NonRemovable -eq $false -and $_.IsFramework -eq $false } | Select-Object -ExpandProperty Name\"",
@@ -911,6 +935,7 @@ try {
                             Description = entry.Description,
                             EstimatedSize = entry.EstimatedSize,
                             RiskLevel = entry.RiskLevel,
+                            Origin = entry.Origin,
                             IsSelected = entry.RiskLevel == "Safe", // Mặc định chỉ tích chọn trước các app Safe (An toàn)
                             IsInstalled = true
                         });
@@ -947,6 +972,173 @@ try {
                 Logger.Warning($"Lỗi gỡ bỏ ứng dụng UWP: {ex.Message}");
                 return false;
             }
+        }
+
+        // ================= 6. BLOATYNOSY-INSPIRED HEALTH CHECK & PROFILES =================
+        public async Task<Models.SystemHealthReport> ScanSystemHealthAsync()
+        {
+            var report = new Models.SystemHealthReport();
+            await Task.Run(async () =>
+            {
+                // 1. Kiểm tra Telemetry DiagTrack
+                try
+                {
+                    using var key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\DiagTrack");
+                    object? startVal = key?.GetValue("Start");
+                    report.IsTelemetryActive = startVal is int val && val != 4;
+                    if (report.IsTelemetryActive)
+                    {
+                        report.TotalIssuesFound++;
+                        report.IssueDescriptions.Add("Dịch vụ Telemetry (DiagTrack) đang gửi dữ liệu ngầm");
+                    }
+                }
+                catch { }
+
+                // 2. Kiểm tra Quảng cáo Start Menu & Windows 11
+                try
+                {
+                    using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager");
+                    object? val = key?.GetValue("SubscribedContent-338388Enabled");
+                    report.IsWin11AdsActive = val == null || (val is int i && i != 0);
+                    if (report.IsWin11AdsActive)
+                    {
+                        report.TotalIssuesFound++;
+                        report.IssueDescriptions.Add("Quảng cáo & gợi ý app trong Start Menu Windows 11 đang bật");
+                    }
+                }
+                catch { }
+
+                // 3. Kiểm tra Copilot AI
+                try
+                {
+                    using var key = Registry.CurrentUser.OpenSubKey(@"Software\Policies\Microsoft\Windows\WindowsCopilot");
+                    object? val = key?.GetValue("TurnOffWindowsCopilot");
+                    report.IsCopilotActive = val == null || (val is int i && i != 1);
+                    if (report.IsCopilotActive)
+                    {
+                        report.TotalIssuesFound++;
+                        report.IssueDescriptions.Add("Trợ lý Windows Copilot AI chạy ngầm");
+                    }
+                }
+                catch { }
+
+                // 4. Kiểm tra Game DVR
+                try
+                {
+                    using var key = Registry.CurrentUser.OpenSubKey(@"System\GameConfigStore");
+                    object? val = key?.GetValue("GameDVR_Enabled");
+                    report.IsGameDvrActive = val == null || (val is int i && i != 0);
+                    if (report.IsGameDvrActive)
+                    {
+                        report.TotalIssuesFound++;
+                        report.IssueDescriptions.Add("Xbox Game DVR đang ghi màn hình nền làm giảm FPS game");
+                    }
+                }
+                catch { }
+
+                // 5. Kiểm tra số lượng App rác thực tế
+                var bloatList = await ScanInstalledBloatwareAsync();
+                report.DetectedBloatwareCount = bloatList.Count;
+                if (report.DetectedBloatwareCount > 0)
+                {
+                    report.TotalIssuesFound += report.DetectedBloatwareCount;
+                    report.IssueDescriptions.Add($"Có {report.DetectedBloatwareCount} ứng dụng rác UWP đang chiếm dung lượng");
+                }
+
+                // Đánh giá điểm sức khỏe
+                if (report.TotalIssuesFound == 0)
+                {
+                    report.HealthScoreText = "🟢 Tối Ưu Tuyệt Đối (100/100)";
+                    report.HealthScoreColor = "#10B981";
+                }
+                else if (report.TotalIssuesFound <= 4)
+                {
+                    report.HealthScoreText = $"🟡 Khá Tốt (Phát hiện {report.TotalIssuesFound} điểm cần tinh chỉnh)";
+                    report.HealthScoreColor = "#F59E0B";
+                }
+                else
+                {
+                    report.HealthScoreText = $"🔴 Cần Tối Ưu Gấp (Phát hiện {report.TotalIssuesFound} vấn đề)";
+                    report.HealthScoreColor = "#EF4444";
+                }
+            });
+
+            return report;
+        }
+
+        public async Task<int> DisableWin11AdsAsync()
+        {
+            var commands = new[]
+            {
+                @"reg add ""HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"" /v ""SubscribedContent-338388Enabled"" /t REG_DWORD /d 0 /f",
+                @"reg add ""HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"" /v ""SubscribedContent-310093Enabled"" /t REG_DWORD /d 0 /f",
+                @"reg add ""HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"" /v ""SubscribedContent-338389Enabled"" /t REG_DWORD /d 0 /f",
+                @"reg add ""HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"" /v ""SubscribedContent-353696Enabled"" /t REG_DWORD /d 0 /f",
+                @"reg add ""HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"" /v ""RotatingLockScreenOverlayEnabled"" /t REG_DWORD /d 0 /f",
+                @"reg add ""HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"" /v ""SubscribedContent-338393Enabled"" /t REG_DWORD /d 0 /f",
+                @"reg add ""HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"" /v ""ShowSyncProviderNotifications"" /t REG_DWORD /d 0 /f"
+            };
+            Logger.Info("[Optimizer] Tắt toàn bộ quảng cáo Start Menu, File Explorer & Màn hình khóa Windows 11...");
+            return await SystemCore.RunBatchScriptAsync(commands, "disable_win11_ads");
+        }
+
+        public async Task<int> DisableCopilotAIAsync()
+        {
+            var commands = new[]
+            {
+                @"reg add ""HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot"" /v ""TurnOffWindowsCopilot"" /t REG_DWORD /d 1 /f",
+                @"reg add ""HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot"" /v ""TurnOffWindowsCopilot"" /t REG_DWORD /d 1 /f",
+                @"reg add ""HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"" /v ""ShowCopilotButton"" /t REG_DWORD /d 0 /f"
+            };
+            Logger.Info("[Optimizer] Vô hiệu hóa Windows Copilot AI chạy ngầm...");
+            return await SystemCore.RunBatchScriptAsync(commands, "disable_copilot");
+        }
+
+        public async Task<int> DisableEdgeStartupBoostAsync()
+        {
+            var commands = new[]
+            {
+                @"reg add ""HKLM\SOFTWARE\Policies\Microsoft\Edge"" /v ""StartupBoostEnabled"" /t REG_DWORD /d 0 /f",
+                @"reg add ""HKLM\SOFTWARE\Policies\Microsoft\Edge"" /v ""BackgroundModeEnabled"" /t REG_DWORD /d 0 /f"
+            };
+            Logger.Info("[Optimizer] Tắt Edge Startup Boost & tiến trình nền khi bật máy...");
+            return await SystemCore.RunBatchScriptAsync(commands, "disable_edge_boost");
+        }
+
+        public async Task<bool> ApplyGamerProfileAsync()
+        {
+            Logger.Info("[Optimizer Profile] Đang kích hoạt Profile Game Thủ (Max FPS)...");
+            await OptimizeServicesAsync();
+            await OptimizePrivacyAndGameDvrAsync();
+            await OptimizeSystemProAsync();
+            await DisableServicesBatchAsync(new[] { "WSearch", "SysMain", "MapsBroker", "PcaSvc" });
+            // Kích hoạt Ultimate Performance
+            await SystemCore.RunBatchScriptAsync(new[] { "powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 >nul 2>&1" }, "ultimate_power");
+            Logger.Success("[Optimizer Profile] Kích hoạt Profile Game Thủ thành công!");
+            return true;
+        }
+
+        public async Task<bool> ApplyOfficeProfileAsync()
+        {
+            Logger.Info("[Optimizer Profile] Đang kích hoạt Profile Văn Phòng & Ổn Định...");
+            await CleanQuickAsync();
+            await DisableWin11AdsAsync();
+            await DisableEdgeStartupBoostAsync();
+            await OptimizeTaskbarWindows11Async();
+            Logger.Success("[Optimizer Profile] Kích hoạt Profile Văn Phòng thành công!");
+            return true;
+        }
+
+        public async Task<bool> ApplyPrivacyProfileAsync()
+        {
+            Logger.Info("[Optimizer Profile] Đang kích hoạt Profile Riêng Tư Tuyệt Đối...");
+            await OptimizeServicesAsync();
+            await OptimizePrivacyAndGameDvrAsync();
+            await DisableWin11AdsAsync();
+            await DisableCopilotAIAsync();
+            await DisableServicesBatchAsync(new[] { "wisvc", "lfsvc", "RetailDemo", "WerSvc" });
+            Logger.Success("[Optimizer Profile] Kích hoạt Profile Riêng Tư thành công!");
+            return true;
         }
     }
 }

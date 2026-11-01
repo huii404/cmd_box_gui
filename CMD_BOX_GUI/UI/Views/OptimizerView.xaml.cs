@@ -119,7 +119,17 @@ namespace CMD_BOX_GUI.UI.Views
             if (CmbBloatwareRiskFilter?.SelectedIndex == 1 && item.RiskLevel != "Safe") return false;
             if (CmbBloatwareRiskFilter?.SelectedIndex == 2 && item.RiskLevel != "Caution") return false;
 
+            // Lọc theo Nguồn gốc BloatFinder: 1=Sponsored, 2=OEM, 3=Microsoft
+            if (CmbBloatwareOriginFilter?.SelectedIndex == 1 && item.Origin != "Sponsored") return false;
+            if (CmbBloatwareOriginFilter?.SelectedIndex == 2 && item.Origin != "OEM") return false;
+            if (CmbBloatwareOriginFilter?.SelectedIndex == 3 && item.Origin != "Microsoft") return false;
+
             return true;
+        }
+
+        private void CmbBloatwareOriginFilter_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _bloatwareView?.Refresh();
         }
 
         private void TxtSearchServices_TextChanged(object sender, TextChangedEventArgs e)
@@ -442,6 +452,119 @@ namespace CMD_BOX_GUI.UI.Views
             SetRunning(false, "Đã khôi phục Windows Update bình thường!");
         }
 
+        // ================= BLOATYNOSY-INSPIRED HEALTH CHECK & PROFILES =================
+
+        private async void BtnHealthCheck_Click(object sender, RoutedEventArgs e)
+        {
+            SetRunning(true, "Đang quét chẩn đoán tình trạng hệ thống theo chuẩn Bloatynosy...");
+            TxtHealthStatus.Text = "⏳ Đang phân tích telemetry, rác quảng cáo, Copilot AI và ứng dụng nền...";
+            
+            var report = await _optimizer.ScanSystemHealthAsync();
+            
+            PnlHealthBadges.Visibility = Visibility.Visible;
+            TxtHealthScore.Text = report.HealthScoreText;
+            BrdHealthScore.BorderBrush = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString(report.HealthScoreColor)!;
+            
+            TxtTelemetryBadge.Text = report.IsTelemetryActive ? "Telemetry: 🔴 Đang Gửi Log" : "Telemetry: 🟢 Đã Tắt Sạch";
+            TxtAdsBadge.Text = report.IsWin11AdsActive ? "Quảng Cáo Win11: 🔴 Đang Bật" : "Quảng Cáo Win11: 🟢 Đã Tắt";
+            TxtBloatBadge.Text = report.DetectedBloatwareCount > 0 ? $"App Rác: 🟡 Còn {report.DetectedBloatwareCount} App" : "App Rác: 🟢 Sạch Rác";
+
+            string statusMsg = report.TotalIssuesFound == 0 
+                ? "✨ Hệ thống của bạn đã ở trạng thái tối ưu tuyệt đối (100/100)!"
+                : $"Phát hiện {report.TotalIssuesFound} vấn đề. Bạn có thể chọn Profile 1-Click bên dưới để xử lý ngay.";
+
+            TxtHealthStatus.Text = statusMsg;
+            SetRunning(false, $"Chẩn đoán hoàn tất! Phát hiện {report.TotalIssuesFound} điểm cần tinh chỉnh.");
+        }
+
+        private async void BtnProfileGamer_Click(object sender, RoutedEventArgs e)
+        {
+            var confirm = MessageBox.Show(
+                "Kích hoạt Gamer Profile (Max FPS)?\n\n" +
+                "• Tắt Telemetry ngầm và Game DVR\n" +
+                "• Tắt Search Indexing & SysMain chống giật lag disk\n" +
+                "• Tối ưu độ trễ chuột và Desktop Low Latency\n" +
+                "• Kích hoạt gói điện năng Ultimate Performance\n\n" +
+                "(Thao tác an toàn 100%, có thể bật lại bình thường).",
+                "Xác nhận kích hoạt Profile Game Thủ",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            SetRunning(true, "Đang kích hoạt Gamer Profile (Max FPS)...");
+            await _optimizer.ApplyGamerProfileAsync();
+            await RefreshServicesAsync();
+            SetRunning(false, "Đã kích hoạt Profile Game Thủ thành công!");
+            MessageBox.Show("Profile Game Thủ đã được kích hoạt thành công! Máy tính đã sẵn sàng cho hiệu năng tối đa.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private async void BtnProfileOffice_Click(object sender, RoutedEventArgs e)
+        {
+            var confirm = MessageBox.Show(
+                "Kích hoạt Office Profile (Văn phòng & Ổn định)?\n\n" +
+                "• Dọn nhanh rác bộ nhớ đệm Quick Clean\n" +
+                "• Tắt toàn bộ quảng cáo Start Menu Windows 11\n" +
+                "• Tắt Edge Startup Boost ngốn RAM ngầm\n" +
+                "• Gọn thanh Taskbar Windows 11\n" +
+                "• Giữ nguyên máy in, chia sẻ mạng và OneDrive",
+                "Xác nhận kích hoạt Profile Văn Phòng",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            SetRunning(true, "Đang kích hoạt Office Profile...");
+            await _optimizer.ApplyOfficeProfileAsync();
+            SetRunning(false, "Đã kích hoạt Profile Văn Phòng thành công!");
+            MessageBox.Show("Profile Văn Phòng đã được kích hoạt thành công! Hệ thống êm ái, sạch rác và ổn định.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private async void BtnProfilePrivacy_Click(object sender, RoutedEventArgs e)
+        {
+            var confirm = MessageBox.Show(
+                "Kích hoạt Privacy Profile (Bảo mật & Riêng tư)?\n\n" +
+                "• Tắt sạch các dịch vụ Telemetry (DiagTrack, dmwappush, WerSvc)\n" +
+                "• Tắt dịch vụ định vị Geolocation và Windows Insider\n" +
+                "• Tắt trợ lý ảo Windows Copilot AI ngầm\n" +
+                "• Tắt quảng cáo gợi ý và thu thập dữ liệu cá nhân",
+                "Xác nhận kích hoạt Profile Riêng Tư",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            SetRunning(true, "Đang kích hoạt Privacy Profile...");
+            await _optimizer.ApplyPrivacyProfileAsync();
+            await RefreshServicesAsync();
+            SetRunning(false, "Đã kích hoạt Profile Riêng Tư thành công!");
+            MessageBox.Show("Profile Riêng Tư đã được kích hoạt thành công! Dữ liệu của bạn đã được bảo vệ tối đa.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private async void BtnDisableWin11Ads_Click(object sender, RoutedEventArgs e)
+        {
+            SetRunning(true, "Đang tắt quảng cáo Start Menu & Windows 11...");
+            await _optimizer.DisableWin11AdsAsync();
+            SetRunning(false, "Đã tắt sạch quảng cáo và gợi ý trên Windows 11!");
+            MessageBox.Show("Đã tắt thành công quảng cáo trong Start Menu, màn hình khóa và cài đặt Windows 11!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private async void BtnDisableCopilot_Click(object sender, RoutedEventArgs e)
+        {
+            SetRunning(true, "Đang vô hiệu hóa Windows Copilot & AI ngầm...");
+            await _optimizer.DisableCopilotAIAsync();
+            SetRunning(false, "Đã tắt Windows Copilot AI!");
+            MessageBox.Show("Đã vô hiệu hóa thành công Windows Copilot AI!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private async void BtnDisableEdgeBoost_Click(object sender, RoutedEventArgs e)
+        {
+            SetRunning(true, "Đang tắt Edge Startup Boost...");
+            await _optimizer.DisableEdgeStartupBoostAsync();
+            SetRunning(false, "Đã tắt Edge chạy ngầm khi mở máy!");
+            MessageBox.Show("Đã tắt tính năng Edge Startup Boost chạy ngầm khi khởi động máy!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
         private void SetRunning(bool running, string statusText)
         {
             PbOptimizer.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
@@ -466,6 +589,13 @@ namespace CMD_BOX_GUI.UI.Views
             BtnRepairIntegrity.IsEnabled = !running;
             BtnPauseWU.IsEnabled = !running;
             BtnResumeWU.IsEnabled = !running;
+            if (BtnHealthCheck != null) BtnHealthCheck.IsEnabled = !running;
+            if (BtnProfileGamer != null) BtnProfileGamer.IsEnabled = !running;
+            if (BtnProfileOffice != null) BtnProfileOffice.IsEnabled = !running;
+            if (BtnProfilePrivacy != null) BtnProfilePrivacy.IsEnabled = !running;
+            if (BtnDisableWin11Ads != null) BtnDisableWin11Ads.IsEnabled = !running;
+            if (BtnDisableCopilot != null) BtnDisableCopilot.IsEnabled = !running;
+            if (BtnDisableEdgeBoost != null) BtnDisableEdgeBoost.IsEnabled = !running;
         }
     }
 }

@@ -194,6 +194,33 @@ namespace CMD_BOX_GUI.Models
         public string Version { get; set; } = string.Empty;
         public string RiskLevel { get; set; } = "Safe"; // "Safe" or "Caution"
 
+        // Nguồn gốc theo chuẩn BloatFinder: Sponsored, OEM, Microsoft
+        public string Origin { get; set; } = "Microsoft";
+        public string OriginDisplay => Origin switch
+        {
+            "Sponsored" => "🌟 Quảng Cáo",
+            "OEM" => "💻 Hãng Laptop",
+            _ => "🪟 Windows In-Box"
+        };
+        public string OriginBadgeBg => Origin switch
+        {
+            "Sponsored" => "#2E1C38",
+            "OEM" => "#1E2B38",
+            _ => "#1B2A32"
+        };
+        public string OriginBadgeBorder => Origin switch
+        {
+            "Sponsored" => "#A855F7",
+            "OEM" => "#38BDF8",
+            _ => "#0EA5E9"
+        };
+        public string OriginBadgeFg => Origin switch
+        {
+            "Sponsored" => "#C084FC",
+            "OEM" => "#7DD3FC",
+            _ => "#38BDF8"
+        };
+
         public string RiskDisplay => RiskLevel == "Safe" ? "🟢 An Toàn" : "🟡 Cẩn Trọng";
         public string RiskBadgeBg => RiskLevel == "Safe" ? "#142E1C" : "#332600";
         public string RiskBadgeBorder => RiskLevel == "Safe" ? "#10B981" : "#F59E0B";
@@ -219,5 +246,18 @@ namespace CMD_BOX_GUI.Models
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    public class SystemHealthReport
+    {
+        public int TotalIssuesFound { get; set; }
+        public bool IsTelemetryActive { get; set; }
+        public bool IsWin11AdsActive { get; set; }
+        public bool IsCopilotActive { get; set; }
+        public bool IsGameDvrActive { get; set; }
+        public int DetectedBloatwareCount { get; set; }
+        public string HealthScoreText { get; set; } = "Chưa chẩn đoán";
+        public string HealthScoreColor { get; set; } = "#9CA3AF";
+        public List<string> IssueDescriptions { get; set; } = new();
     }
 }
