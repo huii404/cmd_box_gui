@@ -498,5 +498,58 @@ namespace CMD_BOX_GUI.Services
             Logger.Error($"[FFmpeg] Tạo ảnh GIF thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
+
+        public async Task<bool> TrimVideoAsync(
+            string inputPath, 
+            string outputPath, 
+            double startTimeSec, 
+            double durationSec, 
+            CancellationToken cancellationToken = default)
+        {
+            if (IsImageFile(inputPath)) return false;
+
+            string ffmpeg = FindFFmpegPath();
+            string durArg = durationSec > 0 ? $"-t {durationSec}" : "";
+            Logger.Info($"[FFmpeg] Cắt Video [{Path.GetFileName(inputPath)}] từ {startTimeSec}s ({durationSec}s) qua Stream Copy 0.1s...");
+
+            string args = $"-y -ss {startTimeSec} -i \"{inputPath}\" {durArg} -c copy \"{outputPath}\"";
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                long oldSize = new FileInfo(inputPath).Length;
+                long newSize = new FileInfo(outputPath).Length;
+                Logger.Success($"[FFmpeg] Cắt Video thành công: {Path.GetFileName(outputPath)} ({SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)})");
+                return true;
+            }
+
+            Logger.Error($"[FFmpeg] Cắt Video thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
+
+        public async Task<bool> ExtractFrameAsync(
+            string inputPath, 
+            string outputPath, 
+            double timeSec = 0, 
+            CancellationToken cancellationToken = default)
+        {
+            if (IsImageFile(inputPath)) return false;
+
+            string ffmpeg = FindFFmpegPath();
+            Logger.Info($"[FFmpeg] Trích xuất frame tại {timeSec}s từ [{Path.GetFileName(inputPath)}] ra PNG...");
+
+            string args = $"-y -ss {timeSec} -i \"{inputPath}\" -vframes 1 -q:v 2 \"{outputPath}\"";
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                long newSize = new FileInfo(outputPath).Length;
+                Logger.Success($"[FFmpeg] Trích xuất frame thành công: {Path.GetFileName(outputPath)} ({SystemCore.FormatBytes(newSize)})");
+                return true;
+            }
+
+            Logger.Error($"[FFmpeg] Trích xuất frame thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
     }
 }

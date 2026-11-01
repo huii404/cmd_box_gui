@@ -53,43 +53,47 @@ namespace CMD_BOX_GUI.Services
 
         private static readonly Dictionary<string, Color> LightPalette = new()
         {
-            { "BgPrimary", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
-            { "BgSecondary", (Color)ColorConverter.ConvertFromString("#F3F3F3") },
+            // Màu nền chính: Tone trắng dịu mắt #F4F6F8 (Soft warm-grey canvas, chống chói, êm mắt)
+            { "BgPrimary", (Color)ColorConverter.ConvertFromString("#F4F6F8") },
+            // Sidebar và Header: Tone xám bạc êm ái #E9ECEF
+            { "BgSecondary", (Color)ColorConverter.ConvertFromString("#E9ECEF") },
             { "ActivityBarBg", (Color)ColorConverter.ConvertFromString("#2C2C2C") },
             { "ActivityBarFg", (Color)ColorConverter.ConvertFromString("#999999") },
             { "ActivityBarActiveFg", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
-            { "ActivityBarActiveBorder", (Color)ColorConverter.ConvertFromString("#007ACC") },
+            { "ActivityBarActiveBorder", (Color)ColorConverter.ConvertFromString("#0969DA") },
 
-            { "EditorTabBg", (Color)ColorConverter.ConvertFromString("#ECECEC") },
+            { "EditorTabBg", (Color)ColorConverter.ConvertFromString("#DFE3E8") },
             { "EditorTabActiveBg", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
-            { "EditorTabBorder", (Color)ColorConverter.ConvertFromString("#E5E5E5") },
-            { "BreadcrumbsBg", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
+            { "EditorTabBorder", (Color)ColorConverter.ConvertFromString("#D0D5DD") },
+            { "BreadcrumbsBg", (Color)ColorConverter.ConvertFromString("#F4F6F8") },
 
-            { "StatusBarBg", (Color)ColorConverter.ConvertFromString("#007ACC") },
+            { "StatusBarBg", (Color)ColorConverter.ConvertFromString("#0969DA") },
             { "StatusBarFg", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
-            { "StatusBarSubtle", (Color)ColorConverter.ConvertFromString("#005A9E") },
+            { "StatusBarSubtle", (Color)ColorConverter.ConvertFromString("#0858B8") },
 
-            { "BgCard", (Color)ColorConverter.ConvertFromString("#F8F8F8") },
-            { "BgCardHover", (Color)ColorConverter.ConvertFromString("#ECECEC") },
-            { "BgInput", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
+            // Khối Cards & Panels: Nổi nhẹ trên nền xám với viền mềm #D5D9E0
+            { "BgCard", (Color)ColorConverter.ConvertFromString("#FFFFFF") },
+            { "BgCardHover", (Color)ColorConverter.ConvertFromString("#EDF1F5") },
+            { "BgInput", (Color)ColorConverter.ConvertFromString("#EDF1F5") },
 
-            { "BorderSubtle", (Color)ColorConverter.ConvertFromString("#E5E5E5") },
-            { "BorderActive", (Color)ColorConverter.ConvertFromString("#007ACC") },
+            { "BorderSubtle", (Color)ColorConverter.ConvertFromString("#D5D9E0") },
+            { "BorderActive", (Color)ColorConverter.ConvertFromString("#0969DA") },
 
-            { "TextPrimary", (Color)ColorConverter.ConvertFromString("#333333") },
-            { "TextSecondary", (Color)ColorConverter.ConvertFromString("#616161") },
-            { "TextMuted", (Color)ColorConverter.ConvertFromString("#888888") },
+            // Chữ: Đen than chì tự nhiên #1F2328 dễ đọc, không gây mỏi mắt
+            { "TextPrimary", (Color)ColorConverter.ConvertFromString("#1F2328") },
+            { "TextSecondary", (Color)ColorConverter.ConvertFromString("#57606A") },
+            { "TextMuted", (Color)ColorConverter.ConvertFromString("#6E7781") },
 
-            { "AccentPrimary", (Color)ColorConverter.ConvertFromString("#007ACC") },
-            { "AccentPrimaryHover", (Color)ColorConverter.ConvertFromString("#005FB8") },
-            { "AccentSuccess", (Color)ColorConverter.ConvertFromString("#16825D") },
-            { "AccentWarning", (Color)ColorConverter.ConvertFromString("#BF8803") },
-            { "AccentDanger", (Color)ColorConverter.ConvertFromString("#CD3131") },
-            { "AccentCyan", (Color)ColorConverter.ConvertFromString("#007ACC") },
-            { "AccentPurple", (Color)ColorConverter.ConvertFromString("#6F42C1") },
+            { "AccentPrimary", (Color)ColorConverter.ConvertFromString("#0969DA") },
+            { "AccentPrimaryHover", (Color)ColorConverter.ConvertFromString("#0858B8") },
+            { "AccentSuccess", (Color)ColorConverter.ConvertFromString("#1A7F37") },
+            { "AccentWarning", (Color)ColorConverter.ConvertFromString("#9A6700") },
+            { "AccentDanger", (Color)ColorConverter.ConvertFromString("#CF222E") },
+            { "AccentCyan", (Color)ColorConverter.ConvertFromString("#0969DA") },
+            { "AccentPurple", (Color)ColorConverter.ConvertFromString("#8250DF") },
 
-            { "TerminalBg", (Color)ColorConverter.ConvertFromString("#F8F8F8") },
-            { "TerminalText", (Color)ColorConverter.ConvertFromString("#333333") }
+            { "TerminalBg", (Color)ColorConverter.ConvertFromString("#E9ECEF") },
+            { "TerminalText", (Color)ColorConverter.ConvertFromString("#1F2328") }
         };
 
         /// <summary>

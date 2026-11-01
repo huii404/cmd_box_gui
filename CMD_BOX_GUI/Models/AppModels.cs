@@ -126,5 +126,98 @@ namespace CMD_BOX_GUI.Models
         public string Status { get; set; } = "Online 🟢";
         public bool IsLocalDevice { get; set; }
         public bool IsGateway { get; set; }
+
+        public string StatusBadgeBg => "#142E1C";
+        public string StatusBadgeBorder => "#10B981";
+        public string StatusBadgeFg => "#34D399";
+    }
+
+    public class WifiProfileItem : INotifyPropertyChanged
+    {
+        public string Ssid { get; set; } = string.Empty;
+        public string Authentication { get; set; } = "WPA2-Personal";
+        public string Password { get; set; } = string.Empty;
+        public bool HasPassword => !string.IsNullOrEmpty(Password);
+        public string PasswordDisplay => HasPassword ? Password : "(Mạng mở / Không mật khẩu)";
+        public string SecurityIcon => HasPassword ? "🔒" : "🌐";
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    public class SystemServiceItem : INotifyPropertyChanged
+    {
+        public string ServiceName { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string Category { get; set; } = "Chung";
+        public string Description { get; set; } = string.Empty;
+        public string Impact { get; set; } = "Tiết kiệm RAM / CPU";
+        public string RiskLevel { get; set; } = "Safe"; // "Safe" or "Caution"
+
+        public string RiskDisplay => RiskLevel == "Safe" ? "🟢 An Toàn" : "🟡 Cẩn Trọng";
+        public string RiskBadgeBg => RiskLevel == "Safe" ? "#142E1C" : "#332600";
+        public string RiskBadgeBorder => RiskLevel == "Safe" ? "#10B981" : "#F59E0B";
+        public string RiskBadgeFg => RiskLevel == "Safe" ? "#34D399" : "#FBBF24";
+
+        private bool _isDisabled;
+        public bool IsDisabled
+        {
+            get => _isDisabled;
+            set
+            {
+                _isDisabled = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(StatusText));
+                OnPropertyChanged(nameof(StatusColor));
+                OnPropertyChanged(nameof(ActionButtonText));
+            }
+        }
+
+        public string StatusText => _isDisabled ? "🛑 Đã Tắt" : "🟢 Đang Chạy";
+        public string StatusColor => _isDisabled ? "#9E9E9E" : "#10B981";
+        public string ActionButtonText => _isDisabled ? "Bật Lại" : "Tắt Service";
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    public class BloatwareAppItem : INotifyPropertyChanged
+    {
+        public string AppName { get; set; } = string.Empty;
+        public string PackageName { get; set; } = string.Empty;
+        public string Category { get; set; } = "App Rác";
+        public string Description { get; set; } = string.Empty;
+        public string EstimatedSize { get; set; } = "~50-200 MB";
+        public string Publisher { get; set; } = string.Empty;
+        public string Version { get; set; } = string.Empty;
+        public string RiskLevel { get; set; } = "Safe"; // "Safe" or "Caution"
+
+        public string RiskDisplay => RiskLevel == "Safe" ? "🟢 An Toàn" : "🟡 Cẩn Trọng";
+        public string RiskBadgeBg => RiskLevel == "Safe" ? "#142E1C" : "#332600";
+        public string RiskBadgeBorder => RiskLevel == "Safe" ? "#10B981" : "#F59E0B";
+        public string RiskBadgeFg => RiskLevel == "Safe" ? "#34D399" : "#FBBF24";
+
+        private bool _isSelected = true;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set { _isSelected = value; OnPropertyChanged(); }
+        }
+
+        private bool _isInstalled = true;
+        public bool IsInstalled
+        {
+            get => _isInstalled;
+            set { _isInstalled = value; OnPropertyChanged(); OnPropertyChanged(nameof(InstalledStatus)); OnPropertyChanged(nameof(StatusColor)); }
+        }
+
+        public string InstalledStatus => _isInstalled ? "Chưa gỡ" : "Đã gỡ sạch ✨";
+        public string StatusColor => _isInstalled ? "#F59E0B" : "#10B981";
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

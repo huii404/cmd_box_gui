@@ -16,6 +16,29 @@ namespace CMD_BOX_GUI.UI.Views
             InitializeComponent();
         }
 
+        // ================= SUB-TAB SWITCHING =================
+        private void TabUtil_Click(object sender, RoutedEventArgs e)
+        {
+            if (PnlUtilApps == null || PnlUtilAuto == null || PnlUtilHardware == null) return;
+
+            PnlUtilApps.Visibility = TabUtilApps.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+            PnlUtilAuto.Visibility = TabUtilAuto.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+            PnlUtilHardware.Visibility = TabUtilHardware.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void SetRunning(bool running, string statusText)
+        {
+            PbUtilities.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
+            TxtUtilStatus.Text = statusText;
+        }
+
+        private async Task InstallAppAsync(string name, string id)
+        {
+            SetRunning(true, $"Đang cài đặt [{name}] qua Winget...");
+            await _utility.InstallQuickAppAsync(name, id);
+            SetRunning(false, $"Tác vụ cài đặt [{name}] hoàn tất.");
+        }
+
         private async void BtnGetCurrentMousePos_Click(object sender, RoutedEventArgs e)
         {
             BtnGetCurrentMousePos.IsEnabled = false;
@@ -76,123 +99,118 @@ namespace CMD_BOX_GUI.UI.Views
 
         private async void BtnOpenBatteryHtml_Click(object sender, RoutedEventArgs e)
         {
+            SetRunning(true, "Đang trích xuất báo cáo pin (batteryreport)...");
             await _utility.OpenBatteryReportHtmlAsync();
-        }
-
-        private async void BtnUninstallBloatware_Click(object sender, RoutedEventArgs e)
-        {
-            BtnUninstallBloatware.IsEnabled = false;
-            try { await _utility.UninstallBloatwareAsync(); }
-            finally { BtnUninstallBloatware.IsEnabled = true; }
+            SetRunning(false, "Đã mở báo cáo pin trên trình duyệt.");
         }
 
         // ================= 1. TRÌNH DUYỆT & GIAO TIẾP =================
         private async void BtnInstallChrome_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Google Chrome", "Google.Chrome");
+            await InstallAppAsync("Google Chrome", "Google.Chrome");
         }
 
         private async void BtnInstallBrave_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Brave Browser", "Brave.Brave");
+            await InstallAppAsync("Brave Browser", "Brave.Brave");
         }
 
         private async void BtnInstallFirefox_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Mozilla Firefox", "Mozilla.Firefox");
+            await InstallAppAsync("Mozilla Firefox", "Mozilla.Firefox");
         }
 
         private async void BtnInstallZalo_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Zalo PC", "VNG.Zalo");
+            await InstallAppAsync("Zalo PC", "VNG.Zalo");
         }
 
         private async void BtnInstallTelegram_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Telegram Desktop", "Telegram.TelegramDesktop");
+            await InstallAppAsync("Telegram Desktop", "Telegram.TelegramDesktop");
         }
 
         private async void BtnInstallDiscord_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Discord", "Discord.Discord");
+            await InstallAppAsync("Discord", "Discord.Discord");
         }
 
         // ================= 2. LẬP TRÌNH & DEV TOOLS =================
         private async void BtnInstallVSCode_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Visual Studio Code", "Microsoft.VisualStudioCode");
+            await InstallAppAsync("Visual Studio Code", "Microsoft.VisualStudioCode");
         }
 
         private async void BtnInstallGit_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Git", "Git.Git");
+            await InstallAppAsync("Git", "Git.Git");
         }
 
         private async void BtnInstallNode_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Node.js (LTS)", "OpenJS.NodeJS.LTS");
+            await InstallAppAsync("Node.js (LTS)", "OpenJS.NodeJS.LTS");
         }
 
         private async void BtnInstallPython_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Python 3", "Python.Python.3.12");
+            await InstallAppAsync("Python 3", "Python.Python.3.12");
         }
 
         private async void BtnInstallNotepadPlusPlus_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Notepad++", "Notepad++.Notepad++");
+            await InstallAppAsync("Notepad++", "Notepad++.Notepad++");
         }
 
         private async void BtnInstallPostman_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Postman", "Postman.Postman");
+            await InstallAppAsync("Postman", "Postman.Postman");
         }
 
         private async void BtnInstallDocker_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Docker Desktop", "Docker.DockerDesktop");
+            await InstallAppAsync("Docker Desktop", "Docker.DockerDesktop");
         }
 
         // ================= 3. TIỆN ÍCH & HỆ THỐNG =================
         private async void BtnInstall7Zip_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("7-Zip", "7zip.7zip");
+            await InstallAppAsync("7-Zip", "7zip.7zip");
         }
 
         private async void BtnInstallWinRAR_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("WinRAR", "RARLab.WinRAR");
+            await InstallAppAsync("WinRAR", "RARLab.WinRAR");
         }
 
         private async void BtnInstallUniKey_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("UniKey", "PhamKimLong.UniKey");
+            await InstallAppAsync("UniKey", "PhamKimLong.UniKey");
         }
 
         private async void BtnInstallEverything_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Everything Search", "voidtools.Everything");
+            await InstallAppAsync("Everything Search", "voidtools.Everything");
         }
 
         private async void BtnInstallRevo_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Revo Uninstaller", "RevoUninstaller.RevoUninstaller");
+            await InstallAppAsync("Revo Uninstaller", "RevoUninstaller.RevoUninstaller");
         }
 
         // ================= 4. GIẢI TRÍ & ĐỒ HỌA / STREAM =================
         private async void BtnInstallVLC_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("VLC Media Player", "VideoLAN.VLC");
+            await InstallAppAsync("VLC Media Player", "VideoLAN.VLC");
         }
 
         private async void BtnInstallSpotify_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("Spotify", "Spotify.Spotify");
+            await InstallAppAsync("Spotify", "Spotify.Spotify");
         }
 
         private async void BtnInstallOBS_Click(object sender, RoutedEventArgs e)
         {
-            await _utility.InstallQuickAppAsync("OBS Studio", "OBSProject.OBSStudio");
+            await InstallAppAsync("OBS Studio", "OBSProject.OBSStudio");
         }
     }
 }

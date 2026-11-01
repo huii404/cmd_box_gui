@@ -490,6 +490,124 @@ namespace CMD_BOX_GUI.Services
             catch { }
             return "N/A";
         }
+
+        // ================= 8. TÍNH NĂNG 6: ĐỔI DNS NHANH 1-CLICK =================
+        public async Task<bool> SetDnsAsync(string primaryDns, string? secondaryDns = null)
+        {
+            var (_, _, _, adapterName) = await GetCurrentNetworkInfoAsync();
+            if (string.IsNullOrWhiteSpace(adapterName) || adapterName == "N/A")
+            {
+                Logger.Warning("[DNS] Không tìm thấy card mạng chính đang hoạt động!");
+                return false;
+            }
+
+            var commands = new List<string>();
+            if (primaryDns.Equals("DHCP", StringComparison.OrdinalIgnoreCase))
+            {
+                commands.Add($"netsh interface ip set dns name=\"{adapterName}\" dhcp");
+                Logger.Info($"[DNS] Đang chuyển card mạng [{adapterName}] về DNS mặc định (DHCP)...");
+            }
+            else
+            {
+                commands.Add($"netsh interface ip set dns name=\"{adapterName}\" static {primaryDns}");
+                if (!string.IsNullOrWhiteSpace(secondaryDns))
+                {
+                    commands.Add($"netsh interface ip add dns name=\"{adapterName}\" {secondaryDns} index=2");
+                }
+                Logger.Info($"[DNS] Đang đổi DNS card mạng [{adapterName}] sang: {primaryDns} / {secondaryDns}...");
+            }
+
+            int code = await SystemCore.RunBatchScriptAsync(commands, "set_dns");
+            if (code == 0)
+            {
+                Logger.Success($"[DNS] Đã áp dụng DNS thành công cho card mạng [{adapterName}]!");
+                await FlushDnsAsync();
+                return true;
+            }
+            return false;
+        }
+
+        // ================= 9. TÍNH NĂNG 7: XEM MẬT KHẨU WI-FI ĐÃ LƯU =================
+        public async Task<List<WifiProfileItem>> GetSavedWifiProfilesAsync()
+        {
+            Logger.Info("🔑 Đang đọc danh sách mật khẩu Wi-Fi đã lưu trên máy...");
+            var profiles = new List<WifiProfileItem>();
+
+            await Task.Run(async () =>
+            {
+                string output = await ProcessRunner.RunCommandAndGetOutputAsync("netsh.exe", "wlan show profiles");
+                if (string.IsNullOrWhiteSpace(output)) return;
+
+                var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                var ssids = new List<string>();
+                foreach (var line in lines)
+                {
+                    int idx = line.IndexOf(":", StringComparison.Ordinal);
+                    if (idx > 0 && (line.Contains("All User Profile") || line.Contains("User Profile")))
+                    {
+                        string ssid = line.Substring(idx + 1).Trim();
+                        if (!string.IsNullOrWhiteSpace(ssid) && !ssids.Contains(ssid))
+                        {
+                            ssids.Add(ssid);
+                        }
+                    }
+                }
+
+                foreach (var ssid in ssids)
+                {
+                    string profileDetail = await ProcessRunner.RunCommandAndGetOutputAsync("netsh.exe", $"wlan show profile name=\"{ssid}\" key=clear");
+                    string password = "";
+                    string auth = "WPA2-Personal";
+
+                    if (!string.IsNullOrWhiteSpace(profileDetail))
+                    {
+                        var detailLines = profileDetail.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var dl in detailLines)
+                        {
+                            if (dl.Contains("Key Content") || dl.Contains("Mật khẩu") || dl.Contains("Nội dung khóa"))
+                            {
+                                int cIdx = dl.IndexOf(":", StringComparison.Ordinal);
+                                if (cIdx > 0) password = dl.Substring(cIdx + 1).Trim();
+                            }
+                            if (dl.Contains("Authentication") || dl.Contains("Xác thực"))
+                            {
+                                int aIdx = dl.IndexOf(":", StringComparison.Ordinal);
+                                if (aIdx > 0) auth = dl.Substring(aIdx + 1).Trim();
+                            }
+                        }
+                    }
+
+                    profiles.Add(new WifiProfileItem
+                    {
+                        Ssid = ssid,
+                        Password = password,
+                        Authentication = auth
+                    });
+                }
+            });
+
+            Logger.Success($"🔑 Đã tìm thấy {profiles.Count} cấu hình Wi-Fi đã lưu trên máy!");
+            return profiles;
+        }
+
+        // ================= 10. TÍNH NĂNG 8: ĐO ĐỘ TRỄ PING INTERNET =================
+        public async Task<long> MeasurePingLatencyAsync(string target = "8.8.8.8")
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    using var ping = new Ping();
+                    var reply = ping.Send(target, 1500);
+                    if (reply.Status == IPStatus.Success)
+                    {
+                        return reply.RoundtripTime;
+                    }
+                }
+                catch { }
+                return -1;
+            });
+        }
     }
 }
 

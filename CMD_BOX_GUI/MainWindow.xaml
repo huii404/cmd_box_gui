@@ -32,84 +32,58 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Left: Toggle Sidebar Button + App Brand + Dropdown Menus -->
+                <!-- Left: App Brand + Dropdown Menus -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <!-- Nút đóng/mở gọn thanh Modules -->
-                    <Button x:Name="BtnToggleSidebar" Style="{StaticResource IconToolButton}" Padding="8,4" Margin="0,0,4,0"
-                            Click="BtnToggleSidebar_Click" ToolTip="Đóng / Mở thanh Modules bên trái (Ctrl+B)">
-                        <TextBlock Text="☰" FontSize="13" FontWeight="Bold"/>
-                    </Button>
-
                     <!-- Logo nhỏ gọn -->
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="2,0,10,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,10,0">
                         <TextBlock Text="🛠️" FontSize="13" VerticalAlignment="Center" Margin="0,0,5,0"/>
                         <TextBlock Text="CMD BOX" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
                     </StackPanel>
 
-                    <!-- Thanh Menu ngang xổ Dropdown như Web -->
+                    <!-- Thanh Menu ngang: Tính năng đặc quyền hệ thống (Không trùng lặp UI dưới) -->
                     <Menu Style="{StaticResource WebMenuBar}">
                         <!-- 1. FILE -->
                         <MenuItem Header="File" Style="{StaticResource WebTopMenuItem}">
                             <MenuItem Header="📂  Nhập / Mở File vào Tab..." InputGestureText="Ctrl+O" Style="{StaticResource WebSubMenuItem}" Click="MenuOpenFile_Click"/>
                             <MenuItem Header="📝  Tạo Tab Ghi Chú Nháp" InputGestureText="Ctrl+N" Style="{StaticResource WebSubMenuItem}" Click="MenuNewScratchpad_Click"/>
-                            <MenuItem Header="🎬  Đưa File vào Xử Lý Media..." Style="{StaticResource WebSubMenuItem}" Click="MenuImportToMedia_Click"/>
+                            <Separator Style="{StaticResource WebMenuSeparator}"/>
+                            <MenuItem Header="💾  Xuất Log Terminal Ra File..." Style="{StaticResource WebSubMenuItem}" Click="MenuExportLog_Click"/>
+                            <MenuItem Header="📁  Mở Thư Mục Ứng Dụng" Style="{StaticResource WebSubMenuItem}" Click="MenuOpenAppFolder_Click"/>
+                            <MenuItem Header="⚡  Mở Thư Mục Tạm (%Temp%)" Style="{StaticResource WebSubMenuItem}" Click="MenuOpenTempFolder_Click"/>
                             <Separator Style="{StaticResource WebMenuSeparator}"/>
                             <MenuItem Header="✕   Đóng Tab Hiện Tại" InputGestureText="Ctrl+W" Style="{StaticResource WebSubMenuItem}" Click="MenuCloseCurrentTab_Click"/>
-                            <MenuItem Header="🗑️  Đóng Tất Cả Tab" Style="{StaticResource WebSubMenuItem}" Click="MenuCloseAllTabs_Click"/>
-                            <Separator Style="{StaticResource WebMenuSeparator}"/>
                             <MenuItem Header="🚪  Thoát Ứng Dụng" InputGestureText="Alt+F4" Style="{StaticResource WebSubMenuItem}" Click="MenuExit_Click"/>
                         </MenuItem>
 
-                        <!-- 2. EDIT -->
-                        <MenuItem Header="Edit" Style="{StaticResource WebTopMenuItem}">
-                            <MenuItem Header="📋  Copy Nội Dung Tab File" Style="{StaticResource WebSubMenuItem}" Click="MenuCopyActiveTab_Click"/>
-                            <MenuItem Header="📋  Copy Toàn Bộ Terminal Log" Style="{StaticResource WebSubMenuItem}" Click="BtnCopyLog_Click"/>
+                        <!-- 2. TOOLS (CÔNG CỤ HỆ THỐNG WINDOWS NHANH) -->
+                        <MenuItem Header="Tools" Style="{StaticResource WebTopMenuItem}">
+                            <MenuItem Header="📊  Task Manager" InputGestureText="Ctrl+Shift+Esc" Style="{StaticResource WebSubMenuItem}" Click="MenuLaunchTaskManager_Click"/>
+                            <MenuItem Header="🖥️  Device Manager" Style="{StaticResource WebSubMenuItem}" Click="MenuLaunchDeviceManager_Click"/>
+                            <MenuItem Header="🌐  Kết Nối Mạng (ncpa.cpl)" Style="{StaticResource WebSubMenuItem}" Click="MenuLaunchNetworkConnections_Click"/>
+                            <MenuItem Header="⚙️  Dịch Vụ Nền (services.msc)" Style="{StaticResource WebSubMenuItem}" Click="MenuLaunchServices_Click"/>
                             <Separator Style="{StaticResource WebMenuSeparator}"/>
-                            <MenuItem Header="🧹  Xóa Sạch Terminal Log" Style="{StaticResource WebSubMenuItem}" Click="BtnClearLog_Click"/>
+                            <MenuItem Header="🗝️  Registry Editor (regedit)" Style="{StaticResource WebSubMenuItem}" Click="MenuLaunchRegedit_Click"/>
                         </MenuItem>
 
-                        <!-- 3. VIEW -->
-                        <MenuItem Header="View" Style="{StaticResource WebTopMenuItem}">
-                            <MenuItem Header="◧   Đóng / Mở Thanh Modules" InputGestureText="Ctrl+B" Style="{StaticResource WebSubMenuItem}" Click="BtnToggleSidebar_Click"/>
-                            <MenuItem Header="⬓   Ẩn / Hiện Khung Terminal" InputGestureText="Ctrl+J" Style="{StaticResource WebSubMenuItem}" Click="MenuToggleTerminal_Click"/>
-                            <MenuItem Header="🗖  Phóng To / Thu Nhỏ Terminal" Style="{StaticResource WebSubMenuItem}" Click="BtnToggleTerminalHeight_Click"/>
-                            <Separator Style="{StaticResource WebMenuSeparator}"/>
-                            <MenuItem Header="🌓  Đổi Giao Diện Sáng / Tối" Style="{StaticResource WebSubMenuItem}" Click="BtnToggleTheme_Click"/>
-                        </MenuItem>
-
-                        <!-- 4. MODULES -->
-                        <MenuItem Header="Modules" Style="{StaticResource WebTopMenuItem}">
-                            <MenuItem Header="🧹  System Optimizer" Style="{StaticResource WebSubMenuItem}" Tag="Optimizer" Click="MenuOpenModule_Click"/>
-                            <MenuItem Header="🌐  Mạng &amp; Bảo Mật" Style="{StaticResource WebSubMenuItem}" Tag="Network" Click="MenuOpenModule_Click"/>
-                            <MenuItem Header="⚡  Tiện Ích &amp; Tự Động" Style="{StaticResource WebSubMenuItem}" Tag="Utilities" Click="MenuOpenModule_Click"/>
-                            <MenuItem Header="🎬  Xử Lý Media" Style="{StaticResource WebSubMenuItem}" Tag="Media" Click="MenuOpenModule_Click"/>
-                            <Separator Style="{StaticResource WebMenuSeparator}"/>
-                            <MenuItem Header="📖  Hướng Dẫn Dùng" Style="{StaticResource WebSubMenuItem}" Tag="Guide" Click="MenuOpenModule_Click"/>
-                        </MenuItem>
-
-                        <!-- 5. TERMINAL -->
+                        <!-- 3. TERMINAL (ĐIỀU KHIỂN & LỆNH MẪU THỰC CHIẾN) -->
                         <MenuItem Header="Terminal" Style="{StaticResource WebTopMenuItem}">
-                            <MenuItem Header="▶   Chạy Thử Kiểm Tra Nhanh (System Info)" Style="{StaticResource WebSubMenuItem}" Click="MenuQuickDiagCmd_Click"/>
-                            <MenuItem Header="🛡️  Bật / Tắt Quyền Lệnh Admin CMD" Style="{StaticResource WebSubMenuItem}" Click="BtnToggleAdminCmd_Click"/>
+                            <MenuItem Header="▶   Kiểm Tra Cấu Hình (systeminfo)" Style="{StaticResource WebSubMenuItem}" Click="MenuCmdSystemInfo_Click"/>
+                            <MenuItem Header="🌐  Kiểm Tra Ping Mạng Liên Tục (ping 8.8.8.8 -t)" Style="{StaticResource WebSubMenuItem}" Click="MenuCmdPingTest_Click"/>
                             <Separator Style="{StaticResource WebMenuSeparator}"/>
-                            <MenuItem Header="🗑️  Xóa Sạch Log Console" Style="{StaticResource WebSubMenuItem}" Click="BtnClearLog_Click"/>
-                        </MenuItem>
-
-                        <!-- 6. HELP -->
-                        <MenuItem Header="Help" Style="{StaticResource WebTopMenuItem}">
-                            <MenuItem Header="📖  Mở Tài Liệu Hướng Dẫn" Style="{StaticResource WebSubMenuItem}" Tag="Guide" Click="MenuOpenModule_Click"/>
-                            <MenuItem Header="ℹ️  Giới Thiệu CMD BOX GUI" Style="{StaticResource WebSubMenuItem}" Click="MenuAbout_Click"/>
+                            <MenuItem Header="💻  Mở Cửa Sổ CMD Ngoài" Style="{StaticResource WebSubMenuItem}" Click="MenuLaunchExternalCmd_Click"/>
+                            <MenuItem Header="⚡  Mở Cửa Sổ PowerShell Ngoài" Style="{StaticResource WebSubMenuItem}" Click="MenuLaunchExternalPowerShell_Click"/>
+                            <Separator Style="{StaticResource WebMenuSeparator}"/>
+                            <MenuItem Header="📋  Copy Toàn Bộ Log" Style="{StaticResource WebSubMenuItem}" Click="BtnCopyLog_Click"/>
+                            <MenuItem Header="🧹  Xóa Sạch Console Log" Style="{StaticResource WebSubMenuItem}" Click="BtnClearLog_Click"/>
                         </MenuItem>
                     </Menu>
                 </StackPanel>
 
-                <!-- Right: Quick Import File Button + Theme Button -->
+                <!-- Right: Theme Switch Button -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="📂 Nhập File" Style="{StaticResource SecondaryButton}" Padding="9,3" FontSize="11" Margin="0,0,6,0"
-                            Click="MenuOpenFile_Click" ToolTip="Chọn tệp từ máy tính để mở trong Tab mới (hoặc kéo thả tệp vào cửa sổ)"/>
-                    <Button x:Name="BtnTopThemeQuick" Style="{StaticResource IconToolButton}" Padding="7,3"
+                    <Button x:Name="BtnTopThemeQuick" Style="{StaticResource IconToolButton}" Padding="7,4"
                             Click="BtnToggleTheme_Click" ToolTip="Chuyển đổi Giao diện Sáng / Tối">
-                        <TextBlock x:Name="TxtTopThemeIcon" Text="🌙" FontSize="12"/>
+                        <TextBlock x:Name="TxtTopThemeIcon" Text="🌙" FontSize="11.5"/>
                     </Button>
                 </StackPanel>
             </Grid>
@@ -124,39 +98,43 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- ================= 1.1 COLLAPSIBLE SIDEBAR MODULES ================= -->
+            <!-- ================= 1.1 COLLAPSIBLE SIDEBAR MODULES (VS CODE EXPLORER STYLE) ================= -->
             <Border x:Name="SidebarPanel" Grid.Column="0" Background="{DynamicResource BgSecondary}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,0,1,0">
-                <Grid Margin="10,10,10,10">
+                <Grid Margin="0">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
+                        <!-- Sidebar Header Bar (VS Code Explorer Title & Actions) -->
+                        <RowDefinition Height="34"/>
+                        <!-- Module / Section Navigation -->
                         <RowDefinition Height="*"/>
+                        <!-- Sidebar Bottom Mini Info -->
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Thanh tiêu đề MODULES có nút đóng/mở gọn danh sách & nút thu gọn toàn Sidebar -->
-                    <Grid Grid.Row="0" Margin="0,0,0,6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                    <!-- 1.1.0 Tiêu đề MODULES cố định với các nút thao tác nhanh -->
+                    <Border Grid.Row="0" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,0,0,1" Padding="12,0,8,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                        <!-- Nút bấm đóng/mở danh sách mục con bên trong -->
-                        <Button x:Name="BtnFoldModuleList" Grid.Column="0" Style="{StaticResource IconToolButton}"
-                                HorizontalContentAlignment="Left" Padding="6,4"
-                                Click="BtnFoldModuleList_Click" ToolTip="Thu gọn / Mở rộng danh sách Modules">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock x:Name="TxtModulesArrow" Text="▾" FontSize="11" Width="14" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center"/>
-                                <TextBlock Text="MODULES" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center"/>
+                            <!-- Tiêu đề cố định (không sổ ra/thụt vào) -->
+                            <TextBlock Text="MODULES" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center"/>
+
+                            <!-- Các nút thao tác nhanh -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="＋" Style="{StaticResource IconToolButton}" Padding="5,2" FontSize="11"
+                                        Click="MenuNewScratchpad_Click" ToolTip="Tạo Tab Ghi chú / Kịch bản mới (Ctrl+N)"/>
+                                <Button Content="📂" Style="{StaticResource IconToolButton}" Padding="5,2" FontSize="10.5"
+                                        Click="MenuOpenFile_Click" ToolTip="Mở tệp vào Tab (Ctrl+O)"/>
+                                <Button Content="🎬" Style="{StaticResource IconToolButton}" Padding="5,2" FontSize="10.5"
+                                        Click="MenuImportToMedia_Click" ToolTip="Đưa tệp vào Xử Lý Media..."/>
                             </StackPanel>
-                        </Button>
+                        </Grid>
+                    </Border>
 
-                        <!-- Nút đóng hẳn cột Sidebar cho gọn không gian -->
-                        <Button Grid.Column="1" Content="«" Style="{StaticResource IconToolButton}" Padding="7,2" FontSize="12"
-                                Click="BtnToggleSidebar_Click" ToolTip="Ẩn thanh Modules sang trái (Ctrl+B)"/>
-                    </Grid>
-
-                    <!-- Danh sách các Module (Có thể đóng/mở gọn) -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <!-- 1.1.1 Danh sách Modules (Dạng cây công cụ Explorer sạch sẽ) -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="6,8">
                         <StackPanel x:Name="PnlModuleItems">
                             <RadioButton x:Name="NavOptimizer" Content="🧹  System Optimizer" Style="{StaticResource SidebarNavButton}" IsChecked="True" Tag="Optimizer" Click="SidebarModule_Click"/>
                             <RadioButton x:Name="NavNetwork" Content="🌐  Mạng &amp; Bảo Mật" Style="{StaticResource SidebarNavButton}" Tag="Network" Click="SidebarModule_Click"/>
@@ -166,58 +144,16 @@
                         </StackPanel>
                     </ScrollViewer>
 
-                    <!-- Footer Status & Toggles -->
-                    <StackPanel Grid.Row="2" Margin="0,8,0,0">
-                        <Border Background="{DynamicResource BgCard}" CornerRadius="3" Padding="9,7" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" Margin="0,0,0,6">
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                                    <Ellipse Width="7" Height="7" Fill="{DynamicResource AccentSuccess}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock x:Name="TxtAppStatus" Text="Trạng thái: Sẵn sàng" FontSize="11" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
-                                </StackPanel>
-                                <TextBlock Text="Hotkey: ESC / F6 ngắt" FontSize="10" Foreground="{DynamicResource TextMuted}"/>
+                    <!-- 1.1.2 Đáy Sidebar tinh giản: Chỉ giữ vạch hiển thị trạng thái khẩn cấp cực gọn -->
+                    <Border Grid.Row="2" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,1,0,0" Padding="10,6">
+                        <Grid>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse Width="6" Height="6" Fill="{DynamicResource AccentSuccess}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Sẵn sàng" FontSize="10.5" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center"/>
                             </StackPanel>
-                        </Border>
-
-                        <!-- Công tắc Lệnh Admin CMD -->
-                        <Button x:Name="BtnToggleAdminCmd" Click="BtnToggleAdminCmd_Click"
-                                Style="{StaticResource SecondaryButton}" 
-                                HorizontalContentAlignment="Stretch"
-                                Padding="8,5" Cursor="Hand" Margin="0,0,0,4"
-                                ToolTip="Bật/Tắt cho phép nâng quyền Admin (Mặc định TẮT để dùng lệnh thường)">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="TxtAdminCmdIcon" Text="🔒" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock x:Name="TxtAdminCmdLabel" Grid.Column="1" Text="Lệnh Admin: TẮT" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
-                                <Border Grid.Column="2" x:Name="BrdAdminCmdSwitch" Width="26" Height="14" CornerRadius="7" Background="{DynamicResource BgInput}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" VerticalAlignment="Center">
-                                    <Ellipse x:Name="EllAdminCmdDot" Width="8" Height="8" Fill="{DynamicResource AccentDanger}" HorizontalAlignment="Left" Margin="2,0,2,0"/>
-                                </Border>
-                            </Grid>
-                        </Button>
-
-                        <!-- Nút Giao diện Sáng - Tối -->
-                        <Button x:Name="BtnToggleTheme" Click="BtnToggleTheme_Click"
-                                Style="{StaticResource SecondaryButton}" 
-                                HorizontalContentAlignment="Stretch"
-                                Padding="8,5" Cursor="Hand"
-                                ToolTip="Chuyển đổi Giao diện Sáng / Tối">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="TxtThemeIcon" Text="🌙" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock x:Name="TxtThemeLabel" Grid.Column="1" Text="Giao diện Tối" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
-                                <Border Grid.Column="2" x:Name="BrdThemeSwitch" Width="26" Height="14" CornerRadius="7" Background="{DynamicResource BgInput}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" VerticalAlignment="Center">
-                                    <Ellipse x:Name="EllThemeDot" Width="8" Height="8" Fill="{DynamicResource AccentCyan}" HorizontalAlignment="Right" Margin="2,0,2,0"/>
-                                </Border>
-                            </Grid>
-                        </Button>
-                    </StackPanel>
+                            <TextBlock Text="ESC / F6 ngắt" FontSize="10" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
 
@@ -234,8 +170,8 @@
                     <RowDefinition x:Name="RowTerminal" Height="175" MinHeight="85"/>
                 </Grid.RowDefinitions>
 
-                <!-- 0. Thanh Tab động (Mở nhiều Module + File nhập vào cùng lúc như VS Code) -->
-                <Border Grid.Row="0" Background="{DynamicResource EditorTabBg}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,0,0,1">
+                <!-- 0. Dynamic Tab Strip (Chỉ hiển thị khi có file / tab nháp được mở qua dấu + hoặc Open File) -->
+                <Border x:Name="TabStripBorder" Grid.Row="0" Background="{DynamicResource EditorTabBg}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,0,0,1" Visibility="Collapsed">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -243,64 +179,64 @@
                         </Grid.ColumnDefinitions>
 
                         <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                            <StackPanel Orientation="Horizontal">
-                                <ItemsControl x:Name="TabStripItems">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border x:Name="tabRoot"
-                                                    Background="{DynamicResource EditorTabBg}"
-                                                    BorderBrush="{DynamicResource EditorTabBorder}"
-                                                    BorderThickness="0,0,1,0"
-                                                    Height="33"
-                                                    Cursor="Hand"
-                                                    ToolTip="{Binding ToolTipText}"
-                                                    MouseLeftButtonDown="TabItem_MouseLeftButtonDown">
-                                                <Grid>
-                                                    <!-- Vạch sáng xanh trên đầu tab đang chọn -->
-                                                    <Border x:Name="topBar" Height="2" VerticalAlignment="Top" Background="{DynamicResource AccentCyan}" Visibility="Collapsed"/>
+                            <ItemsControl x:Name="TabStripItems">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border x:Name="tabRoot"
+                                                Background="{DynamicResource EditorTabBg}"
+                                                BorderBrush="{DynamicResource EditorTabBorder}"
+                                                BorderThickness="0,0,1,0"
+                                                Height="33"
+                                                Cursor="Hand"
+                                                ToolTip="{Binding ToolTipText}"
+                                                MouseLeftButtonDown="TabItem_MouseLeftButtonDown">
+                                            <Grid>
+                                                <!-- Vạch sáng xanh trên đầu tab đang chọn -->
+                                                <Border x:Name="topBar" Height="2" VerticalAlignment="Top" Background="{DynamicResource AccentCyan}" Visibility="Collapsed"/>
 
-                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,6,0">
-                                                        <TextBlock Text="{Binding Icon}" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                        <TextBlock x:Name="txtTitle" Text="{Binding Title}" FontSize="11.5" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" MaxWidth="170" TextTrimming="CharacterEllipsis"/>
-                                                        <Button Content="✕" Style="{StaticResource IconToolButton}"
-                                                                Padding="5,1" Margin="6,0,0,0" FontSize="9.5"
-                                                                Tag="{Binding}"
-                                                                Click="BtnCloseTab_Click"
-                                                                ToolTip="Đóng tab (Ctrl+W)"/>
-                                                    </StackPanel>
-                                                </Grid>
-                                            </Border>
-                                            <DataTemplate.Triggers>
-                                                <DataTrigger Binding="{Binding IsMouseOver, ElementName=tabRoot}" Value="True">
-                                                    <Setter TargetName="tabRoot" Property="Background" Value="{DynamicResource BgCardHover}"/>
-                                                    <Setter TargetName="txtTitle" Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                    <Setter TargetName="tabRoot" Property="Background" Value="{DynamicResource EditorTabActiveBg}"/>
-                                                    <Setter TargetName="topBar" Property="Visibility" Value="Visible"/>
-                                                    <Setter TargetName="txtTitle" Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-                                                    <Setter TargetName="txtTitle" Property="FontWeight" Value="SemiBold"/>
-                                                </DataTrigger>
-                                            </DataTemplate.Triggers>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-
-                                <!-- Nút + tạo nhanh Tab nháp ngay cạnh danh sách Tab -->
-                                <Button Content="＋" Style="{StaticResource IconToolButton}" Padding="8,4" Margin="4,0,0,0" VerticalAlignment="Center"
-                                        Click="MenuNewScratchpad_Click" ToolTip="Tạo Tab ghi chú nháp mới (Ctrl+N)"/>
-                            </StackPanel>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,6,0">
+                                                    <TextBlock Text="{Binding Icon}" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                    <TextBlock x:Name="txtTitle" Text="{Binding Title}" FontSize="11.5" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" MaxWidth="170" TextTrimming="CharacterEllipsis"/>
+                                                    <Button Content="✕" Style="{StaticResource IconToolButton}"
+                                                            Padding="5,1" Margin="6,0,0,0" FontSize="9.5"
+                                                            Tag="{Binding}"
+                                                            Click="BtnCloseTab_Click"
+                                                            ToolTip="Đóng tab (Ctrl+W)"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsMouseOver, ElementName=tabRoot}" Value="True">
+                                                <Setter TargetName="tabRoot" Property="Background" Value="{DynamicResource BgCardHover}"/>
+                                                <Setter TargetName="txtTitle" Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                <Setter TargetName="tabRoot" Property="Background" Value="{DynamicResource EditorTabActiveBg}"/>
+                                                <Setter TargetName="topBar" Property="Visibility" Value="Visible"/>
+                                                <Setter TargetName="txtTitle" Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                                                <Setter TargetName="txtTitle" Property="FontWeight" Value="SemiBold"/>
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </ScrollViewer>
 
-                        <!-- Action nhỏ bên phải thanh Tab -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,6,0">
-                            <Button Content="📂 Mở File" Style="{StaticResource IconToolButton}" Padding="7,3" FontSize="11"
-                                    Click="MenuOpenFile_Click" ToolTip="Nhập tệp vào Tab mới (Ctrl+O)"/>
+                        <!-- Editor Context Actions bên phải thanh Tab -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,8,0">
+                            <Button Content="▶ Chạy" Style="{StaticResource SecondaryButton}" Padding="8,2" FontSize="10.5" Margin="0,0,4,0"
+                                    Click="MenuRunActiveTab_Click" ToolTip="Thực thi kịch bản của Tab hiện tại"/>
+                            <Button Content="📂" Style="{StaticResource IconToolButton}" Padding="6,2" FontSize="11" Margin="0,0,2,0"
+                                    Click="MenuOpenFile_Click" ToolTip="Mở tệp vào Tab mới (Ctrl+O)"/>
+                            <Button Content="＋" Style="{StaticResource IconToolButton}" Padding="6,2" FontSize="11" Margin="0,0,2,0"
+                                    Click="MenuNewScratchpad_Click" ToolTip="Tạo Tab nháp mới (Ctrl+N)"/>
+                            <Button Content="✕" Style="{StaticResource IconToolButton}" Padding="6,2" FontSize="10.5"
+                                    Click="MenuCloseCurrentTab_Click" ToolTip="Đóng tab hiện tại (Ctrl+W)"/>
                         </StackPanel>
                     </Grid>
                 </Border>

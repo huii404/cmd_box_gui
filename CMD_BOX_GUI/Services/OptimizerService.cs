@@ -25,7 +25,7 @@ namespace CMD_BOX_GUI.Services
         // ================= 1. QUICK CLEAN =================
         public async Task<long> CleanQuickAsync(IProgress<int>? progress = null)
         {
-            Logger.Info("[Optimizer] Running Quick Clean...");
+            Logger.Info("[Optimizer] Quick Clean bắt đầu...");
             long initialFree = GetDriveFreeSpace();
 
             var tasks = new Action[]
@@ -56,7 +56,7 @@ namespace CMD_BOX_GUI.Services
             });
 
             long freed = Math.Max(0, GetDriveFreeSpace() - initialFree);
-            Logger.Success($"[Optimizer] Quick Clean completed! Freed: {SystemCore.FormatBytes(freed)}");
+            Logger.Success($"[Optimizer] Quick Clean hoàn tất: {SystemCore.FormatBytes(freed)}");
             return freed;
         }
 
@@ -766,6 +766,187 @@ try {
                 }
             }
             catch { }
+        }
+
+        // ================= 5. QUẢN LÝ DỊCH VỤ RÁC & UWP BLOATWARE (HELLZERG OPTIMIZER PATTERN) =================
+
+        public static void RefreshServiceStatus(Models.SystemServiceItem svc)
+        {
+            try
+            {
+                using var key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{svc.ServiceName}");
+                if (key != null)
+                {
+                    object? startVal = key.GetValue("Start");
+                    if (startVal is int val && val == 4)
+                    {
+                        svc.IsDisabled = true;
+                        return;
+                    }
+                }
+                svc.IsDisabled = false;
+            }
+            catch
+            {
+                // Giữ nguyên mặc định nếu không đọc được
+            }
+        }
+
+        public static List<Models.SystemServiceItem> GetUnneededServicesList()
+        {
+            var list = new List<Models.SystemServiceItem>
+            {
+                new() { ServiceName = "DiagTrack", DisplayName = "Connected User Experiences & Telemetry", Category = "Telemetry", Description = "Thu thập dữ liệu chẩn đoán & gửi ẩn về máy chủ Microsoft.", Impact = "Tiết kiệm RAM & SSD I/O", RiskLevel = "Safe" },
+                new() { ServiceName = "dmwappushservice", DisplayName = "Device Management WAP Push", Category = "Telemetry", Description = "Kênh chuyển tin nhắn telemetry và định tuyến quản lý thiết bị.", Impact = "Bảo mật & Giảm tiến trình nền", RiskLevel = "Safe" },
+                new() { ServiceName = "diagnosticshub.standardcollector.service", DisplayName = "Microsoft (R) Diagnostics Hub Standard Collector", Category = "Telemetry", Description = "Thu thập sự kiện chẩn đoán thời gian thực cho Visual Studio / OEM.", Impact = "Tiết kiệm CPU", RiskLevel = "Safe" },
+                new() { ServiceName = "MapsBroker", DisplayName = "Downloaded Maps Manager", Category = "Hệ Thống", Description = "Tự động tải & cập nhật bản đồ ngoại tuyến của ứng dụng Windows Maps.", Impact = "Giảm tiêu hao SSD & Network", RiskLevel = "Safe" },
+                new() { ServiceName = "WerSvc", DisplayName = "Windows Error Reporting Service", Category = "Báo Lỗi", Description = "Ghi log khi app bị crash và gửi báo cáo lỗi lên Microsoft.", Impact = "Tiết kiệm dung lượng ổ C", RiskLevel = "Safe" },
+
+                new() { ServiceName = "XblAuthManager", DisplayName = "Xbox Live Auth Manager", Category = "Xbox", Description = "Quản lý xác thực tài khoản Xbox Live (chỉ tắt nếu không chơi game Xbox Store).", Impact = "Tiết kiệm RAM", RiskLevel = "Caution" },
+                new() { ServiceName = "XblGameSave", DisplayName = "Xbox Live Game Save", Category = "Xbox", Description = "Đồng bộ lưu file save của các game trong Xbox App.", Impact = "Tiết kiệm Network & RAM", RiskLevel = "Caution" },
+                new() { ServiceName = "XboxNetApiSvc", DisplayName = "Xbox Live Networking Service", Category = "Xbox", Description = "Dịch vụ mạng hỗ trợ kết nối mạng cho Xbox Live.", Impact = "Giảm tải mạng", RiskLevel = "Caution" },
+                new() { ServiceName = "XboxGipSvc", DisplayName = "Xbox Accessory Management Service", Category = "Xbox", Description = "Quản lý phụ kiện tay cầm Xbox chuyên dụng.", Impact = "Tiết kiệm RAM", RiskLevel = "Caution" },
+                new() { ServiceName = "WSearch", DisplayName = "Windows Search Indexer", Category = "Hệ Thống", Description = "Lập chỉ mục tìm kiếm liên tục (tắt giúp giảm 100% Disk HDD/SSD yếu, nhưng tìm file sẽ lâu hơn).", Impact = "Hạ nhiệt ổ cứng & CPU", RiskLevel = "Caution" },
+                new() { ServiceName = "SysMain", DisplayName = "SysMain (Superfetch)", Category = "Hệ Thống", Description = "Tự động nạp trước ứng dụng vào RAM (tắt giúp giải phóng RAM cho game nặng, trên HDD app nạp chậm hơn xíu).", Impact = "Chống nghẽn RAM & Disk", RiskLevel = "Caution" }
+            };
+
+            foreach (var svc in list)
+            {
+                RefreshServiceStatus(svc);
+            }
+
+            return list;
+        }
+
+        public async Task<int> DisableServicesBatchAsync(IEnumerable<string> serviceNames)
+        {
+            var commands = new List<string>();
+            foreach (var svc in serviceNames)
+            {
+                commands.Add($"sc stop \"{svc}\" >nul 2>&1");
+                commands.Add($"sc config \"{svc}\" start=disabled >nul 2>&1");
+            }
+
+            if (commands.Count == 0) return 0;
+            return await SystemCore.RunBatchScriptAsync(commands, "batch_disable_services");
+        }
+
+        public async Task<int> ToggleServiceStateAsync(string serviceName, bool disable)
+        {
+            string startMode = disable ? "disabled" : "demand";
+            string action = disable ? "stop" : "start";
+
+            return await SystemCore.RunBatchScriptAsync(new[]
+            {
+                $"sc {action} \"{serviceName}\" >nul 2>&1",
+                $"sc config \"{serviceName}\" start={startMode} >nul 2>&1"
+            }, $"svc_{serviceName}");
+        }
+
+        private static readonly (string AppName, string PackagePattern, string Category, string Description, string EstimatedSize, string RiskLevel)[] BloatwareCatalog = new[]
+        {
+            // SAFE: An toàn gỡ bỏ 100%
+            ("Cortana", "Microsoft.549981C3F5F10", "Trợ Lý Ảo", "Trợ lý ảo Cortana đã dừng hỗ trợ, chạy ngầm ngốn tài nguyên.", "~60 MB", "Safe"),
+            ("3D Viewer", "Microsoft.Microsoft3DViewer", "Đồ Họa", "Xem mô hình 3D mặc định ít người dùng phổ thông cần tới.", "~120 MB", "Safe"),
+            ("3D Builder", "Microsoft.3DBuilder", "Đồ Họa", "Tạo và in mô hình 3D mặc định.", "~85 MB", "Safe"),
+            ("MSN Weather (Thời Tiết)", "Microsoft.BingWeather", "Tin Tức", "Ứng dụng Thời tiết MSN liên tục kết nối mạng cập nhật.", "~90 MB", "Safe"),
+            ("MSN News (Tin Tức)", "Microsoft.BingNews", "Tin Tức", "Tin tức MSN cập nhật và đẩy thông báo ngầm.", "~80 MB", "Safe"),
+            ("MSN Finance (Tài Chính)", "Microsoft.BingFinance", "Tin Tức", "Theo dõi thị trường chứng khoán MSN.", "~75 MB", "Safe"),
+            ("MSN Sports (Thể Thao)", "Microsoft.BingSports", "Tin Tức", "Bản tin thể thao MSN.", "~70 MB", "Safe"),
+            ("Solitaire Collection", "Microsoft.MicrosoftSolitaireCollection", "Game Rác", "Bộ game bài Solitaire cài sẵn kèm quảng cáo.", "~140 MB", "Safe"),
+            ("Candy Crush Saga", "king.com.CandyCrush", "Game Rác", "Game tài trợ tự động cài ngầm khi cài đặt Windows.", "~250 MB", "Safe"),
+            ("Movies & TV (Zune Video)", "Microsoft.ZuneVideo", "Media", "Trình xem video mặc định của Windows.", "~80 MB", "Safe"),
+            ("People (Danh Bạ)", "Microsoft.People", "Danh Bạ", "Danh bạ liên lạc tích hợp Skype/Mail không cần thiết.", "~40 MB", "Safe"),
+            ("Feedback Hub", "Microsoft.WindowsFeedbackHub", "Telemetry", "Trung tâm gửi phản hồi và dữ liệu người dùng lên Microsoft.", "~55 MB", "Safe"),
+            ("Skype", "Microsoft.SkypeApp", "Liên Lạc", "Ứng dụng nhắn tin / gọi video Skype.", "~110 MB", "Safe"),
+            ("Microsoft To Do", "Microsoft.Todos", "Ghi Chú", "Quản lý danh sách công việc To-Do của Microsoft.", "~50 MB", "Safe"),
+            ("Clipchamp Video Editor", "Clipchamp.Clipchamp", "Media", "Trình dựng video trực tuyến mặc định trên Win 11.", "~160 MB", "Safe"),
+            ("Spotify Music", "SpotifyAB.SpotifyMusic", "Media", "Ứng dụng nghe nhạc Spotify đối tác cài sẵn.", "~150 MB", "Safe"),
+            ("Disney+", "Disney", "Đối Tác", "Ứng dụng xem phim Disney+ đối tác cài sẵn.", "~120 MB", "Safe"),
+            ("TikTok", "TikTok", "Đối Tác", "Ứng dụng mạng xã hội video TikTok cài sẵn.", "~100 MB", "Safe"),
+            ("Amazon Prime Video", "AmazonVideo", "Đối Tác", "Ứng dụng xem phim Amazon Prime Video.", "~90 MB", "Safe"),
+
+            // CAUTION: Cần cân nhắc (Chỉ gỡ nếu thực sự không dùng đến tính năng đó)
+            ("Groove Music (Media Player cũ)", "Microsoft.ZuneMusic", "Media", "Trình nghe nhạc mặc định Windows đời cũ.", "~70 MB", "Caution"),
+            ("Get Help", "Microsoft.GetHelp", "Tiện Ích", "Trung tâm trợ giúp cơ bản của Windows.", "~45 MB", "Caution"),
+            ("Tips (Mẹo Windows)", "Microsoft.Getstarted", "Mẹo Vặt", "Hướng dẫn và gợi ý sử dụng Windows.", "~35 MB", "Caution"),
+            ("Phone Link (Liên kết điện thoại)", "Microsoft.YourPhone", "Tiện Ích", "Ứng dụng đồng bộ điện thoại với PC nếu bạn không dùng.", "~95 MB", "Caution"),
+            ("Microsoft 365 (Office Hub)", "Microsoft.MicrosoftOfficeHub", "Quảng Cáo", "Cổng giới thiệu và khởi động nhanh bộ Office 365.", "~65 MB", "Caution"),
+            ("Power Automate", "Microsoft.PowerAutomateDesktop", "Nền Tảng", "Tự động hóa luồng tác vụ văn phòng và doanh nghiệp.", "~280 MB", "Caution"),
+            ("Xbox Apps & Game Bar", "Microsoft.XboxApp", "Xbox", "Ứng dụng Xbox Console Companion & dịch vụ game.", "~180 MB", "Caution"),
+            ("Voice Recorder (Ghi Âm)", "Microsoft.WindowsSoundRecorder", "Tiện Ích", "Trình ghi âm giọng nói mặc định qua microphone.", "~30 MB", "Caution")
+        };
+
+        public async Task<List<Models.BloatwareAppItem>> ScanInstalledBloatwareAsync()
+        {
+            var detectedList = new List<Models.BloatwareAppItem>();
+            try
+            {
+                var installedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                // Quét an toàn theo chuẩn optimizerDuck: Loại trừ NonRemovable và Frameworks (.NET, VCLibs, WinAppRuntime)
+                await ProcessRunner.RunProcessAsync(
+                    "powershell.exe",
+                    "-NoProfile -ExecutionPolicy Bypass -Command \"Get-AppxPackage | Where-Object { $_.NonRemovable -eq $false -and $_.IsFramework -eq $false } | Select-Object -ExpandProperty Name\"",
+                    onOutputLine: line =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            installedNames.Add(line.Trim());
+                        }
+                    },
+                    runAsAdmin: false
+                );
+
+                foreach (var entry in BloatwareCatalog)
+                {
+                    bool isInstalled = installedNames.Any(name => name.Contains(entry.PackagePattern, StringComparison.OrdinalIgnoreCase));
+                    if (isInstalled)
+                    {
+                        detectedList.Add(new Models.BloatwareAppItem
+                        {
+                            AppName = entry.AppName,
+                            PackageName = entry.PackagePattern,
+                            Category = entry.Category,
+                            Description = entry.Description,
+                            EstimatedSize = entry.EstimatedSize,
+                            RiskLevel = entry.RiskLevel,
+                            IsSelected = entry.RiskLevel == "Safe", // Mặc định chỉ tích chọn trước các app Safe (An toàn)
+                            IsInstalled = true
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Lỗi khi quét ứng dụng UWP đã cài: {ex.Message}");
+            }
+
+            return detectedList;
+        }
+
+        public async Task<bool> RemoveBloatwareBatchAsync(IEnumerable<string> packagePatterns)
+        {
+            try
+            {
+                var patternsList = packagePatterns.Where(p => !string.IsNullOrWhiteSpace(p)).ToList();
+                if (patternsList.Count == 0) return true;
+
+                string patternsFormatted = string.Join(",", patternsList.Select(p => $"'{p.Trim('*')}'"));
+                string script = $"$patterns = @({patternsFormatted}); foreach ($p in $patterns) {{ Get-AppxPackage | Where-Object {{ $_.Name -like \"*$p*\" }} | Remove-AppxPackage -ErrorAction SilentlyContinue }}";
+
+                int code = await ProcessRunner.RunProcessAsync(
+                    "powershell.exe",
+                    $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"",
+                    runAsAdmin: false
+                );
+                return code == 0;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Lỗi gỡ bỏ ứng dụng UWP: {ex.Message}");
+                return false;
+            }
         }
     }
 }

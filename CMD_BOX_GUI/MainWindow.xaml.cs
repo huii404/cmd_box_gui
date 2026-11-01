@@ -1,8 +1,10 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -24,11 +26,11 @@ namespace CMD_BOX_GUI
         private readonly GuideView _guideView = new();
 
         private readonly ObservableCollection<WorkspaceTabItem> _openTabs = new();
+        private string _currentModule = "Optimizer";
         private WorkspaceTabItem? _activeTab;
         private int _scratchpadCounter = 1;
 
         private bool _isSidebarOpen = true;
-        private bool _isModuleListExpanded = true;
         private bool _isTerminalVisible = true;
         private bool _isTerminalExpanded = false;
 
@@ -46,8 +48,8 @@ namespace CMD_BOX_GUI
             UpdateThemeUIState();
             UpdateAdminCmdUIState();
 
-            // Mở sẵn tab System Optimizer mặc định khi khởi động
-            OpenOrActivateModuleTab("Optimizer");
+            // Hiển thị module chính mặc định (System Optimizer) trực tiếp, không tạo thẻ tab
+            SwitchToModule("Optimizer");
 
             // Timer batch update log chống lag giao diện
             _logBatchTimer = new DispatcherTimer(DispatcherPriority.Background)
@@ -58,69 +60,42 @@ namespace CMD_BOX_GUI
             _logBatchTimer.Start();
 
             bool isAdmin = SystemCore.IsAdministrator();
-            Logger.Info("Khởi động CMD BOX GUI hoàn tất.");
             Logger.Info(isAdmin
-                ? "Quyền tiến trình: Administrator."
-                : "Quyền tiến trình: Standard User (Chế độ lệnh thường).");
+                ? "CMD BOX GUI khởi động (Admin)."
+                : "CMD BOX GUI khởi động (Standard User).");
         }
 
-        // ================= QUẢN LÝ ĐA TAB & NHẬP FILE =================
+        // ================= ĐIỀU HƯỚNG MODULE CHÍNH & TAB FILE NHÁP =================
+
+        private void SwitchToModule(string moduleId)
+        {
+            _currentModule = moduleId;
+            _activeTab = null;
+
+            // Bỏ chọn tất cả các tab file nếu có
+            foreach (var t in _openTabs) t.IsSelected = false;
+
+            // Chuyển view trực tiếp vào MainContentHost
+            MainContentHost.Content = moduleId switch
+            {
+                "Network" => _networkView,
+                "Utilities" => _utilitiesView,
+                "Media" => _mediaView,
+                "Guide" => _guideView,
+                _ => _optimizerView
+            };
+
+            MainContentHost.Visibility = Visibility.Visible;
+            PnlEmptyWorkspace.Visibility = Visibility.Collapsed;
+
+            // Đồng bộ trạng thái RadioButton trên Sidebar
+            SyncSidebarSelection(moduleId);
+            UpdateTabVisibility();
+        }
 
         private void OpenOrActivateModuleTab(string moduleId)
         {
-            var existing = _openTabs.FirstOrDefault(t => t.Id.Equals(moduleId, StringComparison.OrdinalIgnoreCase));
-            if (existing != null)
-            {
-                ActivateTab(existing);
-                return;
-            }
-
-            WorkspaceTabItem newTab = moduleId switch
-            {
-                "Network" => new WorkspaceTabItem
-                {
-                    Id = "Network",
-                    Icon = "🌐",
-                    Title = "Mạng & Bảo Mật",
-                    ToolTipText = "Module: Sửa lỗi Internet & Quét mạng LAN",
-                    Content = _networkView
-                },
-                "Utilities" => new WorkspaceTabItem
-                {
-                    Id = "Utilities",
-                    Icon = "⚡",
-                    Title = "Tiện Ích & Tự Động",
-                    ToolTipText = "Module: Auto Click, Spam Text, Báo cáo Pin & Winget",
-                    Content = _utilitiesView
-                },
-                "Media" => new WorkspaceTabItem
-                {
-                    Id = "Media",
-                    Icon = "🎬",
-                    Title = "Xử Lý Media",
-                    ToolTipText = "Module: Nén, Đổi đuôi, Làm nét Ảnh/Video, Tách nhạc, GIF",
-                    Content = _mediaView
-                },
-                "Guide" => new WorkspaceTabItem
-                {
-                    Id = "Guide",
-                    Icon = "📖",
-                    Title = "Hướng Dẫn Dùng",
-                    ToolTipText = "Module: Tài liệu hướng dẫn sử dụng chi tiết",
-                    Content = _guideView
-                },
-                _ => new WorkspaceTabItem
-                {
-                    Id = "Optimizer",
-                    Icon = "🧹",
-                    Title = "System Optimizer",
-                    ToolTipText = "Module: Dọn rác & Tối ưu hệ thống Windows",
-                    Content = _optimizerView
-                }
-            };
-
-            _openTabs.Add(newTab);
-            ActivateTab(newTab);
+            SwitchToModule(moduleId);
         }
 
         public void OpenFileInTab(string filePath)
@@ -211,15 +186,16 @@ namespace CMD_BOX_GUI
                 MainContentHost.Content = tab.Content;
                 MainContentHost.Visibility = Visibility.Visible;
                 PnlEmptyWorkspace.Visibility = Visibility.Collapsed;
+                // Bỏ chọn nút RadioButton trên Sidebar vì đang xem tab file riêng biệt
+                SyncSidebarSelection(null);
             }
             else
             {
-                MainContentHost.Content = null;
-                MainContentHost.Visibility = Visibility.Collapsed;
-                PnlEmptyWorkspace.Visibility = Visibility.Visible;
+                // Khi không còn tab file nào được chọn, tự động quay về Module chính đang chọn
+                SwitchToModule(_currentModule);
             }
 
-            SyncSidebarSelection(tab?.Id);
+            UpdateTabVisibility();
             UpdateTabCountStatus();
         }
 
@@ -246,7 +222,17 @@ namespace CMD_BOX_GUI
             }
             else
             {
+                UpdateTabVisibility();
                 UpdateTabCountStatus();
+            }
+        }
+
+        private void UpdateTabVisibility()
+        {
+            if (TabStripBorder != null)
+            {
+                // Thanh Tab Strip chỉ hiển thị khi có ít nhất 1 file/nháp được mở
+                TabStripBorder.Visibility = _openTabs.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             }
         }
 
@@ -312,14 +298,6 @@ namespace CMD_BOX_GUI
             {
                 TxtStatusSidebar.Text = _isSidebarOpen ? "◧ Modules: Mở" : "◧ Modules: Đóng";
             }
-        }
-
-        // Thu gọn / Mở rộng danh sách nút con bên trong mục MODULES
-        private void BtnFoldModuleList_Click(object sender, RoutedEventArgs e)
-        {
-            _isModuleListExpanded = !_isModuleListExpanded;
-            PnlModuleItems.Visibility = _isModuleListExpanded ? Visibility.Visible : Visibility.Collapsed;
-            TxtModulesArrow.Text = _isModuleListExpanded ? "▾" : "▸";
         }
 
         // ================= SỰ KIỆN TOP DROPDOWN MENU & KÉO THẢ FILE =================
@@ -406,25 +384,186 @@ namespace CMD_BOX_GUI
             }
         }
 
-        private async void MenuQuickDiagCmd_Click(object sender, RoutedEventArgs e)
+        private void MenuRunActiveTab_Click(object sender, RoutedEventArgs e)
         {
-            if (!_isTerminalVisible) ToggleTerminalVisibility();
-            Logger.Info("▶ Đang kiểm tra nhanh thông tin hệ thống Windows...");
-            string osInfo = await ProcessRunner.RunCommandAndGetOutputAsync("cmd.exe", "/c ver");
-            Logger.Success($"[OS] {osInfo} | Machine: {Environment.MachineName} | Cores: {Environment.ProcessorCount}");
+            if (_activeTab?.Content is FileTabView fileView && fileView.CanRunScript)
+            {
+                fileView.ExecuteScriptDirectly();
+            }
+            else
+            {
+                MenuCmdSystemInfo_Click(sender, e);
+            }
         }
 
-        private void MenuAbout_Click(object sender, RoutedEventArgs e)
+        private void MenuExportLog_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show(
-                "CMD BOX GUI — Multi-Tab Workspace Edition\n\n" +
-                "• Hỗ trợ mở nhiều Tab công cụ và nhập File trực tiếp (Ctrl+O / Kéo thả)\n" +
-                "• Thanh Modules gọn nhẹ đóng/mở linh hoạt (Ctrl+B)\n" +
-                "• Menu ngang sổ Dropdown hiện đại\n" +
-                "• Mặc định chạy quyền thường an toàn (asInvoker)",
-                "Giới thiệu CMD BOX GUI",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            var sfd = new SaveFileDialog
+            {
+                Title = "Xuất Log Terminal ra File",
+                Filter = "Log File (*.log)|*.log|Text File (*.txt)|*.txt",
+                FileName = $"cmd_box_log_{DateTime.Now:yyyyMMdd_HHmmss}.log"
+            };
+
+            if (sfd.ShowDialog() == true)
+            {
+                try
+                {
+                    File.WriteAllText(sfd.FileName, _logHistory.ToString(), Encoding.UTF8);
+                    Logger.Success($"Đã xuất log ra: {sfd.FileName}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"Không thể lưu log: {ex.Message}");
+                }
+            }
+        }
+
+        private void MenuOpenAppFolder_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = AppDomain.CurrentDomain.BaseDirectory,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Không thể mở thư mục app: {ex.Message}");
+            }
+        }
+
+        private void MenuOpenTempFolder_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = Path.GetTempPath(),
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Không thể mở thư mục %temp%: {ex.Message}");
+            }
+        }
+
+        private void MenuLaunchTaskManager_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = "taskmgr.exe", UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Không thể mở Task Manager: {ex.Message}");
+            }
+        }
+
+        private void MenuLaunchDeviceManager_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = "devmgmt.msc", UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Không thể mở Device Manager: {ex.Message}");
+            }
+        }
+
+        private void MenuLaunchNetworkConnections_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = "ncpa.cpl", UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Không thể mở Network Connections: {ex.Message}");
+            }
+        }
+
+        private void MenuLaunchServices_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = "services.msc", UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Không thể mở Services: {ex.Message}");
+            }
+        }
+
+        private void MenuLaunchRegedit_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = "regedit.exe", UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Không thể mở Registry Editor: {ex.Message}");
+            }
+        }
+
+        private async void MenuCmdSystemInfo_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isTerminalVisible) ToggleTerminalVisibility();
+            Logger.Info("▶ Đang truy xuất thông tin hệ thống Windows (systeminfo)...");
+            await ProcessRunner.RunProcessAsync("cmd.exe", "/c systeminfo",
+                line => { if (!string.IsNullOrWhiteSpace(line)) Logger.Info(line); },
+                err => { if (!string.IsNullOrWhiteSpace(err)) Logger.Warning(err); });
+        }
+
+        private void MenuCmdPingTest_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_isTerminalVisible) ToggleTerminalVisibility();
+            Logger.Info("▶ Bật tiến trình kiểm tra Ping mạng liên tục (8.8.8.8)...");
+            _ = Task.Run(async () =>
+            {
+                await ProcessRunner.RunProcessAsync("cmd.exe", "/c ping 8.8.8.8 -t",
+                    line => { if (!string.IsNullOrWhiteSpace(line)) Logger.Info(line); },
+                    err => { if (!string.IsNullOrWhiteSpace(err)) Logger.Warning(err); });
+            });
+        }
+
+        private void MenuLaunchExternalCmd_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Không thể mở CMD ngoài: {ex.Message}");
+            }
+        }
+
+        private void MenuLaunchExternalPowerShell_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "powershell.exe",
+                    WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Logger.Warning($"Không thể mở PowerShell ngoài: {ex.Message}");
+            }
         }
 
         private void MenuExit_Click(object sender, RoutedEventArgs e)
@@ -579,30 +718,17 @@ namespace CMD_BOX_GUI
 
             if (nextState)
             {
-                Logger.Success("🛡️ Đã BẬT cho phép nâng quyền thực thi Lệnh Admin CMD khi cần.");
+                Logger.Success("Admin CMD: BẬT.");
             }
             else
             {
-                Logger.Info("🔒 Đã TẮT Lệnh Admin CMD — Tất cả tác vụ chạy ở chế độ người dùng thường.");
+                Logger.Info("Admin CMD: TẮT.");
             }
         }
 
         private void UpdateAdminCmdUIState()
         {
             bool isAllowed = SettingsService.Current.AllowAdminCmd;
-
-            if (TxtAdminCmdIcon != null) TxtAdminCmdIcon.Text = isAllowed ? "🛡️" : "🔒";
-            if (TxtAdminCmdLabel != null) TxtAdminCmdLabel.Text = isAllowed ? "Lệnh Admin: BẬT" : "Lệnh Admin: TẮT";
-
-            if (EllAdminCmdDot != null)
-            {
-                EllAdminCmdDot.HorizontalAlignment = isAllowed ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-                string brushKey = isAllowed ? "AccentSuccess" : "AccentDanger";
-                if (Application.Current?.Resources[brushKey] is System.Windows.Media.Brush statusBrush)
-                {
-                    EllAdminCmdDot.Fill = statusBrush;
-                }
-            }
 
             if (TxtStatusAdmin != null)
             {
@@ -620,19 +746,7 @@ namespace CMD_BOX_GUI
         private void UpdateThemeUIState()
         {
             string icon = ThemeService.IsDarkMode ? "🌙" : "☀️";
-            if (TxtThemeIcon != null) TxtThemeIcon.Text = icon;
             if (TxtTopThemeIcon != null) TxtTopThemeIcon.Text = icon;
-            if (TxtThemeLabel != null) TxtThemeLabel.Text = ThemeService.IsDarkMode ? "Giao diện Tối" : "Giao diện Sáng";
-
-            if (EllThemeDot != null)
-            {
-                EllThemeDot.HorizontalAlignment = ThemeService.IsDarkMode ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-                string brushKey = ThemeService.IsDarkMode ? "AccentCyan" : "AccentWarning";
-                if (Application.Current?.Resources[brushKey] is System.Windows.Media.Brush themeBrush)
-                {
-                    EllThemeDot.Fill = themeBrush;
-                }
-            }
 
             if (TxtStatusTheme != null)
             {

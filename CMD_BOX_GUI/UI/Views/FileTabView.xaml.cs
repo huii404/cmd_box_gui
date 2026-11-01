@@ -232,6 +232,16 @@ namespace CMD_BOX_GUI.UI.Views
             }
         }
 
+        public bool CanRunScript => !string.IsNullOrWhiteSpace(_filePath) && (_filePath.EndsWith(".bat", StringComparison.OrdinalIgnoreCase) || _filePath.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase) || _filePath.EndsWith(".ps1", StringComparison.OrdinalIgnoreCase));
+
+        public void ExecuteScriptDirectly()
+        {
+            if (CanRunScript)
+            {
+                BtnRunScript_Click(this, new RoutedEventArgs());
+            }
+        }
+
         private async void BtnRunScript_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(_filePath) || !File.Exists(_filePath)) return;
