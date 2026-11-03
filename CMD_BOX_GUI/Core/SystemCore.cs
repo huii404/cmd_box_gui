@@ -115,7 +115,8 @@ namespace CMD_BOX_GUI.Core
             string tempPs1 = Path.Combine(Path.GetTempPath(), $"cmd_box_{scriptName}_{Guid.NewGuid():N}.ps1");
             try
             {
-                await File.WriteAllTextAsync(tempPs1, psScript, new UTF8Encoding(false), cancellationToken);
+                // Dùng UTF8 with BOM (true) để PowerShell 5.1 nhận diện đúng 100% tiếng Việt Telex và ký tự Unicode
+                await File.WriteAllTextAsync(tempPs1, psScript, new UTF8Encoding(true), cancellationToken);
 
                 return await ProcessRunner.RunProcessAsync(
                     "powershell.exe",

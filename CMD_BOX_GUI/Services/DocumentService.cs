@@ -14,6 +14,7 @@ using CMD_BOX_GUI.Models;
 using Windows.Graphics.Imaging;
 using Windows.Media.Ocr;
 using Windows.Storage;
+using Windows.Storage.Streams;
 
 namespace CMD_BOX_GUI.Services
 {
@@ -67,10 +68,18 @@ namespace CMD_BOX_GUI.Services
                 throw new FileNotFoundException("Tệp hình ảnh không tồn tại.", imagePath);
 
             string fullPath = Path.GetFullPath(imagePath);
-            var file = await StorageFile.GetFileFromPathAsync(fullPath);
-            using var stream = await file.OpenAsync(FileAccessMode.Read);
 
-            var decoder = await BitmapDecoder.CreateAsync(stream);
+            // Đọc bytes trực tiếp qua .NET I/O để hỗ trợ 100% đường dẫn tiếng Việt / Telex / khoảng trắng / Unicode
+            byte[] imageBytes = await File.ReadAllBytesAsync(fullPath);
+            using var memStream = new InMemoryRandomAccessStream();
+            using (var writer = new DataWriter(memStream.GetOutputStreamAt(0)))
+            {
+                writer.WriteBytes(imageBytes);
+                await writer.StoreAsync();
+            }
+            memStream.Seek(0);
+
+            var decoder = await BitmapDecoder.CreateAsync(memStream);
             using var softwareBitmap = await decoder.GetSoftwareBitmapAsync();
 
             OcrEngine? engine = null;
@@ -179,7 +188,8 @@ namespace CMD_BOX_GUI.Services
 
             return await Task.Run(() =>
             {
-                using var archive = ZipFile.OpenRead(docxPath);
+                using var fs = new FileStream(docxPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var archive = new ZipArchive(fs, ZipArchiveMode.Read);
                 var entry = archive.GetEntry("word/document.xml");
                 if (entry == null) return string.Empty;
 
@@ -559,7 +569,9 @@ namespace CMD_BOX_GUI.Services
                         int imgWidth = 800;
                         int imgHeight = 600;
 
-                        using (var srcBmp = new System.Drawing.Bitmap(imgPath))
+                        byte[] imgFileBytes = File.ReadAllBytes(imgPath);
+                        using (var imgMem = new MemoryStream(imgFileBytes))
+                        using (var srcBmp = new System.Drawing.Bitmap(imgMem))
                         {
                             imgWidth = srcBmp.Width;
                             imgHeight = srcBmp.Height;
