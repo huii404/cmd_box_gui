@@ -129,6 +129,8 @@
                                         Click="MenuOpenFile_Click" ToolTip="Mở tệp vào Tab (Ctrl+O)"/>
                                 <Button Content="🎬" Style="{StaticResource IconToolButton}" Padding="5,2" FontSize="10.5"
                                         Click="MenuImportToMedia_Click" ToolTip="Đưa tệp vào Xử Lý Media..."/>
+                                <Button Content="📄" Style="{StaticResource IconToolButton}" Padding="5,2" FontSize="10.5"
+                                        Click="MenuImportToDocument_Click" ToolTip="Đưa tệp ảnh vào OCR &amp; Tài Liệu..."/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -140,6 +142,7 @@
                             <RadioButton x:Name="NavNetwork" Content="🌐  Mạng &amp; Bảo Mật" Style="{StaticResource SidebarNavButton}" Tag="Network" Click="SidebarModule_Click"/>
                             <RadioButton x:Name="NavUtilities" Content="⚡  Tiện Ích &amp; Tự Động" Style="{StaticResource SidebarNavButton}" Tag="Utilities" Click="SidebarModule_Click"/>
                             <RadioButton x:Name="NavMedia" Content="🎬  Xử Lý Media" Style="{StaticResource SidebarNavButton}" Tag="Media" Click="SidebarModule_Click"/>
+                            <RadioButton x:Name="NavDocument" Content="📄  Xử Lý Tài Liệu" Style="{StaticResource SidebarNavButton}" Tag="Document" Click="SidebarModule_Click"/>
                             <RadioButton x:Name="NavGuide" Content="📖  Hướng Dẫn Dùng" Style="{StaticResource SidebarNavButton}" Tag="Guide" Click="SidebarModule_Click"/>
                         </StackPanel>
                     </ScrollViewer>
@@ -259,6 +262,7 @@
                                     <Button Content="📝 Tạo Tab Nháp" Style="{StaticResource SecondaryButton}" Margin="4" Padding="12,6" FontSize="11.5" Click="MenuNewScratchpad_Click"/>
                                     <Button Content="🧹 System Optimizer" Style="{StaticResource SecondaryButton}" Margin="4" Padding="12,6" FontSize="11.5" Tag="Optimizer" Click="SidebarModule_Click"/>
                                     <Button Content="🎬 Xử Lý Media" Style="{StaticResource SecondaryButton}" Margin="4" Padding="12,6" FontSize="11.5" Tag="Media" Click="SidebarModule_Click"/>
+                                    <Button Content="📄 Xử Lý Tài Liệu" Style="{StaticResource SecondaryButton}" Margin="4" Padding="12,6" FontSize="11.5" Tag="Document" Click="SidebarModule_Click"/>
                                 </WrapPanel>
                             </StackPanel>
                         </Border>

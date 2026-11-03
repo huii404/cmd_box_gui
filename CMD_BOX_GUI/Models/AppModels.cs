@@ -260,4 +260,65 @@ namespace CMD_BOX_GUI.Models
         public string HealthScoreColor { get; set; } = "#9CA3AF";
         public List<string> IssueDescriptions { get; set; } = new();
     }
+
+    public class DocumentBatchItem : INotifyPropertyChanged
+    {
+        public string FilePath { get; set; } = string.Empty;
+        public string FileName => Path.GetFileName(FilePath);
+        public string FileExtension => Path.GetExtension(FilePath).ToUpperInvariant();
+        public long FileSizeBytes { get; set; }
+        public string FileSizeFormatted => SystemCore.FormatBytes(FileSizeBytes);
+
+        public string DocType { get; set; } = "Ảnh OCR";
+
+        private string _status = "Sẵn sàng";
+        public string Status
+        {
+            get => _status;
+            set
+            {
+                _status = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(StatusColor));
+            }
+        }
+
+        public string StatusColor => Status switch
+        {
+            "Thành công" or "Hoàn tất" => "#10B981",
+            "Đang xử lý..." => "#38BDF8",
+            "Lỗi" => "#EF4444",
+            _ => "#9CA3AF"
+        };
+
+        private string _resultText = string.Empty;
+        public string ResultText
+        {
+            get => _resultText;
+            set
+            {
+                _resultText = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CharCount));
+                OnPropertyChanged(nameof(WordCount));
+            }
+        }
+
+        public int CharCount => ResultText.Length;
+        public int WordCount => string.IsNullOrWhiteSpace(ResultText)
+            ? 0
+            : ResultText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
+
+        public string OutputPath { get; set; } = string.Empty;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    public class OcrLanguageOption
+    {
+        public string Code { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+    }
 }

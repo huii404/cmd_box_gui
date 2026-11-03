@@ -23,6 +23,7 @@ namespace CMD_BOX_GUI
         private readonly NetworkView _networkView = new();
         private readonly UtilitiesView _utilitiesView = new();
         private readonly MediaView _mediaView = new();
+        private readonly DocumentView _documentView = new();
         private readonly GuideView _guideView = new();
 
         private readonly ObservableCollection<WorkspaceTabItem> _openTabs = new();
@@ -81,6 +82,7 @@ namespace CMD_BOX_GUI
                 "Network" => _networkView,
                 "Utilities" => _utilitiesView,
                 "Media" => _mediaView,
+                "Document" => _documentView,
                 "Guide" => _guideView,
                 _ => _optimizerView
             };
@@ -242,6 +244,7 @@ namespace CMD_BOX_GUI
             if (NavNetwork != null) NavNetwork.IsChecked = string.Equals(activeId, "Network", StringComparison.OrdinalIgnoreCase);
             if (NavUtilities != null) NavUtilities.IsChecked = string.Equals(activeId, "Utilities", StringComparison.OrdinalIgnoreCase);
             if (NavMedia != null) NavMedia.IsChecked = string.Equals(activeId, "Media", StringComparison.OrdinalIgnoreCase);
+            if (NavDocument != null) NavDocument.IsChecked = string.Equals(activeId, "Document", StringComparison.OrdinalIgnoreCase);
             if (NavGuide != null) NavGuide.IsChecked = string.Equals(activeId, "Guide", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -334,6 +337,23 @@ namespace CMD_BOX_GUI
                 _mediaView.ImportExternalFiles(dlg.FileNames);
                 OpenOrActivateModuleTab("Media");
                 Logger.Success($"🎬 Đã nhập {dlg.FileNames.Length} tệp vào bảng Xử Lý Media.");
+            }
+        }
+
+        private void MenuImportToDocument_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new OpenFileDialog
+            {
+                Title = "Chọn các tệp Ảnh đưa vào OCR & Tài Liệu",
+                Filter = "Tệp Ảnh (*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.tiff)|*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.tiff|All Files (*.*)|*.*",
+                Multiselect = true
+            };
+
+            if (dlg.ShowDialog() == true && dlg.FileNames.Length > 0)
+            {
+                _documentView.ImportImages(dlg.FileNames);
+                OpenOrActivateModuleTab("Document");
+                Logger.Success($"📄 Đã nhập {dlg.FileNames.Length} tệp ảnh vào bảng OCR & Tài Liệu.");
             }
         }
 
@@ -778,6 +798,11 @@ namespace CMD_BOX_GUI
         {
             _logBatchTimer.Stop();
             base.OnClosed(e);
+        }
+
+        private void NavUtilities_Checked(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }
