@@ -148,18 +148,32 @@ namespace CMD_BOX_GUI.Services
                     string text = await ExtractTextFromImageAsync(item.FilePath, languageCode);
                     item.ResultText = text;
 
-                    if (exportTxtFiles)
+                    if (exportTxtFiles && !string.IsNullOrWhiteSpace(text))
                     {
                         string outDir = string.IsNullOrWhiteSpace(outputFolder)
                             ? Path.GetDirectoryName(item.FilePath) ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
                             : outputFolder;
 
-                        if (!Directory.Exists(outDir)) Directory.CreateDirectory(outDir);
-
                         string txtName = Path.GetFileNameWithoutExtension(item.FilePath) + "_ocr.txt";
                         string outPath = Path.Combine(outDir, txtName);
-                        await File.WriteAllTextAsync(outPath, text, Encoding.UTF8);
-                        item.OutputPath = outPath;
+
+                        try
+                        {
+                            if (!Directory.Exists(outDir)) Directory.CreateDirectory(outDir);
+                            await File.WriteAllTextAsync(outPath, text, Encoding.UTF8);
+                            item.OutputPath = outPath;
+                        }
+                        catch (Exception exWrite)
+                        {
+                            // Nếu Windows Defender Controlled Folder Access chặn ghi vào thư mục được bảo vệ (Pictures, Documents, Desktop)
+                            Logger.Warning($"[OCR] Thư mục gốc bị Windows Defender bảo vệ chống ghi ({exWrite.Message}). Đang lưu tệp sang AppData...");
+                            string fallbackDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CMD_BOX_GUI", "OCR_Output");
+                            Directory.CreateDirectory(fallbackDir);
+                            string fallbackPath = Path.Combine(fallbackDir, txtName);
+                            await File.WriteAllTextAsync(fallbackPath, text, Encoding.UTF8);
+                            item.OutputPath = fallbackPath;
+                            Logger.Info($"[OCR] Đã lưu tệp kết quả dự phòng tại: {fallbackPath}");
+                        }
                     }
 
                     item.Status = "Thành công";
