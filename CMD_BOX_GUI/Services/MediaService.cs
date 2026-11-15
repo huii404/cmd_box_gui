@@ -23,6 +23,11 @@ namespace CMD_BOX_GUI.Services
             ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".webm", ".flv", ".m4v", ".ts", ".3gp"
         };
 
+        private static readonly HashSet<string> AudioExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".mp3", ".wav", ".flac", ".aac", ".m4a", ".ogg", ".wma", ".opus"
+        };
+
         private string? _cachedFfmpegPath;
         private (bool isAvailable, string path, string versionInfo)? _cachedFfmpegStatus;
 
@@ -36,6 +41,12 @@ namespace CMD_BOX_GUI.Services
         {
             if (string.IsNullOrWhiteSpace(path)) return false;
             return VideoExtensions.Contains(Path.GetExtension(path));
+        }
+
+        public static bool IsAudioFile(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            return AudioExtensions.Contains(Path.GetExtension(path));
         }
 
         public static string GetDefaultTargetExtension(string path)
@@ -423,6 +434,7 @@ namespace CMD_BOX_GUI.Services
             {
                 "wav" => "-c:a pcm_s16le",
                 "flac" => "-c:a flac",
+                "ogg" => "-c:a libvorbis -q:a 5",
                 "aac" or "m4a" => "-c:a aac -b:a 256k",
                 _ => "-c:a libmp3lame -b:a 320k"
             };
@@ -549,6 +561,35 @@ namespace CMD_BOX_GUI.Services
             }
 
             Logger.Error($"[FFmpeg] Trích xuất frame thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
+
+        public async Task<bool> AdjustAudioVolumeAsync(
+            string inputPath,
+            string outputPath,
+            double volumeMultiplier = 1.5,
+            CancellationToken cancellationToken = default)
+        {
+            if (IsImageFile(inputPath)) return false;
+
+            string ffmpeg = FindFFmpegPath();
+            string volArg = volumeMultiplier.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+            Logger.Info($"[FFmpeg] Điều chỉnh âm lượng x{volArg} cho [{Path.GetFileName(inputPath)}]...");
+
+            string args = IsAudioFile(inputPath)
+                ? $"-y -i \"{inputPath}\" -filter:a \"volume={volArg}\" \"{outputPath}\""
+                : $"-y -i \"{inputPath}\" -c:v copy -filter:a \"volume={volArg}\" \"{outputPath}\"";
+
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                long newSize = new FileInfo(outputPath).Length;
+                Logger.Success($"[FFmpeg] Điều chỉnh âm lượng thành công: {Path.GetFileName(outputPath)} ({SystemCore.FormatBytes(newSize)})");
+                return true;
+            }
+
+            Logger.Error($"[FFmpeg] Điều chỉnh âm lượng thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
     }

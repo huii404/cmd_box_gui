@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:models="clr-namespace:CMD_BOX_GUI.Models"
              mc:Ignorable="d" 
              d:DesignHeight="720" d:DesignWidth="920"
              Loaded="UserControl_Loaded">
@@ -36,16 +37,19 @@
                     <!-- Khối Dọn dẹp ổ đĩa -->
                     <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="14">
                         <StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                <TextBlock Text="🗑️" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="DỌN DẸP Ổ ĐĨA &amp; BỘ NHỚ ĐỆM (DISK CLEANUP)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
-                            </StackPanel>
+                            <DockPanel Margin="0,0,0,10">
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                                    <TextBlock Text="🗑️" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <TextBlock Text="DỌN DẸP Ổ ĐĨA &amp; BỘ NHỚ ĐỆM (DISK CLEANUP)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button x:Name="BtnScanJunkSizes" Content="🔍 Quét Dung Lượng Rác" Style="{StaticResource SecondaryButton}" DockPanel.Dock="Right" Padding="10,4" FontSize="10.5" Click="BtnScanJunkSizes_Click" ToolTip="Quét lại dung lượng rác thực tế ở từng phân mục"/>
+                            </DockPanel>
                             <WrapPanel>
-                                <Button x:Name="BtnCleanQuick" Content="⚡ Quick Clean" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="14,7" FontSize="11" FontWeight="SemiBold" Click="BtnCleanQuick_Click" ToolTip="Dọn nhanh %temp%, C:\Windows\Temp, WER, DirectX Shader Cache, Flush DNS &amp; Thùng rác."/>
-                                <Button x:Name="BtnCleanPro" Content="🔥 Deep Clean PRO" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="14,7" FontSize="11" FontWeight="SemiBold" Click="BtnCleanPro_Click" ToolTip="Quét sâu đa tầng: Prefetch, WinSxS, Delivery Optimization, Shader GPU, Event Logs &amp; 20+ vị trí ngầm."/>
-                                <Button x:Name="BtnCleanWindowsOld" Content="⚠️ Xóa Windows.old" Style="{StaticResource DangerButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnCleanWindowsOld_Click" ToolTip="Xóa các thư mục Windows.old, $Windows.~BT sau khi nâng cấp Windows (giải phóng 15-40GB+)."/>
-                                <Button x:Name="BtnCleanDev" Content="💻 Dọn Dev Cache" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnCleanDev_Click" ToolTip="Xóa cache của NPM, Yarn, Pip, NuGet, Gradle, Cargo &amp; Composer."/>
-                                <Button x:Name="BtnCleanBrowser" Content="🌐 Dọn Cache Trình Duyệt" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnCleanBrowser_Click" ToolTip="Xóa bộ nhớ đệm của 8 trình duyệt (Chrome, Edge, Brave, CocCoc, Firefox, Opera, Vivaldi, Arc)."/>
+                                <Button x:Name="BtnCleanQuick" Content="⚡ Quick Clean (...)" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="14,7" FontSize="11" FontWeight="SemiBold" Click="BtnCleanQuick_Click" ToolTip="Dọn nhanh %temp%, C:\Windows\Temp, WER, DirectX Shader Cache, Flush DNS &amp; Thùng rác."/>
+                                <Button x:Name="BtnCleanPro" Content="🔥 Deep Clean PRO (...)" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="14,7" FontSize="11" FontWeight="SemiBold" Click="BtnCleanPro_Click" ToolTip="Quét sâu đa tầng: Prefetch, WinSxS, Delivery Optimization, Shader GPU, Event Logs &amp; 20+ vị trí ngầm."/>
+                                <Button x:Name="BtnCleanWindowsOld" Content="⚠️ Xóa Windows.old (...)" Style="{StaticResource DangerButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnCleanWindowsOld_Click" ToolTip="Xóa các thư mục Windows.old, $Windows.~BT sau khi nâng cấp Windows (giải phóng 15-40GB+)."/>
+                                <Button x:Name="BtnCleanDev" Content="💻 Dọn Dev Cache (...)" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnCleanDev_Click" ToolTip="Xóa cache của NPM, Yarn, Pip, NuGet, Gradle, Cargo &amp; Composer."/>
+                                <Button x:Name="BtnCleanBrowser" Content="🌐 Dọn Cache Trình Duyệt (...)" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnCleanBrowser_Click" ToolTip="Xóa bộ nhớ đệm của 8 trình duyệt (Chrome, Edge, Brave, CocCoc, Firefox, Opera, Vivaldi, Arc)."/>
                             </WrapPanel>
                         </StackPanel>
                     </Border>
@@ -95,17 +99,18 @@
                             <DockPanel Grid.Row="1" LastChildFill="False">
                                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
                                     <TextBox x:Name="TxtSearchServices" Style="{StaticResource FlatTextBox}" Width="200" Padding="8,4" FontSize="11" Margin="0,0,6,0" TextChanged="TxtSearchServices_TextChanged" ToolTip="Tìm kiếm theo tên dịch vụ hoặc mô tả..."/>
-                                    <ComboBox x:Name="CmbServicesRiskFilter" Width="145" Padding="6,3" FontSize="11" Margin="0,0,8,0" SelectionChanged="CmbServicesRiskFilter_SelectionChanged">
+                                    <ComboBox x:Name="CmbServicesRiskFilter" Width="175" Padding="6,3" FontSize="11" Margin="0,0,8,0" SelectionChanged="CmbServicesRiskFilter_SelectionChanged">
                                         <ComboBoxItem Content="Tất Cả Mức Độ" IsSelected="True"/>
-                                        <ComboBoxItem Content="🟢 An Toàn (Safe)"/>
-                                        <ComboBoxItem Content="🟡 Cần Cân Nhắc (Caution)"/>
+                                        <ComboBoxItem Content="🟢 An Toàn"/>
+                                        <ComboBoxItem Content="🟡 Cân Nhắc"/>
+                                        <ComboBoxItem Content="🟠 Ảnh Hưởng Hệ Thống"/>
                                     </ComboBox>
                                 </StackPanel>
 
                                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
                                     <Button Content="🔄 Quét Lại" Style="{StaticResource SecondaryButton}" Padding="9,4" FontSize="10.5" Margin="0,0,6,0" Click="BtnRefreshServices_Click" ToolTip="Đọc lại trạng thái hiện tại của các dịch vụ"/>
-                                    <Button x:Name="BtnDisableSafeServices" Content="⚡ Tắt An Toàn (Safe Only)" Style="{StaticResource SuccessButton}" Padding="11,5" FontSize="11" Margin="0,0,6,0" Click="BtnDisableSafeServices_Click" ToolTip="Chỉ tắt các dịch vụ telemetry an toàn 100%, giữ nguyên các dịch vụ Xbox và Tìm kiếm"/>
-                                    <Button x:Name="BtnDisableAllSelectedServices" Content="🛑 Tắt Toàn Bộ Dịch Vụ Này" Style="{StaticResource DangerButton}" Padding="11,5" FontSize="11" Click="BtnDisableAllSelectedServices_Click" ToolTip="Gom toàn bộ lệnh tắt vào 1 file chạy duy nhất (không spam UAC)"/>
+                                    <Button x:Name="BtnDisableSafeServices" Content="⚡ Tắt An Toàn (Safe)" Style="{StaticResource SuccessButton}" Padding="11,5" FontSize="11" Margin="0,0,6,0" Click="BtnDisableSafeServices_Click" ToolTip="Chỉ tắt các dịch vụ telemetry an toàn 100%, giữ nguyên các dịch vụ Xbox và Tìm kiếm"/>
+                                    <Button x:Name="BtnDisableAllSelectedServices" Content="🚀 Áp Dụng Toàn Bộ" Style="{StaticResource PrimaryButton}" Padding="11,5" FontSize="11" Click="BtnDisableAllSelectedServices_Click" ToolTip="Áp dụng trạng thái mục tiêu đã chọn cho toàn bộ danh sách dịch vụ trong 1 lần chạy"/>
                                 </StackPanel>
                             </DockPanel>
                         </Grid>
@@ -113,8 +118,8 @@
                         <Border Grid.Row="1" Background="{DynamicResource BgInput}" CornerRadius="4" Padding="0">
                             <DataGrid x:Name="DgServices" Style="{StaticResource FlatDataGrid}">
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="DỊCH VỤ" Binding="{Binding DisplayName}" Width="2*"/>
-                                    <DataGridTemplateColumn Header="MỨC ĐỘ" Width="110">
+                                    <DataGridTextColumn Header="DỊCH VỤ" Binding="{Binding DisplayName}" Width="1.7*"/>
+                                    <DataGridTemplateColumn Header="MỨC ĐỘ" Width="135">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Border Background="{Binding RiskBadgeBg}" BorderBrush="{Binding RiskBadgeBorder}" BorderThickness="1" CornerRadius="10" Padding="7,2" HorizontalAlignment="Left" VerticalAlignment="Center">
@@ -123,13 +128,29 @@
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
-                                    <DataGridTextColumn Header="NHÓM" Binding="{Binding Category}" Width="85"/>
-                                    <DataGridTextColumn Header="MỤC TIÊU &amp; TÁC ĐỘNG" Binding="{Binding Description}" Width="3*"/>
-                                    <DataGridTextColumn Header="TRẠNG THÁI" Binding="{Binding StatusText}" Width="105"/>
-                                    <DataGridTemplateColumn Header="THAO TÁC" Width="95">
+                                    <DataGridTemplateColumn Header="HIỆN TẠI" Width="115">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Button Content="{Binding ActionButtonText}" Style="{StaticResource SecondaryButton}" Padding="6,2" FontSize="10" Click="BtnToggleSingleService_Click" Tag="{Binding}"/>
+                                                <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusColor}" FontSize="10.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="CHẾ ĐỘ ĐẶT (4 TRẠNG THÁI)" Width="165">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <ComboBox ItemsSource="{x:Static models:SystemServiceItem.StartupModeOptions}"
+                                                          DisplayMemberPath="DisplayName"
+                                                          SelectedValuePath="Mode"
+                                                          SelectedValue="{Binding TargetStartupMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          FontSize="10.5" Padding="5,2" Height="26"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="MỤC TIÊU &amp; TÁC ĐỘNG" Binding="{Binding Description}" Width="2.4*"/>
+                                    <DataGridTemplateColumn Header="CHẠY LẺ" Width="85">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="▶ Áp Dụng" Style="{StaticResource SecondaryButton}" Padding="7,3" FontSize="10" Click="BtnToggleSingleService_Click" Tag="{Binding}" ToolTip="Áp dụng trạng thái đã chọn riêng cho service này"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
