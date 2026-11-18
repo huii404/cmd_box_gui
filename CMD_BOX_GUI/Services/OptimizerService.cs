@@ -775,16 +775,28 @@ try {
             try
             {
                 using var key = Registry.LocalMachine.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{svc.ServiceName}");
-                if (key != null)
+                if (key != null && key.GetValue("Start") is int startVal)
                 {
-                    object? startVal = key.GetValue("Start");
-                    if (startVal is int val && val == 4)
+                    if (startVal == 4)
                     {
-                        svc.IsDisabled = true;
+                        svc.CurrentStartupMode = Models.ServiceStartupMode.Disabled;
+                        return;
+                    }
+                    if (startVal == 3)
+                    {
+                        svc.CurrentStartupMode = Models.ServiceStartupMode.Manual;
+                        return;
+                    }
+                    if (startVal == 2)
+                    {
+                        bool isDelayed = key.GetValue("DelayedAutostart") is int d && d == 1;
+                        svc.CurrentStartupMode = isDelayed
+                            ? Models.ServiceStartupMode.AutomaticDelayed
+                            : Models.ServiceStartupMode.Automatic;
                         return;
                     }
                 }
-                svc.IsDisabled = false;
+                svc.CurrentStartupMode = Models.ServiceStartupMode.Manual;
             }
             catch
             {
@@ -796,28 +808,19 @@ try {
         {
             var list = new List<Models.SystemServiceItem>
             {
-                // TELEMETRY & CHẨN ĐOÁN (SAFE)
-                new() { ServiceName = "DiagTrack", DisplayName = "Connected User Experiences & Telemetry", Category = "Telemetry", Description = "Thu thập dữ liệu chẩn đoán & gửi ẩn về máy chủ Microsoft.", Impact = "Tiết kiệm RAM & SSD I/O", RiskLevel = "Safe" },
-                new() { ServiceName = "dmwappushservice", DisplayName = "Device Management WAP Push", Category = "Telemetry", Description = "Kênh chuyển tin nhắn telemetry và định tuyến quản lý thiết bị.", Impact = "Bảo mật & Giảm tiến trình nền", RiskLevel = "Safe" },
-                new() { ServiceName = "diagnosticshub.standardcollector.service", DisplayName = "Microsoft (R) Diagnostics Hub Standard Collector", Category = "Telemetry", Description = "Thu thập sự kiện chẩn đoán thời gian thực cho Visual Studio / OEM.", Impact = "Tiết kiệm CPU", RiskLevel = "Safe" },
-                new() { ServiceName = "WerSvc", DisplayName = "Windows Error Reporting Service", Category = "Báo Lỗi", Description = "Ghi log khi app bị crash và gửi báo cáo lỗi lên Microsoft.", Impact = "Tiết kiệm dung lượng ổ C", RiskLevel = "Safe" },
-                new() { ServiceName = "wisvc", DisplayName = "Windows Insider Service", Category = "Telemetry", Description = "Dịch vụ thử nghiệm bản dựng beta liên tục gửi dữ liệu chẩn đoán sâu.", Impact = "Chặn tải bản dựng lỗi ngầm", RiskLevel = "Safe" },
-                new() { ServiceName = "RetailDemo", DisplayName = "Retail Demo Service", Category = "Dịch Vụ Rác", Description = "Chế độ trình chiếu demo cho máy trưng bày tại siêu thị điện máy.", Impact = "Giải phóng dịch vụ thừa", RiskLevel = "Safe" },
-                new() { ServiceName = "lfsvc", DisplayName = "Geolocation Service (Định vị)", Category = "Riêng Tư", Description = "Theo dõi vị trí thực tế của thiết bị gửi về cho Cortana và quảng cáo.", Impact = "Bảo vệ riêng tư tuyệt đối", RiskLevel = "Safe" },
-                new() { ServiceName = "PcaSvc", DisplayName = "Program Compatibility Assistant", Category = "Dịch Vụ Rác", Description = "Giám sát cài app cũ và hiện pop-up phiền toái, gửi log tương thích.", Impact = "Tăng tốc chạy file setup .exe", RiskLevel = "Safe" },
-                new() { ServiceName = "WMPNetworkSvc", DisplayName = "Windows Media Player Network Sharing", Category = "Media", Description = "Chia sẻ thư viện nhạc/video qua mạng UPnP cũ, quét ổ đĩa liên tục.", Impact = "Hạ nhiệt SSD & RAM", RiskLevel = "Safe" },
-                new() { ServiceName = "SharedRealitySvc", DisplayName = "Spatial Data Service (Windows Mixed Reality)", Category = "Dịch Vụ Rác", Description = "Dịch vụ phục vụ kính thực tế ảo WMR đã bị Microsoft khai tử trên Win 11.", Impact = "Tắt dịch vụ lỗi thời", RiskLevel = "Safe" },
-                new() { ServiceName = "MapsBroker", DisplayName = "Downloaded Maps Manager", Category = "Hệ Thống", Description = "Tự động tải & cập nhật bản đồ ngoại tuyến của ứng dụng Windows Maps.", Impact = "Giảm tiêu hao SSD & Network", RiskLevel = "Safe" },
+                new() { ServiceName = "DiagTrack", DisplayName = "Connected User Experiences & Telemetry", Category = "Telemetry", Description = "Thu thập dữ liệu chẩn đoán & gửi ẩn về máy chủ Microsoft.", Impact = "Tiết kiệm RAM & SSD I/O", RiskLevel = "Safe", TargetStartupMode = Models.ServiceStartupMode.Disabled },
+                new() { ServiceName = "dmwappushservice", DisplayName = "Device Management WAP Push", Category = "Telemetry", Description = "Kênh chuyển tin nhắn telemetry và định tuyến quản lý thiết bị.", Impact = "Bảo mật & Giảm tiến trình nền", RiskLevel = "Safe", TargetStartupMode = Models.ServiceStartupMode.Disabled },
+                new() { ServiceName = "diagnosticshub.standardcollector.service", DisplayName = "Microsoft (R) Diagnostics Hub Standard Collector", Category = "Telemetry", Description = "Thu thập sự kiện chẩn đoán thời gian thực cho Visual Studio / OEM.", Impact = "Tiết kiệm CPU", RiskLevel = "Safe", TargetStartupMode = Models.ServiceStartupMode.Disabled },
+                new() { ServiceName = "WerSvc", DisplayName = "Windows Error Reporting Service", Category = "Báo Lỗi", Description = "Ghi log khi app bị crash và gửi báo cáo lỗi lên Microsoft.", Impact = "Tiết kiệm dung lượng ổ C", RiskLevel = "Safe", TargetStartupMode = Models.ServiceStartupMode.Disabled },
 
-                // CAUTION: CẦN CÂN NHẮC
-                new() { ServiceName = "DPS", DisplayName = "Diagnostic Policy Service", Category = "Chẩn Đoán", Description = "Ghi log liên tục vào SRUDB.dat (tắt giúp giảm hao SSD nhưng mất Troubleshoot mạng tự động).", Impact = "Tiết kiệm hàng GB ghi đĩa", RiskLevel = "Caution" },
-                new() { ServiceName = "PhoneSvc", DisplayName = "Phone Service (Liên kết điện thoại)", Category = "Tiện Ích", Description = "Dịch vụ đồng bộ tin nhắn/cuộc gọi của Phone Link (chỉ tắt nếu không dùng).", Impact = "Tiết kiệm RAM & tiến trình", RiskLevel = "Caution" },
-                new() { ServiceName = "XblAuthManager", DisplayName = "Xbox Live Auth Manager", Category = "Xbox", Description = "Quản lý xác thực tài khoản Xbox Live (chỉ tắt nếu không chơi game Xbox Store).", Impact = "Tiết kiệm RAM", RiskLevel = "Caution" },
-                new() { ServiceName = "XblGameSave", DisplayName = "Xbox Live Game Save", Category = "Xbox", Description = "Đồng bộ lưu file save của các game trong Xbox App.", Impact = "Tiết kiệm Network & RAM", RiskLevel = "Caution" },
-                new() { ServiceName = "XboxNetApiSvc", DisplayName = "Xbox Live Networking Service", Category = "Xbox", Description = "Dịch vụ mạng hỗ trợ kết nối mạng cho Xbox Live.", Impact = "Giảm tải mạng", RiskLevel = "Caution" },
-                new() { ServiceName = "XboxGipSvc", DisplayName = "Xbox Accessory Management Service", Category = "Xbox", Description = "Quản lý phụ kiện tay cầm Xbox chuyên dụng.", Impact = "Tiết kiệm RAM", RiskLevel = "Caution" },
-                new() { ServiceName = "WSearch", DisplayName = "Windows Search Indexer", Category = "Hệ Thống", Description = "Lập chỉ mục tìm kiếm liên tục (tắt giúp giảm 100% Disk HDD/SSD yếu, nhưng tìm file sẽ lâu hơn).", Impact = "Hạ nhiệt ổ cứng & CPU", RiskLevel = "Caution" },
-                new() { ServiceName = "SysMain", DisplayName = "SysMain (Superfetch)", Category = "Hệ Thống", Description = "Tự động nạp trước ứng dụng vào RAM (tắt giúp giải phóng RAM cho game nặng).", Impact = "Chống nghẽn RAM & Disk", RiskLevel = "Caution" }
+                new() { ServiceName = "MapsBroker", DisplayName = "Downloaded Maps Manager", Category = "Hệ Thống", Description = "Tự động tải & cập nhật bản đồ ngoại tuyến của ứng dụng Windows Maps.", Impact = "Giảm tiêu hao SSD & Network", RiskLevel = "Moderate", TargetStartupMode = Models.ServiceStartupMode.Disabled },
+                new() { ServiceName = "XblAuthManager", DisplayName = "Xbox Live Auth Manager", Category = "Xbox", Description = "Quản lý xác thực tài khoản Xbox Live (nên chuyển Manual/Disabled nếu không chơi game Xbox).", Impact = "Tiết kiệm RAM", RiskLevel = "Moderate", TargetStartupMode = Models.ServiceStartupMode.Manual },
+                new() { ServiceName = "XblGameSave", DisplayName = "Xbox Live Game Save", Category = "Xbox", Description = "Đồng bộ lưu file save của các game trong Xbox App.", Impact = "Tiết kiệm Network & RAM", RiskLevel = "Moderate", TargetStartupMode = Models.ServiceStartupMode.Manual },
+                new() { ServiceName = "XboxNetApiSvc", DisplayName = "Xbox Live Networking Service", Category = "Xbox", Description = "Dịch vụ mạng hỗ trợ kết nối mạng cho Xbox Live.", Impact = "Giảm tải mạng", RiskLevel = "Moderate", TargetStartupMode = Models.ServiceStartupMode.Manual },
+                new() { ServiceName = "XboxGipSvc", DisplayName = "Xbox Accessory Management Service", Category = "Xbox", Description = "Quản lý phụ kiện tay cầm Xbox chuyên dụng.", Impact = "Tiết kiệm RAM", RiskLevel = "Moderate", TargetStartupMode = Models.ServiceStartupMode.Manual },
+
+                new() { ServiceName = "WSearch", DisplayName = "Windows Search Indexer", Category = "Hệ Thống", Description = "Lập chỉ mục tìm kiếm liên tục (tắt giúp giảm 100% Disk HDD/SSD yếu, nhưng tìm file trong Explorer sẽ chậm hơn).", Impact = "Hạ nhiệt ổ cứng & CPU", RiskLevel = "Complex", TargetStartupMode = Models.ServiceStartupMode.Manual },
+                new() { ServiceName = "SysMain", DisplayName = "SysMain (Superfetch)", Category = "Hệ Thống", Description = "Nạp trước ứng dụng vào RAM (tắt giúp giải phóng RAM cho game nặng, nhưng trên HDD mở app lần đầu chậm hơn).", Impact = "Chống nghẽn RAM & Disk", RiskLevel = "Complex", TargetStartupMode = Models.ServiceStartupMode.Disabled }
             };
 
             foreach (var svc in list)
@@ -828,29 +831,162 @@ try {
             return list;
         }
 
-        public async Task<int> DisableServicesBatchAsync(IEnumerable<string> serviceNames)
+        private static IEnumerable<string> BuildServiceModeCommands(string serviceName, Models.ServiceStartupMode mode)
+        {
+            return mode switch
+            {
+                Models.ServiceStartupMode.Disabled => new[]
+                {
+                    $"sc stop \"{serviceName}\" >nul 2>&1",
+                    $"sc config \"{serviceName}\" start=disabled >nul 2>&1"
+                },
+                Models.ServiceStartupMode.Manual => new[]
+                {
+                    $"sc config \"{serviceName}\" start=demand >nul 2>&1"
+                },
+                Models.ServiceStartupMode.Automatic => new[]
+                {
+                    $"sc config \"{serviceName}\" start=auto >nul 2>&1",
+                    $"sc start \"{serviceName}\" >nul 2>&1"
+                },
+                Models.ServiceStartupMode.AutomaticDelayed => new[]
+                {
+                    $"sc config \"{serviceName}\" start=delayed-auto >nul 2>&1"
+                },
+                _ => Array.Empty<string>()
+            };
+        }
+
+        public async Task<int> ApplyServiceStartupModeAsync(string serviceName, Models.ServiceStartupMode mode)
+        {
+            var commands = BuildServiceModeCommands(serviceName, mode).ToList();
+            if (commands.Count == 0) return 0;
+            return await SystemCore.RunBatchScriptAsync(commands, $"svc_{serviceName}");
+        }
+
+        public async Task<int> ApplyServicesStartupBatchAsync(IEnumerable<(string ServiceName, Models.ServiceStartupMode Mode)> items)
         {
             var commands = new List<string>();
-            foreach (var svc in serviceNames)
+            foreach (var (svc, mode) in items)
             {
-                commands.Add($"sc stop \"{svc}\" >nul 2>&1");
-                commands.Add($"sc config \"{svc}\" start=disabled >nul 2>&1");
+                commands.AddRange(BuildServiceModeCommands(svc, mode));
             }
-
             if (commands.Count == 0) return 0;
-            return await SystemCore.RunBatchScriptAsync(commands, "batch_disable_services");
+            return await SystemCore.RunBatchScriptAsync(commands, "batch_apply_services");
+        }
+
+        public async Task<int> DisableServicesBatchAsync(IEnumerable<string> serviceNames)
+        {
+            return await ApplyServicesStartupBatchAsync(serviceNames.Select(s => (s, Models.ServiceStartupMode.Disabled)));
         }
 
         public async Task<int> ToggleServiceStateAsync(string serviceName, bool disable)
         {
-            string startMode = disable ? "disabled" : "demand";
-            string action = disable ? "stop" : "start";
+            return await ApplyServiceStartupModeAsync(serviceName, disable ? Models.ServiceStartupMode.Disabled : Models.ServiceStartupMode.Manual);
+        }
 
-            return await SystemCore.RunBatchScriptAsync(new[]
+        public async Task<Models.JunkScanSummary> ScanJunkSizesAsync()
+        {
+            return await Task.Run(() =>
             {
-                $"sc {action} \"{serviceName}\" >nul 2>&1",
-                $"sc config \"{serviceName}\" start={startMode} >nul 2>&1"
-            }, $"svc_{serviceName}");
+                string user = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                string localApp = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+
+                long quick = GetDirectorySizeSafe(Path.GetTempPath())
+                           + GetDirectorySizeSafe(Path.Combine(winDir, "Temp"))
+                           + GetDirectorySizeSafe(Path.Combine(localApp, @"Microsoft\Windows\WER"))
+                           + GetDirectorySizeSafe(Path.Combine(localApp, "D3DSCache"));
+
+                long proExtra = GetDirectorySizeSafe(Path.Combine(winDir, "Prefetch"))
+                              + GetDirectorySizeSafe(Path.Combine(winDir, @"SoftwareDistribution\DeliveryOptimization"))
+                              + GetDirectorySizeSafe(Path.Combine(winDir, @"SoftwareDistribution\Download"))
+                              + GetDirectorySizeSafe(Path.Combine(localApp, @"NVIDIA\DXCache"))
+                              + GetDirectorySizeSafe(Path.Combine(localApp, @"AMD\DxCache"));
+
+                long winOld = GetDirectorySizeSafe(@"C:\Windows.old")
+                            + GetDirectorySizeSafe(@"C:\$Windows.~BT")
+                            + GetDirectorySizeSafe(@"C:\$Windows.~WS");
+
+                long devCache = GetDirectorySizeSafe(Path.Combine(user, ".gradle", "caches"))
+                              + GetDirectorySizeSafe(Path.Combine(user, ".cargo", ".package-cache"))
+                              + GetDirectorySizeSafe(Path.Combine(user, ".cargo", "registry", "cache"))
+                              + GetDirectorySizeSafe(Path.Combine(user, ".nuget", "packages"))
+                              + GetDirectorySizeSafe(Path.Combine(user, ".composer", "cache"))
+                              + GetDirectorySizeSafe(Path.Combine(appData, "npm-cache"))
+                              + GetDirectorySizeSafe(Path.Combine(localApp, "pip", "cache"));
+
+                string[] browserDirs =
+                {
+                    Path.Combine(localApp, @"Google\Chrome\User Data\Default\Cache"),
+                    Path.Combine(localApp, @"Google\Chrome\User Data\Default\Code Cache"),
+                    Path.Combine(localApp, @"Microsoft\Edge\User Data\Default\Cache"),
+                    Path.Combine(localApp, @"Microsoft\Edge\User Data\Default\Code Cache"),
+                    Path.Combine(localApp, @"BraveSoftware\Brave-Browser\User Data\Default\Cache"),
+                    Path.Combine(localApp, @"CocCoc\Browser\User Data\Default\Cache"),
+                    Path.Combine(localApp, @"Opera Software\Opera Stable\Cache"),
+                    Path.Combine(localApp, @"Vivaldi\User Data\Default\Cache")
+                };
+
+                long browser = 0;
+                foreach (var dir in browserDirs) browser += GetDirectorySizeSafe(dir);
+
+                string ffProfile = Path.Combine(localApp, @"Mozilla\Firefox\Profiles");
+                if (Directory.Exists(ffProfile))
+                {
+                    try
+                    {
+                        foreach (var p in Directory.GetDirectories(ffProfile))
+                        {
+                            browser += GetDirectorySizeSafe(Path.Combine(p, "cache2"));
+                        }
+                    }
+                    catch { }
+                }
+
+                return new Models.JunkScanSummary
+                {
+                    QuickCleanBytes = quick,
+                    DeepCleanProBytes = quick + proExtra,
+                    WindowsOldBytes = winOld,
+                    DevCacheBytes = devCache,
+                    BrowserCacheBytes = browser
+                };
+            });
+        }
+
+        private static long GetDirectorySizeSafe(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path)) return 0;
+            long total = 0;
+            try
+            {
+                var stack = new Stack<string>();
+                stack.Push(path);
+                while (stack.Count > 0)
+                {
+                    string current = stack.Pop();
+                    try
+                    {
+                        foreach (var file in Directory.EnumerateFiles(current))
+                        {
+                            try { total += new FileInfo(file).Length; } catch { }
+                        }
+                        foreach (var sub in Directory.EnumerateDirectories(current))
+                        {
+                            var attrs = File.GetAttributes(sub);
+                            if ((attrs & FileAttributes.ReparsePoint) == 0)
+                            {
+                                stack.Push(sub);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+            return total;
         }
 
         private static readonly (string AppName, string PackagePattern, string Category, string Description, string EstimatedSize, string RiskLevel, string Origin)[] BloatwareCatalog = new[]

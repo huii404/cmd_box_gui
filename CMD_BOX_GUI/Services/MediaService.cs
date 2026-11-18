@@ -15,12 +15,17 @@ namespace CMD_BOX_GUI.Services
 
         private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-            ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".tif", ".ico", ".jfif", ".gif", ".heic", ".avif"
+            ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".tif", ".ico", ".jfif", ".gif", ".heic", ".heif", ".avif"
         };
 
         private static readonly HashSet<string> VideoExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".webm", ".flv", ".m4v", ".ts", ".3gp"
+        };
+
+        private static readonly HashSet<string> AudioExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".mp3", ".wav", ".flac", ".aac", ".m4a", ".ogg", ".wma", ".opus"
         };
 
         private string? _cachedFfmpegPath;
@@ -38,15 +43,47 @@ namespace CMD_BOX_GUI.Services
             return VideoExtensions.Contains(Path.GetExtension(path));
         }
 
+        public static bool IsAudioFile(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            return AudioExtensions.Contains(Path.GetExtension(path));
+        }
+
         public static string GetDefaultTargetExtension(string path)
         {
             if (IsImageFile(path))
             {
                 string ext = Path.GetExtension(path).ToLowerInvariant();
-                return string.IsNullOrWhiteSpace(ext) ? ".jpg" : ext;
+                if (string.IsNullOrWhiteSpace(ext) || ext is ".heic" or ".heif" or ".avif" or ".jfif")
+                    return ".jpg";
+                return ext;
             }
             if (IsVideoFile(path)) return ".mp4";
             return Path.GetExtension(path);
+        }
+
+        public static string ResolveTargetExtension(string inputPath, bool isAutoMode, string? customImageExt, string? customVideoExt)
+        {
+            if (isAutoMode)
+                return GetDefaultTargetExtension(inputPath);
+
+            if (IsImageFile(inputPath))
+            {
+                if (string.IsNullOrWhiteSpace(customImageExt) || customImageExt.Equals("auto", StringComparison.OrdinalIgnoreCase))
+                    return GetDefaultTargetExtension(inputPath);
+                return customImageExt.StartsWith('.') ? customImageExt : "." + customImageExt;
+            }
+
+            if (IsVideoFile(inputPath))
+            {
+                if (string.IsNullOrWhiteSpace(customVideoExt) || customVideoExt.Equals("auto", StringComparison.OrdinalIgnoreCase))
+                    return ".mp4";
+                if (customVideoExt.Equals("keep", StringComparison.OrdinalIgnoreCase))
+                    return Path.GetExtension(inputPath).ToLowerInvariant();
+                return customVideoExt.StartsWith('.') ? customVideoExt : "." + customVideoExt;
+            }
+
+            return Path.GetExtension(inputPath);
         }
 
         public static List<string> GetAvailableExtensions(string path)
@@ -205,13 +242,13 @@ namespace CMD_BOX_GUI.Services
                 int maxVideoBitrate = Math.Max(150, targetTotalKbps - targetAudioKbps);
 
                 Logger.Info($"[FFmpeg] Nén Video Chuẩn HD [{Path.GetFileName(inputPath)}] (Gốc: {origBitrateKbps} kbps, MaxRate: {maxVideoBitrate} kbps, CRF {crf}, Tune: Film)...");
-                // Dùng -preset slow + -tune film + -profile:v high để tối ưu thuật toán tìm vector chuyển động, giữ trọn chi tiết vi mô (da, tóc, vân vải) mà không dùng filter làm sai màu
-                args = $"-y -i \"{inputPath}\" -c:v libx264 -profile:v high -preset slow -tune film -crf {crf} -maxrate {maxVideoBitrate}k -bufsize {maxVideoBitrate * 2}k -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a {targetAudioKbps}k \"{outputPath}\"";
+                // Dùng -preset slow + -tune film + -profile:v high + -map_metadata 0 để tối ưu nén mà giữ trọn chi tiết và metadata gốc
+                args = $"-y -i \"{inputPath}\" -map_metadata 0 -vf \"scale=trunc(iw/2)*2:trunc(ih/2)*2\" -c:v libx264 -profile:v high -preset slow -tune film -crf {crf} -maxrate {maxVideoBitrate}k -bufsize {maxVideoBitrate * 2}k -pix_fmt yuv420p -movflags +faststart+use_metadata_tags -c:a aac -b:a {targetAudioKbps}k \"{outputPath}\"";
             }
             else
             {
                 Logger.Info($"[FFmpeg] Nén Video Chuẩn HD [{Path.GetFileName(inputPath)}] (CRF {crf}, Tune: Film)...");
-                args = $"-y -i \"{inputPath}\" -c:v libx264 -profile:v high -preset slow -tune film -crf {crf} -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a {audioBitrate}k \"{outputPath}\"";
+                args = $"-y -i \"{inputPath}\" -map_metadata 0 -vf \"scale=trunc(iw/2)*2:trunc(ih/2)*2\" -c:v libx264 -profile:v high -preset slow -tune film -crf {crf} -pix_fmt yuv420p -movflags +faststart+use_metadata_tags -c:a aac -b:a {audioBitrate}k \"{outputPath}\"";
             }
 
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
@@ -231,7 +268,7 @@ namespace CMD_BOX_GUI.Services
                     int strictAudioKbps = Math.Min(96, Math.Max(48, (int)(strictTotalKbps * 0.12)));
                     int strictVideoKbps = Math.Max(120, strictTotalKbps - strictAudioKbps);
 
-                    string pass2Args = $"-y -i \"{inputPath}\" -c:v libx264 -profile:v high -b:v {strictVideoKbps}k -maxrate {strictVideoKbps}k -bufsize {strictVideoKbps * 2}k -preset slow -tune film -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a {strictAudioKbps}k \"{outputPath}\"";
+                    string pass2Args = $"-y -i \"{inputPath}\" -map_metadata 0 -vf \"scale=trunc(iw/2)*2:trunc(ih/2)*2\" -c:v libx264 -profile:v high -b:v {strictVideoKbps}k -maxrate {strictVideoKbps}k -bufsize {strictVideoKbps * 2}k -preset slow -tune film -pix_fmt yuv420p -movflags +faststart+use_metadata_tags -c:a aac -b:a {strictAudioKbps}k \"{outputPath}\"";
                     int code2 = await ProcessRunner.RunProcessAsync(ffmpeg, pass2Args, cancellationToken: cancellationToken);
 
                     if (code2 == 0 && File.Exists(outputPath))
@@ -259,10 +296,10 @@ namespace CMD_BOX_GUI.Services
 
             string args = (outExt, ext) switch
             {
-                (".jpg" or ".jpeg", _) or (_, ".jpg" or ".jpeg") => $"-y -i \"{inputPath}\" -q:v {(compressionLevel == 0 ? 4 : (compressionLevel >= 2 ? 8 : 6))} -pix_fmt yuvj420p \"{outputPath}\"",
-                (".webp", _) or (_, ".webp") => $"-y -i \"{inputPath}\" -c:v libwebp -quality {(compressionLevel == 0 ? 78 : (compressionLevel >= 2 ? 50 : 65))} -preset default \"{outputPath}\"",
-                (".png", _) or (_, ".png") => $"-y -i \"{inputPath}\" -c:v png -compression_level {(compressionLevel == 0 ? 7 : 9)} \"{outputPath}\"",
-                _ => $"-y -i \"{inputPath}\" -q:v 6 \"{outputPath}\""
+                (".jpg" or ".jpeg", _) or (_, ".jpg" or ".jpeg") => $"-y -i \"{inputPath}\" -map_metadata 0 -frames:v 1 -update 1 -q:v {(compressionLevel == 0 ? 4 : (compressionLevel >= 2 ? 8 : 6))} -pix_fmt yuvj420p -color_range 2 \"{outputPath}\"",
+                (".webp", _) or (_, ".webp") => $"-y -i \"{inputPath}\" -map_metadata 0 -frames:v 1 -update 1 -c:v libwebp -quality {(compressionLevel == 0 ? 78 : (compressionLevel >= 2 ? 50 : 65))} -preset default \"{outputPath}\"",
+                (".png", _) or (_, ".png") => $"-y -i \"{inputPath}\" -map_metadata 0 -frames:v 1 -update 1 -c:v png -compression_level {(compressionLevel == 0 ? 7 : 9)} \"{outputPath}\"",
+                _ => $"-y -i \"{inputPath}\" -map_metadata 0 -frames:v 1 -update 1 -q:v 6 \"{outputPath}\""
             };
 
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
@@ -276,12 +313,12 @@ namespace CMD_BOX_GUI.Services
                 {
                     if (outExt == ".jpg" || outExt == ".jpeg")
                     {
-                        string fallbackArgs = $"-y -i \"{inputPath}\" -q:v 10 -pix_fmt yuvj420p \"{outputPath}\"";
+                        string fallbackArgs = $"-y -i \"{inputPath}\" -map_metadata 0 -frames:v 1 -update 1 -q:v 10 -pix_fmt yuvj420p -color_range 2 \"{outputPath}\"";
                         await ProcessRunner.RunProcessAsync(ffmpeg, fallbackArgs, cancellationToken: cancellationToken);
                     }
                     else if (outExt == ".webp")
                     {
-                        string fallbackArgs = $"-y -i \"{inputPath}\" -c:v libwebp -quality 48 -preset default \"{outputPath}\"";
+                        string fallbackArgs = $"-y -i \"{inputPath}\" -map_metadata 0 -frames:v 1 -update 1 -c:v libwebp -quality 48 -preset default \"{outputPath}\"";
                         await ProcessRunner.RunProcessAsync(ffmpeg, fallbackArgs, cancellationToken: cancellationToken);
                     }
 
@@ -306,16 +343,14 @@ namespace CMD_BOX_GUI.Services
                 : await CompressVideoAsync(inputPath, outputPath, compressionLevel, cancellationToken);
         }
 
-        public async Task<bool> ConvertMediaFormatAsync(string inputPath, string outputPath, CancellationToken cancellationToken = default)
+        public async Task<bool> ConvertMediaFormatAsync(string inputPath, string outputPath, int qualityPreset = 0, CancellationToken cancellationToken = default)
         {
             string ffmpeg = FindFFmpegPath();
             string outExt = Path.GetExtension(outputPath).ToLowerInvariant();
 
-            Logger.Info($"[FFmpeg] Chuyển định dạng [{Path.GetFileName(inputPath)}] ➔ [{outExt}]...");
+            Logger.Info($"[FFmpeg] Chuyển định dạng [{Path.GetFileName(inputPath)}] ➔ [{outExt}] (Bảo toàn metadata)...");
 
-            string args = (IsVideoFile(inputPath) || IsVideoFile(outputPath))
-                ? $"-y -i \"{inputPath}\" -c:v libx264 -preset faster -crf 23 -c:a aac -b:a 128k \"{outputPath}\""
-                : $"-y -i \"{inputPath}\" \"{outputPath}\"";
+            string args = BuildSafeConvertArgs(inputPath, outputPath, outExt, qualityPreset);
 
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
@@ -331,6 +366,56 @@ namespace CMD_BOX_GUI.Services
             return false;
         }
 
+        private static string BuildSafeConvertArgs(string inputPath, string outputPath, string outExt, int qualityPreset)
+        {
+            if (IsImageFile(outputPath) && !IsVideoFile(inputPath))
+            {
+                int jpgQ = qualityPreset == 0 ? 2 : (qualityPreset >= 2 ? 7 : 4);
+                int webpQ = qualityPreset == 0 ? 95 : (qualityPreset >= 2 ? 72 : 85);
+                int pngLevel = qualityPreset == 0 ? 6 : 9;
+
+                return outExt switch
+                {
+                    ".jpg" or ".jpeg" or ".jfif" =>
+                        $"-y -i \"{inputPath}\" -map_metadata 0 -frames:v 1 -update 1 -pix_fmt yuvj420p -color_range 2 -q:v {jpgQ} \"{outputPath}\"",
+                    ".png" =>
+                        $"-y -i \"{inputPath}\" -map_metadata 0 -frames:v 1 -update 1 -c:v png -compression_level {pngLevel} \"{outputPath}\"",
+                    ".webp" =>
+                        $"-y -i \"{inputPath}\" -map_metadata 0 -frames:v 1 -update 1 -c:v libwebp -quality {webpQ} -preset default \"{outputPath}\"",
+                    ".bmp" =>
+                        $"-y -i \"{inputPath}\" -frames:v 1 -update 1 -pix_fmt bgr24 -c:v bmp \"{outputPath}\"",
+                    ".ico" =>
+                        $"-y -i \"{inputPath}\" -frames:v 1 -update 1 -vf \"scale='min(256,iw)':'min(256,ih)':force_original_aspect_ratio=decrease\" -pix_fmt rgba \"{outputPath}\"",
+                    ".tiff" or ".tif" =>
+                        $"-y -i \"{inputPath}\" -map_metadata 0 -frames:v 1 -update 1 -c:v tiff \"{outputPath}\"",
+                    ".gif" =>
+                        $"-y -i \"{inputPath}\" -vf \"split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" \"{outputPath}\"",
+                    _ =>
+                        $"-y -i \"{inputPath}\" -map_metadata 0 -frames:v 1 -update 1 \"{outputPath}\""
+                };
+            }
+
+            // Video hoặc chuyển từ Video/Ảnh sang định dạng Video (ép chẵn kích thước + pix_fmt yuv420p để không sập codec/mã màu)
+            int crf = qualityPreset == 0 ? 18 : (qualityPreset >= 2 ? 26 : 22);
+            return outExt switch
+            {
+                ".mp4" or ".m4v" =>
+                    $"-y -i \"{inputPath}\" -map_metadata 0 -vf \"scale=trunc(iw/2)*2:trunc(ih/2)*2\" -c:v libx264 -profile:v high -preset medium -crf {crf} -pix_fmt yuv420p -movflags +faststart+use_metadata_tags -c:a aac -b:a 192k \"{outputPath}\"",
+                ".mov" =>
+                    $"-y -i \"{inputPath}\" -map_metadata 0 -vf \"scale=trunc(iw/2)*2:trunc(ih/2)*2\" -c:v libx264 -preset medium -crf {crf} -pix_fmt yuv420p -movflags +faststart+use_metadata_tags -c:a aac -b:a 192k \"{outputPath}\"",
+                ".mkv" =>
+                    $"-y -i \"{inputPath}\" -map_metadata 0 -vf \"scale=trunc(iw/2)*2:trunc(ih/2)*2\" -c:v libx264 -preset medium -crf {crf} -pix_fmt yuv420p -c:a aac -b:a 192k \"{outputPath}\"",
+                ".webm" =>
+                    $"-y -i \"{inputPath}\" -map_metadata 0 -vf \"scale=trunc(iw/2)*2:trunc(ih/2)*2\" -c:v libvpx-vp9 -crf {crf + 8} -b:v 0 -pix_fmt yuv420p -c:a libopus -b:a 128k \"{outputPath}\"",
+                ".avi" =>
+                    $"-y -i \"{inputPath}\" -map_metadata 0 -vf \"scale=trunc(iw/2)*2:trunc(ih/2)*2\" -c:v libx264 -preset medium -crf {crf} -pix_fmt yuv420p -c:a libmp3lame -b:a 192k \"{outputPath}\"",
+                ".gif" =>
+                    $"-y -i \"{inputPath}\" -vf \"fps=15,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" \"{outputPath}\"",
+                _ =>
+                    $"-y -i \"{inputPath}\" -map_metadata 0 -vf \"scale=trunc(iw/2)*2:trunc(ih/2)*2\" -c:v libx264 -preset medium -crf {crf} -pix_fmt yuv420p -c:a aac -b:a 192k \"{outputPath}\""
+            };
+        }
+
         public async Task<bool> EnhanceVideoAsync(string inputPath, string outputPath, int enhanceLevel = 1, CancellationToken cancellationToken = default)
         {
             string ffmpeg = FindFFmpegPath();
@@ -343,7 +428,7 @@ namespace CMD_BOX_GUI.Services
             };
 
             Logger.Info($"[FFmpeg] Làm nét Video [{Path.GetFileName(inputPath)}] (Mức {enhanceLevel + 1})...");
-            string args = $"-y -i \"{inputPath}\" -vf \"{filter}\" -c:v libx264 -crf 20 -preset faster -c:a copy \"{outputPath}\"";
+            string args = $"-y -i \"{inputPath}\" -map_metadata 0 -vf \"{filter},scale=trunc(iw/2)*2:trunc(ih/2)*2\" -c:v libx264 -crf 20 -preset faster -pix_fmt yuv420p -movflags +faststart+use_metadata_tags -c:a copy \"{outputPath}\"";
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
             if (code == 0 && File.Exists(outputPath))
@@ -372,7 +457,7 @@ namespace CMD_BOX_GUI.Services
                     if (ok && File.Exists(tempPng))
                     {
                         string ffmpeg = FindFFmpegPath();
-                        string args = $"-y -threads 0 -i \"{tempPng}\" -c:v libwebp -quality 95 \"{outputPath}\"";
+                        string args = $"-y -threads 0 -i \"{tempPng}\" -map_metadata 0 -c:v libwebp -quality 95 \"{outputPath}\"";
                         int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
                         if (code == 0 && File.Exists(outputPath))
                         {
@@ -423,12 +508,13 @@ namespace CMD_BOX_GUI.Services
             {
                 "wav" => "-c:a pcm_s16le",
                 "flac" => "-c:a flac",
+                "ogg" => "-c:a libvorbis -q:a 5",
                 "aac" or "m4a" => "-c:a aac -b:a 256k",
                 _ => "-c:a libmp3lame -b:a 320k"
             };
 
             Logger.Info($"[FFmpeg] Trích xuất Audio từ [{Path.GetFileName(inputPath)}] ➔ [.{outExt}]...");
-            string args = $"-y -i \"{inputPath}\" -vn {codecArgs} \"{outputPath}\"";
+            string args = $"-y -i \"{inputPath}\" -map_metadata 0 -vn {codecArgs} \"{outputPath}\"";
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
             if (code == 0 && File.Exists(outputPath))
@@ -449,7 +535,7 @@ namespace CMD_BOX_GUI.Services
             string ffmpeg = FindFFmpegPath();
             Logger.Info($"[FFmpeg] Tắt tiếng Video [{Path.GetFileName(inputPath)}] (0.1s Stream copy)...");
 
-            string args = $"-y -i \"{inputPath}\" -c:v copy -an \"{outputPath}\"";
+            string args = $"-y -i \"{inputPath}\" -map_metadata 0 -c:v copy -an \"{outputPath}\"";
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
             if (code == 0 && File.Exists(outputPath))
@@ -512,7 +598,7 @@ namespace CMD_BOX_GUI.Services
             string durArg = durationSec > 0 ? $"-t {durationSec}" : "";
             Logger.Info($"[FFmpeg] Cắt Video [{Path.GetFileName(inputPath)}] từ {startTimeSec}s ({durationSec}s) qua Stream Copy 0.1s...");
 
-            string args = $"-y -ss {startTimeSec} -i \"{inputPath}\" {durArg} -c copy \"{outputPath}\"";
+            string args = $"-y -ss {startTimeSec} -i \"{inputPath}\" {durArg} -map_metadata 0 -c copy \"{outputPath}\"";
             int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
 
             if (code == 0 && File.Exists(outputPath))
@@ -549,6 +635,35 @@ namespace CMD_BOX_GUI.Services
             }
 
             Logger.Error($"[FFmpeg] Trích xuất frame thất bại cho {Path.GetFileName(inputPath)}");
+            return false;
+        }
+
+        public async Task<bool> AdjustAudioVolumeAsync(
+            string inputPath,
+            string outputPath,
+            double volumeMultiplier = 1.5,
+            CancellationToken cancellationToken = default)
+        {
+            if (IsImageFile(inputPath)) return false;
+
+            string ffmpeg = FindFFmpegPath();
+            string volArg = volumeMultiplier.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+            Logger.Info($"[FFmpeg] Điều chỉnh âm lượng x{volArg} cho [{Path.GetFileName(inputPath)}]...");
+
+            string args = IsAudioFile(inputPath)
+                ? $"-y -i \"{inputPath}\" -map_metadata 0 -filter:a \"volume={volArg}\" \"{outputPath}\""
+                : $"-y -i \"{inputPath}\" -map_metadata 0 -c:v copy -filter:a \"volume={volArg}\" \"{outputPath}\"";
+
+            int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
+
+            if (code == 0 && File.Exists(outputPath))
+            {
+                long newSize = new FileInfo(outputPath).Length;
+                Logger.Success($"[FFmpeg] Điều chỉnh âm lượng thành công: {Path.GetFileName(outputPath)} ({SystemCore.FormatBytes(newSize)})");
+                return true;
+            }
+
+            Logger.Error($"[FFmpeg] Điều chỉnh âm lượng thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
     }

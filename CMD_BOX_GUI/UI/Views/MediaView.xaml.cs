@@ -1,14 +1,15 @@
 using System;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using CMD_BOX_GUI.Core;
-using CMD_BOX_GUI.Models;
 using CMD_BOX_GUI.Services;
 using Microsoft.Win32;
 
@@ -16,727 +17,606 @@ namespace CMD_BOX_GUI.UI.Views
 {
     public partial class MediaView : UserControl
     {
-        private readonly MediaService _media = new();
-        private readonly ObservableCollection<MediaBatchItem> _mediaItems = new();
-        private string _lastOutputDir = string.Empty;
-        private CancellationTokenSource? _batchCts;
-        private bool _isBatchRunning = false;
-        private bool _isFfmpegChecked = false;
+        private sealed class MediaCardConfig
+        {
+            public string Key { get; init; } = string.Empty;
+            public string Title { get; init; } = string.Empty;
+            public string DialogTitle { get; init; } = string.Empty;
+            public string DialogFilter { get; init; } = string.Empty;
+            public Func<string, bool> FileFilter { get; init; } = _ => true;
+            public TextBlock CountLabel { get; init; } = null!;
+            public Border CardBorder { get; init; } = null!;
+            public Func<string, string, CancellationToken, Task<bool>> ProcessFileAsync { get; init; } = null!;
+            public List<string> Files { get; } = new();
+        }
 
-        // Tệp video nguồn cho các Tab chuyên sâu
-        private string _audioSourceVideo = string.Empty;
-        private string _trimSourceVideo = string.Empty;
+        private readonly MediaService _mediaService = new();
+        private readonly Dictionary<string, MediaCardConfig> _cards = new(StringComparer.OrdinalIgnoreCase);
+        private string _activeCardKey = "compress_media";
+        private bool _isAutoFormatMode = true;
+        private string _customImageFormat = "auto";
+        private string _customVideoFormat = ".mp4";
+        private int _customFormatQuality = 0;
+        private bool _isRunning;
+        private CancellationTokenSource? _cts;
+        private string? _lastOutputDirectory;
+
+        private const string MediaFilter = "Video & Ảnh|*.mp4;*.mkv;*.avi;*.mov;*.wmv;*.webm;*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.ico;*.gif;*.heic;*.heif;*.avif;*.jfif|Video Files|*.mp4;*.mkv;*.avi;*.mov;*.wmv;*.webm;*.flv;*.m4v|Image Files|*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.ico;*.tiff;*.gif;*.heic;*.heif;*.avif;*.jfif|All Files (*.*)|*.*";
+        private const string VideoFilter = "Video Files|*.mp4;*.mkv;*.avi;*.mov;*.wmv;*.webm;*.flv;*.m4v;*.ts;*.3gp|All Files (*.*)|*.*";
+        private const string AudioOrVideoFilter = "Audio & Video|*.mp3;*.wav;*.flac;*.aac;*.m4a;*.ogg;*.mp4;*.mkv;*.avi;*.mov;*.webm|All Files (*.*)|*.*";
 
         public MediaView()
         {
             InitializeComponent();
-            DgMediaFiles.ItemsSource = _mediaItems;
-            UpdateTableNotice();
+            InitializeCardRegistry();
+            SetActiveCard("compress_media");
         }
 
         private void MediaView_Loaded(object sender, RoutedEventArgs e)
         {
-            if (!_isFfmpegChecked)
-            {
-                _isFfmpegChecked = true;
-                CheckFfmpegStatus();
-            }
+            _ = RefreshFfmpegStatusAsync(false);
         }
 
-        private void CheckFfmpegStatus(bool force = false)
+        // =========================================================================
+        // 1. ĐĂNG KÝ 6 CARD GỌN NHẸ (GỘP CHUNG VIDEO & ẢNH)
+        // =========================================================================
+
+        private void InitializeCardRegistry()
         {
-            _ = Task.Run(async () =>
+            RegisterCard(new MediaCardConfig
             {
-                var (ok, path, info) = await _media.GetFFmpegStatusAsync(force);
-                Dispatcher.Invoke(() =>
+                Key = "compress_media",
+                Title = "Nén Dung Lượng",
+                DialogTitle = "Chọn Video hoặc Ảnh cần nén giảm dung lượng",
+                DialogFilter = MediaFilter,
+                FileFilter = p => MediaService.IsVideoFile(p) || MediaService.IsImageFile(p),
+                CountLabel = TxtCount_compress_media,
+                CardBorder = Card_compress_media,
+                ProcessFileAsync = (input, outDir, ct) =>
                 {
-                    if (ok)
-                    {
-                        TxtFfmpegStatus.Text = "FFmpeg: Sẵn sàng";
-                        TxtFfmpegStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentSuccess");
-                        BtnBrowseFfmpeg.ToolTip = $"FFmpeg: Sẵn sàng\n{info}\nĐường dẫn: {path}";
-                    }
-                    else
-                    {
-                        TxtFfmpegStatus.Text = "FFmpeg: Chưa cấu hình";
-                        TxtFfmpegStatus.Foreground = (System.Windows.Media.Brush)FindResource("AccentDanger");
-                        BtnBrowseFfmpeg.ToolTip = "FFmpeg: Chưa tìm thấy!\nBấm để chọn file ffmpeg.exe thủ công";
-                    }
-                });
+                    int level = CmbCompressLevel.SelectedIndex;
+                    string ext = MediaService.IsVideoFile(input) ? ".mp4" : Path.GetExtension(input);
+                    string outPath = BuildUniqueOutputPath(outDir, input, "_compressed", ext);
+                    return _mediaService.CompressMediaAsync(input, outPath, level, ct);
+                }
+            });
+
+            RegisterCard(new MediaCardConfig
+            {
+                Key = "convert_media",
+                Title = "Đổi Định Dạng",
+                DialogTitle = "Chọn Video hoặc Ảnh cần đổi định dạng",
+                DialogFilter = MediaFilter,
+                FileFilter = p => MediaService.IsVideoFile(p) || MediaService.IsImageFile(p),
+                CountLabel = TxtCount_convert_media,
+                CardBorder = Card_convert_media,
+                ProcessFileAsync = (input, outDir, ct) =>
+                {
+                    string ext = MediaService.ResolveTargetExtension(input, _isAutoFormatMode, _customImageFormat, _customVideoFormat);
+                    int quality = _isAutoFormatMode ? 0 : _customFormatQuality;
+                    string outPath = BuildUniqueOutputPath(outDir, input, "", ext);
+                    return _mediaService.ConvertMediaFormatAsync(input, outPath, quality, ct);
+                }
+            });
+
+            RegisterCard(new MediaCardConfig
+            {
+                Key = "enhance_media",
+                Title = "Làm Nét Media",
+                DialogTitle = "Chọn Video hoặc Ảnh cần làm nét & khử nhiễu",
+                DialogFilter = MediaFilter,
+                FileFilter = p => MediaService.IsVideoFile(p) || MediaService.IsImageFile(p),
+                CountLabel = TxtCount_enhance_media,
+                CardBorder = Card_enhance_media,
+                ProcessFileAsync = (input, outDir, ct) =>
+                {
+                    int level = CmbEnhanceLevel.SelectedIndex;
+                    string ext = MediaService.IsVideoFile(input) ? ".mp4" : Path.GetExtension(input);
+                    string outPath = BuildUniqueOutputPath(outDir, input, "_enhanced", ext);
+                    return _mediaService.EnhanceMediaAsync(input, outPath, level, ct);
+                }
+            });
+
+            RegisterCard(new MediaCardConfig
+            {
+                Key = "extract_audio",
+                Title = "Tách Âm Thanh",
+                DialogTitle = "Chọn Video cần tách nhạc",
+                DialogFilter = VideoFilter,
+                FileFilter = MediaService.IsVideoFile,
+                CountLabel = TxtCount_extract_audio,
+                CardBorder = Card_extract_audio,
+                ProcessFileAsync = (input, outDir, ct) =>
+                {
+                    string fmt = (CmbExtractAudioFormat.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "mp3";
+                    string outPath = BuildUniqueOutputPath(outDir, input, "_audio", "." + fmt);
+                    return _mediaService.ExtractAudioAsync(input, outPath, fmt, ct);
+                }
+            });
+
+            RegisterCard(new MediaCardConfig
+            {
+                Key = "volume_audio",
+                Title = "Chỉnh Âm Lượng",
+                DialogTitle = "Chọn Audio hoặc Video cần chỉnh âm lượng",
+                DialogFilter = AudioOrVideoFilter,
+                FileFilter = p => MediaService.IsAudioFile(p) || MediaService.IsVideoFile(p),
+                CountLabel = TxtCount_volume_audio,
+                CardBorder = Card_volume_audio,
+                ProcessFileAsync = (input, outDir, ct) =>
+                {
+                    string tag = (CmbAudioVolume.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "1.5";
+                    double mult = ParseDoubleOrDefault(tag, 1.5);
+                    string ext = Path.GetExtension(input);
+                    string outPath = BuildUniqueOutputPath(outDir, input, $"_vol{mult:0.#}x", ext);
+                    return _mediaService.AdjustAudioVolumeAsync(input, outPath, mult, ct);
+                }
+            });
+
+            RegisterCard(new MediaCardConfig
+            {
+                Key = "trim_video",
+                Title = "Cắt Video Nhanh",
+                DialogTitle = "Chọn Video cần cắt đoạn",
+                DialogFilter = VideoFilter,
+                FileFilter = MediaService.IsVideoFile,
+                CountLabel = TxtCount_trim_video,
+                CardBorder = Card_trim_video,
+                ProcessFileAsync = (input, outDir, ct) =>
+                {
+                    double start = ParseDoubleOrDefault(TxtTrimStart.Text, 0);
+                    double dur = ParseDoubleOrDefault(TxtTrimDuration.Text, 15);
+                    string ext = Path.GetExtension(input);
+                    string outPath = BuildUniqueOutputPath(outDir, input, $"_cut_{start:0}s", ext);
+                    return _mediaService.TrimVideoAsync(input, outPath, start, dur, ct);
+                }
             });
         }
 
-        private void BtnRefreshFfmpeg_Click(object sender, RoutedEventArgs e)
-        {
-            CheckFfmpegStatus(true);
-        }
+        private void RegisterCard(MediaCardConfig config) => _cards[config.Key] = config;
 
-        #region ================= 0. SUB-TABS NAVIGATION =================
+        // =========================================================================
+        // 2. ĐIỀU HƯỚNG TAB & QUẢN LÝ FILE TRÊN CARD
+        // =========================================================================
+
         private void TabMedia_Click(object sender, RoutedEventArgs e)
         {
-            if (PnlMediaBatch == null || PnlMediaAudio == null || PnlMediaTrimGif == null || PnlMediaToolbox == null) return;
+            if (sender is not RadioButton rb) return;
 
-            PnlMediaBatch.Visibility = Visibility.Collapsed;
-            PnlMediaAudio.Visibility = Visibility.Collapsed;
-            PnlMediaTrimGif.Visibility = Visibility.Collapsed;
-            PnlMediaToolbox.Visibility = Visibility.Collapsed;
+            PnlTabGeneral.Visibility = rb == TabGeneral ? Visibility.Visible : Visibility.Collapsed;
+            PnlTabAudioTrim.Visibility = rb == TabAudioTrim ? Visibility.Visible : Visibility.Collapsed;
+            PnlTabTools.Visibility = rb == TabTools ? Visibility.Visible : Visibility.Collapsed;
 
-            if (TabMediaBatch.IsChecked == true)
+            if (rb == TabGeneral)
             {
-                PnlMediaBatch.Visibility = Visibility.Visible;
-                TxtStatus.Text = "Tab Nén & Đổi Đuôi Hàng Loạt: Kéo thả nhiều ảnh/video để xử lý cùng lúc.";
+                SetActiveCard("compress_media");
             }
-            else if (TabMediaAudio.IsChecked == true)
+            else if (rb == TabAudioTrim)
             {
-                PnlMediaAudio.Visibility = Visibility.Visible;
-                TxtStatus.Text = "Tab Tách Âm Thanh: Chọn Video để trích xuất MP3, AAC, FLAC, WAV, M4A.";
+                SetActiveCard("extract_audio");
             }
-            else if (TabMediaTrimGif.IsChecked == true)
+
+            bool isToolTab = rb == TabTools;
+            BtnRunActiveCard.Visibility = isToolTab ? Visibility.Collapsed : Visibility.Visible;
+            BtnClearActiveCard.Visibility = isToolTab ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void Card_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement el && el.Tag is string key)
             {
-                PnlMediaTrimGif.Visibility = Visibility.Visible;
-                TxtStatus.Text = "Tab Cắt & GIF: Nhập thời gian cắt siêu tốc hoặc xuất ảnh GIF palette tối ưu.";
-            }
-            else if (TabMediaToolbox.IsChecked == true)
-            {
-                PnlMediaToolbox.Visibility = Visibility.Visible;
-                TxtStatus.Text = "Tab Hộp Công Cụ: Các tác vụ nhanh 1-click (Mute audio, Chụp frame PNG, Watermark, yt-dlp).";
+                SetActiveCard(key);
             }
         }
-        #endregion
 
-        #region ================= TAB 1: BATCH PROCESSOR =================
+        private void SetActiveCard(string key)
+        {
+            if (!_cards.TryGetValue(key, out var activeCard)) return;
+            _activeCardKey = key;
+
+            var activeBrush = TryFindResource("AccentCyan") as Brush ?? Brushes.DeepSkyBlue;
+            var normalBrush = TryFindResource("BorderSubtle") as Brush ?? Brushes.DimGray;
+
+            foreach (var c in _cards.Values)
+            {
+                if (c.CardBorder == null) continue;
+                bool isSelected = string.Equals(c.Key, key, StringComparison.OrdinalIgnoreCase);
+                c.CardBorder.BorderBrush = isSelected ? activeBrush : normalBrush;
+                c.CardBorder.BorderThickness = new Thickness(isSelected ? 1.5 : 1);
+            }
+
+            UpdateGlobalRunButton();
+        }
+
+        private void CardPickFiles_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement el || el.Tag is not string key) return;
+            if (!_cards.TryGetValue(key, out var card)) return;
+
+            SetActiveCard(key);
+
+            var dlg = new OpenFileDialog
+            {
+                Title = card.DialogTitle,
+                Filter = card.DialogFilter,
+                Multiselect = true
+            };
+
+            if (dlg.ShowDialog() == true && dlg.FileNames.Length > 0)
+            {
+                AddFilesToCard(card, dlg.FileNames);
+            }
+        }
+
+        private void Card_Drop(object sender, DragEventArgs e)
+        {
+            if (sender is not FrameworkElement el || el.Tag is not string key) return;
+            if (!_cards.TryGetValue(key, out var card)) return;
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+            if (e.Data.GetData(DataFormats.FileDrop) is not string[] dropped) return;
+
+            SetActiveCard(key);
+            var valid = dropped.Where(f => File.Exists(f) && card.FileFilter(f)).ToArray();
+            if (valid.Length > 0)
+            {
+                AddFilesToCard(card, valid);
+            }
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Tiếp nhận tệp từ bên ngoài (MainWindow kéo thả hoặc nút mở nhanh)
+        /// </summary>
+        public void ImportExternalFiles(string[] files)
+        {
+            if (files == null || files.Length == 0) return;
+
+            var media = files.Where(f => File.Exists(f) && (MediaService.IsVideoFile(f) || MediaService.IsImageFile(f))).ToArray();
+            var audios = files.Where(f => File.Exists(f) && MediaService.IsAudioFile(f)).ToArray();
+
+            if (media.Length > 0 && _cards.TryGetValue("compress_media", out var mediaCard))
+            {
+                AddFilesToCard(mediaCard, media);
+                TabGeneral.IsChecked = true;
+                TabMedia_Click(TabGeneral, new RoutedEventArgs());
+                SetActiveCard("compress_media");
+            }
+            if (audios.Length > 0 && _cards.TryGetValue("volume_audio", out var audioCard))
+            {
+                AddFilesToCard(audioCard, audios);
+                if (media.Length == 0)
+                {
+                    TabAudioTrim.IsChecked = true;
+                    TabMedia_Click(TabAudioTrim, new RoutedEventArgs());
+                    SetActiveCard("volume_audio");
+                }
+            }
+        }
+
+        private void AddFilesToCard(MediaCardConfig card, IEnumerable<string> paths)
+        {
+            int added = 0;
+            foreach (var p in paths)
+            {
+                if (File.Exists(p) && !card.Files.Contains(p, StringComparer.OrdinalIgnoreCase))
+                {
+                    card.Files.Add(p);
+                    added++;
+                }
+            }
+
+            UpdateCardCountDisplay(card);
+            if (added > 0)
+            {
+                TxtStatus.Text = $"[{card.Title}] Đã thêm {added} tệp (Tổng: {card.Files.Count} tệp).";
+                Logger.Info($"[Media] [{card.Title}] Đã nạp {added} tệp.");
+            }
+        }
+
+        private void UpdateCardCountDisplay(MediaCardConfig card)
+        {
+            int count = card.Files.Count;
+            card.CountLabel.Text = count == 0 ? "0 tệp" : $"📂 {count} tệp";
+            card.CountLabel.Foreground = count > 0
+                ? (TryFindResource("AccentSuccess") as Brush ?? Brushes.MediumSeaGreen)
+                : (TryFindResource("TextSecondary") as Brush ?? Brushes.Gray);
+
+            UpdateGlobalRunButton();
+        }
+
+        private void UpdateGlobalRunButton()
+        {
+            if (!_cards.TryGetValue(_activeCardKey, out var activeCard)) return;
+            BtnRunActiveCard.Content = $"▶ Chạy: {activeCard.Title} ({activeCard.Files.Count})";
+        }
+
+        // =========================================================================
+        // 3. THỰC THI 1 CARD ĐANG CHỌN MỖI PHIÊN (TIẾT KIỆM TÀI NGUYÊN)
+        // =========================================================================
+
+        private async void BtnRunActiveCard_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_cards.TryGetValue(_activeCardKey, out var activeCard)) return;
+
+            if (activeCard.Files.Count == 0)
+            {
+                var dlg = new OpenFileDialog
+                {
+                    Title = activeCard.DialogTitle,
+                    Filter = activeCard.DialogFilter,
+                    Multiselect = true
+                };
+
+                if (dlg.ShowDialog() == true && dlg.FileNames.Length > 0)
+                {
+                    AddFilesToCard(activeCard, dlg.FileNames);
+                }
+
+                if (activeCard.Files.Count == 0) return;
+            }
+
+            await ExecuteCardsAsync(new[] { activeCard });
+        }
+
+        private async Task ExecuteCardsAsync(IReadOnlyList<MediaCardConfig> cardsToRun)
+        {
+            if (_isRunning) return;
+
+            var status = await _mediaService.GetFFmpegStatusAsync();
+            if (!status.isAvailable)
+            {
+                MessageBox.Show("Chưa tìm thấy ffmpeg.exe! Vui lòng vào tab 'Cấu Hình' để chọn đường dẫn ffmpeg.exe.", "Thiếu FFmpeg", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            int totalFiles = cardsToRun.Sum(c => c.Files.Count);
+            if (totalFiles == 0) return;
+
+            _isRunning = true;
+            _cts = new CancellationTokenSource();
+            SetControlsEnabled(false);
+
+            PbBatchTotal.Visibility = Visibility.Visible;
+            PbBatchTotal.Value = 0;
+            PbBatchTotal.Maximum = totalFiles;
+
+            int processed = 0;
+            int successCount = 0;
+            int failCount = 0;
+
+            try
+            {
+                foreach (var card in cardsToRun)
+                {
+                    foreach (var inputPath in card.Files.ToList())
+                    {
+                        if (_cts.Token.IsCancellationRequested || SystemCore.CheckEmergencyStop())
+                        {
+                            Logger.Warning("[Media] Đã dừng tác vụ theo yêu cầu người dùng.");
+                            break;
+                        }
+
+                        processed++;
+                        string fileName = Path.GetFileName(inputPath);
+                        TxtStatus.Text = $"[{card.Title}] Đang xử lý ({processed}/{totalFiles}): {fileName}...";
+
+                        try
+                        {
+                            string baseDir = Path.GetDirectoryName(inputPath) ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                            string outDir = Path.Combine(baseDir, "CMD_BOX_Output");
+                            Directory.CreateDirectory(outDir);
+                            _lastOutputDirectory = outDir;
+
+                            bool ok = await card.ProcessFileAsync(inputPath, outDir, _cts.Token);
+                            if (ok) successCount++;
+                            else failCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            failCount++;
+                            Logger.Error($"[Media] [{card.Title}] Lỗi xử lý {fileName}: {ex.Message}");
+                        }
+
+                        PbBatchTotal.Value = processed;
+                    }
+                }
+
+                TxtStatus.Text = $"Hoàn tất! Thành công: {successCount} tệp | Thất bại: {failCount} tệp.";
+                Logger.Success($"[Media] Hoàn tất xử lý {processed} tệp (Thành công: {successCount}, Lỗi: {failCount}).");
+            }
+            finally
+            {
+                PbBatchTotal.Visibility = Visibility.Collapsed;
+                _cts?.Dispose();
+                _cts = null;
+                _isRunning = false;
+                SetControlsEnabled(true);
+            }
+        }
+
+        private void BtnClearActiveCard_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_cards.TryGetValue(_activeCardKey, out var activeCard)) return;
+            activeCard.Files.Clear();
+            UpdateCardCountDisplay(activeCard);
+            TxtStatus.Text = $"Đã xóa danh sách tệp của '{activeCard.Title}'.";
+        }
+
+        private void BtnOpenLastOutput_Click(object sender, RoutedEventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(_lastOutputDirectory) && Directory.Exists(_lastOutputDirectory))
+            {
+                Process.Start(new ProcessStartInfo { FileName = _lastOutputDirectory, UseShellExecute = true });
+                return;
+            }
+
+            var firstFile = _cards.Values.SelectMany(c => c.Files).FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(firstFile))
+            {
+                string dir = Path.GetDirectoryName(firstFile) ?? string.Empty;
+                string outDir = Path.Combine(dir, "CMD_BOX_Output");
+                string target = Directory.Exists(outDir) ? outDir : dir;
+                if (Directory.Exists(target))
+                {
+                    Process.Start(new ProcessStartInfo { FileName = target, UseShellExecute = true });
+                    return;
+                }
+            }
+
+            MessageBox.Show("Chưa có thư mục kết quả nào được tạo trong phiên làm việc này.", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // =========================================================================
+        // 4. TRẠNG THÁI FFMPEG & HELPERS
+        // =========================================================================
+
+        private async void BtnRefreshFfmpeg_Click(object sender, RoutedEventArgs e) => await RefreshFfmpegStatusAsync(true);
+
         private async void BtnBrowseFfmpeg_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new OpenFileDialog
             {
-                Title = "Chọn tệp thực thi ffmpeg.exe",
-                Filter = "FFmpeg (ffmpeg.exe)|ffmpeg.exe|All Files (*.*)|*.*"
+                Title = "Chọn tệp ffmpeg.exe",
+                Filter = "FFmpeg Executable (ffmpeg.exe)|ffmpeg.exe|All Files (*.*)|*.*"
             };
 
             if (dlg.ShowDialog() == true && File.Exists(dlg.FileName))
             {
-                _media.SetManualFfmpegPath(dlg.FileName);
-                var (ok, path, info) = await _media.GetFFmpegStatusAsync(true);
-                BtnBrowseFfmpeg.ToolTip = ok ? $"FFmpeg: Sẵn sàng\n{info}\nĐường dẫn: {path}" : "FFmpeg lỗi";
-                CheckFfmpegStatus(true);
-                MessageBox.Show($"Đã cấu hình FFmpeg thành công:\n{dlg.FileName}", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                _mediaService.SetManualFfmpegPath(dlg.FileName);
+                await RefreshFfmpegStatusAsync(true);
             }
         }
 
-        private void CmbActionFeature_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async Task RefreshFfmpegStatusAsync(bool force)
         {
-            if (PnlOptionCompress == null || PnlOptionConvert == null || PnlOptionEnhance == null) return;
-
-            PnlOptionCompress.Visibility = Visibility.Collapsed;
-            PnlOptionConvert.Visibility = Visibility.Collapsed;
-            PnlOptionEnhance.Visibility = Visibility.Collapsed;
-
-            switch (CmbActionFeature.SelectedIndex)
+            var status = await _mediaService.GetFFmpegStatusAsync(force);
+            if (status.isAvailable)
             {
-                case 0: PnlOptionCompress.Visibility = Visibility.Visible; break;
-                case 1: PnlOptionConvert.Visibility = Visibility.Visible; break;
-                case 2: PnlOptionEnhance.Visibility = Visibility.Visible; break;
-            }
-        }
-
-        private void BtnAddFiles_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new OpenFileDialog
-            {
-                Title = "Chọn các tệp Media",
-                Filter = "Media Files|*.mp4;*.mkv;*.avi;*.mov;*.webm;*.jpg;*.jpeg;*.png;*.webp;*.bmp;*.gif|All Files (*.*)|*.*",
-                Multiselect = true
-            };
-
-            if (dlg.ShowDialog() == true)
-            {
-                foreach (var file in dlg.FileNames) AddMediaFile(file);
-                UpdateTableNotice();
-                e.Handled = true;
-            }
-        }
-
-        private void BtnAddFolder_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new OpenFolderDialog { Title = "Chọn thư mục Media" };
-            if (dlg.ShowDialog() == true)
-            {
-                var files = Directory.GetFiles(dlg.FolderName, "*.*", SearchOption.TopDirectoryOnly)
-                    .Where(f => MediaService.IsImageFile(f) || MediaService.IsVideoFile(f));
-                foreach (var file in files) AddMediaFile(file);
-                UpdateTableNotice();
-                e.Handled = true;
-            }
-        }
-
-        private void MediaGrid_DragOver(object sender, DragEventArgs e)
-        {
-            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
-            e.Handled = true;
-        }
-
-        private void MediaGrid_Drop(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop) && e.Data.GetData(DataFormats.FileDrop) is string[] files)
-            {
-                foreach (var path in files)
-                {
-                    if (File.Exists(path)) AddMediaFile(path);
-                    else if (Directory.Exists(path))
-                    {
-                        var dirFiles = Directory.GetFiles(path).Where(f => MediaService.IsImageFile(f) || MediaService.IsVideoFile(f));
-                        foreach (var df in dirFiles) AddMediaFile(df);
-                    }
-                }
-                UpdateTableNotice();
-                e.Handled = true;
-            }
-        }
-
-        public void ImportExternalFiles(System.Collections.Generic.IEnumerable<string> paths)
-        {
-            if (_isBatchRunning) return;
-            foreach (var path in paths)
-            {
-                if (File.Exists(path)) AddMediaFile(path);
-                else if (Directory.Exists(path))
-                {
-                    var dirFiles = Directory.GetFiles(path).Where(f => MediaService.IsImageFile(f) || MediaService.IsVideoFile(f));
-                    foreach (var df in dirFiles) AddMediaFile(df);
-                }
-            }
-            UpdateTableNotice();
-        }
-
-        private void AddMediaFile(string filePath)
-        {
-            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)) return;
-            if (_mediaItems.Any(i => i.FilePath.Equals(filePath, StringComparison.OrdinalIgnoreCase))) return;
-
-            bool isImg = MediaService.IsImageFile(filePath);
-            bool isVid = MediaService.IsVideoFile(filePath);
-
-            _mediaItems.Add(new MediaBatchItem
-            {
-                FilePath = filePath,
-                FileSizeBytes = new FileInfo(filePath).Length,
-                IsImage = isImg,
-                IsVideo = isVid,
-                AvailableExtensions = MediaService.GetAvailableExtensions(filePath),
-                TargetExtension = MediaService.GetDefaultTargetExtension(filePath),
-                Status = "⚪ Sẵn sàng",
-                StatusColor = "#9CA3AF"
-            });
-        }
-
-        private void BtnRemoveItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (_isBatchRunning) return;
-            if (sender is Button btn && btn.DataContext is MediaBatchItem item)
-            {
-                _mediaItems.Remove(item);
-                UpdateTableNotice();
-                e.Handled = true;
-            }
-        }
-
-        private void BtnClearTable_Click(object sender, RoutedEventArgs e)
-        {
-            if (_isBatchRunning) return;
-            _mediaItems.Clear();
-            UpdateTableNotice();
-        }
-
-        private void UpdateTableNotice()
-        {
-            int count = _mediaItems.Count;
-            TxtTableCount.Text = $"{count} tệp trong danh sách";
-            PnlEmptyNotice.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        private async void BtnStartBatch_Click(object sender, RoutedEventArgs e)
-        {
-            if (_isBatchRunning)
-            {
-                _batchCts?.Cancel();
-                Logger.Warning("Đang yêu cầu dừng tác vụ xử lý hàng loạt...");
-                return;
-            }
-
-            if (_mediaItems.Count == 0)
-            {
-                MessageBox.Show("Vui lòng thêm ít nhất một tệp Media vào danh sách!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            _batchCts = new CancellationTokenSource();
-            var token = _batchCts.Token;
-
-            _isBatchRunning = true;
-            SetBatchRunning(true);
-            PbBatchTotal.Maximum = _mediaItems.Count;
-            PbBatchTotal.Value = 0;
-
-            int actionIndex = CmbActionFeature.SelectedIndex;
-            int enhanceLevel = CmbEnhanceLevel?.SelectedIndex switch
-            {
-                0 => 0,
-                2 => 2,
-                3 => 3,
-                _ => 1
-            };
-
-            await Task.Run(async () =>
-            {
-                for (int i = 0; i < _mediaItems.Count; i++)
-                {
-                    if (token.IsCancellationRequested || SystemCore.CheckEmergencyStop()) break;
-
-                    var item = _mediaItems[i];
-                    Dispatcher.Invoke(() =>
-                    {
-                        item.Status = "⏳ Đang chạy...";
-                        item.StatusColor = "#06B6D4";
-                        TxtStatus.Text = $"Đang xử lý [{i + 1}/{_mediaItems.Count}]: {item.FileName}";
-                    });
-
-                    string outDir = Path.GetDirectoryName(item.FilePath) ?? AppDomain.CurrentDomain.BaseDirectory;
-                    _lastOutputDir = outDir;
-
-                    string baseName = Path.GetFileNameWithoutExtension(item.FilePath);
-                    string origExt = Path.GetExtension(item.FilePath);
-                    string targetExt = string.IsNullOrWhiteSpace(item.TargetExtension) ? origExt : item.TargetExtension;
-
-                    string outPath;
-                    bool ok = false;
-
-                    try
-                    {
-                        switch (actionIndex)
-                        {
-                            case 0:
-                                outPath = Path.Combine(outDir, $"{baseName}_compressed{origExt}");
-                                ok = await _media.CompressMediaAsync(item.FilePath, outPath, 1, token);
-                                break;
-                            case 1:
-                                outPath = Path.Combine(outDir, $"{baseName}_converted{targetExt}");
-                                ok = await _media.ConvertMediaFormatAsync(item.FilePath, outPath, token);
-                                break;
-                            case 2:
-                                outPath = Path.Combine(outDir, $"{baseName}_enhanced{targetExt}");
-                                ok = await _media.EnhanceMediaAsync(item.FilePath, outPath, enhanceLevel, token);
-                                break;
-                            default:
-                                outPath = Path.Combine(outDir, $"{baseName}_output{origExt}");
-                                ok = false;
-                                break;
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        break;
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Error($"Lỗi xử lý file [{item.FileName}]: {ex.Message}");
-                        ok = false;
-                        outPath = "";
-                    }
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        if (ok && File.Exists(outPath))
-                        {
-                            item.OutputPath = outPath;
-                            item.ProcessedSizeBytes = new FileInfo(outPath).Length;
-                            item.Status = "✅ Đã xong";
-                            item.StatusColor = "#10B981";
-                        }
-                        else
-                        {
-                            item.Status = "❌ Thất bại";
-                            item.StatusColor = "#EF4444";
-                        }
-                        PbBatchTotal.Value = i + 1;
-                    });
-                }
-            });
-
-            _isBatchRunning = false;
-            SetBatchRunning(false);
-            TxtStatus.Text = "Hoàn tất phiên xử lý hàng loạt!";
-        }
-
-        private void BtnOpenResultFolder_Click(object sender, RoutedEventArgs e)
-        {
-            string dirToOpen = _lastOutputDir;
-            if (string.IsNullOrWhiteSpace(dirToOpen) || !Directory.Exists(dirToOpen))
-            {
-                if (_mediaItems.Count > 0 && File.Exists(_mediaItems[0].FilePath))
-                {
-                    dirToOpen = Path.GetDirectoryName(_mediaItems[0].FilePath)!;
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(dirToOpen) && Directory.Exists(dirToOpen))
-            {
-                Process.Start(new ProcessStartInfo { FileName = dirToOpen, UseShellExecute = true });
+                TxtFfmpegStatus.Text = "FFmpeg: Sẵn sàng ✓";
+                TxtFfmpegStatus.Foreground = TryFindResource("AccentSuccess") as Brush ?? Brushes.MediumSeaGreen;
+                TxtFfmpegPathInfo.Text = $"Đang sử dụng: {status.path}";
             }
             else
             {
-                MessageBox.Show("Chưa có thư mục kết quả để mở!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                TxtFfmpegStatus.Text = "FFmpeg: Chưa tìm thấy ✕";
+                TxtFfmpegStatus.Foreground = TryFindResource("AccentDanger") as Brush ?? Brushes.IndianRed;
+                TxtFfmpegPathInfo.Text = "Không tìm thấy ffmpeg.exe trong PATH hoặc thư mục ứng dụng. Nhấn nút bên dưới để chỉ định thủ công.";
             }
         }
 
-        private void SetBatchRunning(bool running)
+        private void SetControlsEnabled(bool enabled)
         {
-            PbBatchTotal.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
-            BtnStartBatch.Content = running ? "🛑 Dừng Lại" : "🚀 Bắt Đầu Xử Lý";
-            BtnStartBatch.Style = (Style)FindResource(running ? "DangerButton" : "PrimaryButton");
-
-            BtnAddFiles.IsEnabled = !running;
-            BtnAddFolder.IsEnabled = !running;
-            BtnClearTable.IsEnabled = !running;
-            BtnBrowseFfmpeg.IsEnabled = !running;
-            CmbActionFeature.IsEnabled = !running;
-            CmbEnhanceLevel.IsEnabled = !running;
-            DgMediaFiles.IsEnabled = !running;
+            BtnRunActiveCard.IsEnabled = enabled;
+            BtnClearActiveCard.IsEnabled = enabled;
         }
-        #endregion
 
-        #region ================= TAB 2: AUDIO EXTRACTOR =================
-        private void AudioDrop_DragOver(object sender, DragEventArgs e)
+        private static string BuildUniqueOutputPath(string outDir, string inputPath, string suffix, string targetExt)
         {
-            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+            string baseName = Path.GetFileNameWithoutExtension(inputPath);
+            string ext = targetExt.StartsWith('.') ? targetExt : "." + targetExt;
+            string candidate = Path.Combine(outDir, $"{baseName}{suffix}{ext}");
+
+            int idx = 1;
+            while (File.Exists(candidate))
+            {
+                candidate = Path.Combine(outDir, $"{baseName}{suffix}_{idx}{ext}");
+                idx++;
+            }
+            return candidate;
+        }
+
+        private static double ParseDoubleOrDefault(string? raw, double fallback)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return fallback;
+            return double.TryParse(raw.Trim().Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out double val)
+                ? val
+                : fallback;
+        }
+
+        // =========================================================================
+        // 5. BẢNG TÙY CHỈNH ĐỔI ĐỊNH DẠNG (MODAL OVERLAY)
+        // =========================================================================
+
+        private void BtnOpenFormatModal_Click(object sender, RoutedEventArgs e)
+        {
             e.Handled = true;
+            SetActiveCard("convert_media");
+
+            RbFormatAuto.IsChecked = _isAutoFormatMode;
+            RbFormatCustom.IsChecked = !_isAutoFormatMode;
+            SelectComboItemByTag(CmbFormatTargetImage, _customImageFormat);
+            SelectComboItemByTag(CmbFormatTargetVideo, _customVideoFormat);
+            CmbFormatQuality.SelectedIndex = Math.Clamp(_customFormatQuality, 0, 2);
+
+            UpdateCustomFormatPanelState();
+            PnlFormatModal.Visibility = Visibility.Visible;
         }
 
-        private void AudioDrop_Drop(object sender, DragEventArgs e)
+        private void BtnCloseFormatModal_Click(object sender, RoutedEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop) && e.Data.GetData(DataFormats.FileDrop) is string[] files)
-            {
-                var vid = files.FirstOrDefault(f => MediaService.IsVideoFile(f));
-                if (!string.IsNullOrEmpty(vid))
-                {
-                    SetAudioSelectedFile(vid);
-                }
-                else
-                {
-                    MessageBox.Show("Vui lòng kéo thả tệp Video hợp lệ (MP4, MKV, AVI, MOV...)!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-                e.Handled = true;
-            }
+            PnlFormatModal.Visibility = Visibility.Collapsed;
         }
 
-        private void BtnSelectAudioVideo_Click(object sender, RoutedEventArgs e)
+        private void FormatModeRadio_Changed(object sender, RoutedEventArgs e)
         {
-            var dlg = new OpenFileDialog
-            {
-                Title = "Chọn tệp Video cần tách âm thanh",
-                Filter = "Video Files|*.mp4;*.mkv;*.avi;*.mov;*.webm;*.flv;*.wmv;*.ts|All Files (*.*)|*.*"
-            };
-
-            if (dlg.ShowDialog() == true)
-            {
-                SetAudioSelectedFile(dlg.FileName);
-            }
+            UpdateCustomFormatPanelState();
         }
 
-        private void SetAudioSelectedFile(string path)
+        private void UpdateCustomFormatPanelState()
         {
-            _audioSourceVideo = path;
-            TxtAudioSelectedFile.Text = $"{Path.GetFileName(path)} ({SystemCore.FormatBytes(new FileInfo(path).Length)})";
-            TxtAudioTrackInfo.Text = "Định dạng âm thanh: Tự động nhận diện qua FFmpeg";
-            TxtStatus.Text = $"Đã nạp video: {Path.GetFileName(path)}";
+            if (PnlCustomFormatOptions == null) return;
+            bool isCustom = RbFormatCustom?.IsChecked == true;
+            PnlCustomFormatOptions.IsEnabled = isCustom;
+            PnlCustomFormatOptions.Opacity = isCustom ? 1.0 : 0.6;
         }
 
-        private async void BtnExtractAudioRun_Click(object sender, RoutedEventArgs e)
+        private void BtnResetFormatAuto_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(_audioSourceVideo) || !File.Exists(_audioSourceVideo))
-            {
-                MessageBox.Show("Vui lòng chọn một tệp Video nguồn trước khi trích xuất âm thanh!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            string fmt = (CmbAudioOutFormat.SelectedIndex) switch
-            {
-                1 => "aac",
-                2 => "flac",
-                3 => "wav",
-                4 => "m4a",
-                _ => "mp3"
-            };
-
-            string outDir = Path.GetDirectoryName(_audioSourceVideo) ?? AppDomain.CurrentDomain.BaseDirectory;
-            string baseName = Path.GetFileNameWithoutExtension(_audioSourceVideo);
-            string outPath = Path.Combine(outDir, $"{baseName}_audio.{fmt}");
-
-            BtnExtractAudioRun.IsEnabled = false;
-            PbBatchTotal.Visibility = Visibility.Visible;
-            PbBatchTotal.IsIndeterminate = true;
-            TxtStatus.Text = $"Đang trích xuất âm thanh .{fmt} từ {Path.GetFileName(_audioSourceVideo)}...";
-
-            try
-            {
-                bool ok = await _media.ExtractAudioAsync(_audioSourceVideo, outPath, fmt);
-                if (ok && File.Exists(outPath))
-                {
-                    TxtStatus.Text = $"Trích xuất thành công: {Path.GetFileName(outPath)} ({SystemCore.FormatBytes(new FileInfo(outPath).Length)})";
-                    _lastOutputDir = outDir;
-                    MessageBox.Show($"Trích xuất âm thanh thành công!\n\nĐã lưu: {outPath}", "Hoàn Tất", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    TxtStatus.Text = "Trích xuất âm thanh thất bại! Vui lòng kiểm tra FFmpeg.";
-                    MessageBox.Show("Không thể trích xuất âm thanh từ video này. Hãy đảm bảo video có chứa track âm thanh và FFmpeg đã sẵn sàng.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            finally
-            {
-                BtnExtractAudioRun.IsEnabled = true;
-                PbBatchTotal.IsIndeterminate = false;
-                PbBatchTotal.Visibility = Visibility.Collapsed;
-            }
+            RbFormatAuto.IsChecked = true;
+            CmbFormatTargetImage.SelectedIndex = 0;
+            CmbFormatTargetVideo.SelectedIndex = 0;
+            CmbFormatQuality.SelectedIndex = 0;
+            UpdateCustomFormatPanelState();
         }
-        #endregion
 
-        #region ================= TAB 3: TRIM & GIF MAKER =================
-        private void BtnSelectTrimVideo_Click(object sender, RoutedEventArgs e)
+        private void BtnApplyFormatModal_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new OpenFileDialog
-            {
-                Title = "Chọn tệp Video để Cắt hoặc Tạo GIF",
-                Filter = "Video Files|*.mp4;*.mkv;*.avi;*.mov;*.webm;*.flv;*.wmv;*.ts|All Files (*.*)|*.*"
-            };
+            _isAutoFormatMode = RbFormatAuto.IsChecked == true;
+            _customImageFormat = (CmbFormatTargetImage.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "auto";
+            _customVideoFormat = (CmbFormatTargetVideo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? ".mp4";
+            _customFormatQuality = Math.Max(0, CmbFormatQuality.SelectedIndex);
 
-            if (dlg.ShowDialog() == true)
-            {
-                _trimSourceVideo = dlg.FileName;
-                TxtTrimSelectedFile.Text = $"{Path.GetFileName(dlg.FileName)} ({SystemCore.FormatBytes(new FileInfo(dlg.FileName).Length)})";
-                TxtStatus.Text = $"Đã nạp video cho Cắt / GIF: {Path.GetFileName(dlg.FileName)}";
-            }
+            UpdateConvertModeSummary();
+            PnlFormatModal.Visibility = Visibility.Collapsed;
         }
 
-        private async void BtnTrimVideoFast_Click(object sender, RoutedEventArgs e)
+        private void UpdateConvertModeSummary()
         {
-            if (string.IsNullOrWhiteSpace(_trimSourceVideo) || !File.Exists(_trimSourceVideo))
+            if (_isAutoFormatMode)
             {
-                MessageBox.Show("Vui lòng chọn một tệp Video trước khi cắt!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                TxtConvertModeSummary.Text = "Tự động: Ảnh giữ chuẩn (HEIC ➔ JPG) • Video ➔ MP4";
+                BtnOpenFormatModal.Content = "🎛️ Bảng Định Dạng";
             }
-
-            if (!double.TryParse(TxtTrimStartSec.Text.Trim(), out double startSec) || startSec < 0)
+            else
             {
-                MessageBox.Show("Thời điểm bắt đầu không hợp lệ (nhập số giây, ví dụ: 0, 15, 60)!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (!double.TryParse(TxtTrimDurationSec.Text.Trim(), out double durSec) || durSec <= 0)
-            {
-                MessageBox.Show("Thời lượng cắt không hợp lệ (nhập số giây, ví dụ: 5, 10, 30)!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            string outDir = Path.GetDirectoryName(_trimSourceVideo) ?? AppDomain.CurrentDomain.BaseDirectory;
-            string baseName = Path.GetFileNameWithoutExtension(_trimSourceVideo);
-            string ext = Path.GetExtension(_trimSourceVideo);
-            string outPath = Path.Combine(outDir, $"{baseName}_cut_{startSec}s_to_{startSec + durSec}s{ext}");
-
-            BtnTrimVideoFast.IsEnabled = false;
-            PbBatchTotal.Visibility = Visibility.Visible;
-            PbBatchTotal.IsIndeterminate = true;
-            TxtStatus.Text = $"Đang cắt video qua Stream Copy: {startSec}s ➔ {startSec + durSec}s...";
-
-            try
-            {
-                bool ok = await _media.TrimVideoAsync(_trimSourceVideo, outPath, startSec, durSec);
-                if (ok && File.Exists(outPath))
-                {
-                    _lastOutputDir = outDir;
-                    TxtStatus.Text = $"Cắt video hoàn tất: {Path.GetFileName(outPath)}";
-                    MessageBox.Show($"Cắt video siêu tốc thành công!\n\nĐã lưu: {outPath}", "Hoàn Tất", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    TxtStatus.Text = "Cắt video thất bại!";
-                    MessageBox.Show("Cắt video thất bại. Vui lòng kiểm tra lại mốc thời gian và định dạng video.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            finally
-            {
-                BtnTrimVideoFast.IsEnabled = true;
-                PbBatchTotal.IsIndeterminate = false;
-                PbBatchTotal.Visibility = Visibility.Collapsed;
+                string imgLabel = _customImageFormat == "auto" ? "Tự động" : _customImageFormat.ToUpperInvariant();
+                string vidLabel = _customVideoFormat == "keep" ? "Giữ gốc" : _customVideoFormat.ToUpperInvariant();
+                TxtConvertModeSummary.Text = $"Tùy chỉnh: Ảnh ➔ {imgLabel} • Video ➔ {vidLabel}";
+                BtnOpenFormatModal.Content = $"🎛️ {imgLabel} / {vidLabel}";
             }
         }
 
-        private async void BtnMakeGifFast_Click(object sender, RoutedEventArgs e)
+        private static void SelectComboItemByTag(ComboBox combo, string tag)
         {
-            if (string.IsNullOrWhiteSpace(_trimSourceVideo) || !File.Exists(_trimSourceVideo))
+            foreach (var item in combo.Items.OfType<ComboBoxItem>())
             {
-                MessageBox.Show("Vui lòng chọn một tệp Video trước khi tạo GIF!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (!double.TryParse(TxtTrimStartSec.Text.Trim(), out double startSec) || startSec < 0) startSec = 0;
-            if (!double.TryParse(TxtTrimDurationSec.Text.Trim(), out double durSec) || durSec <= 0) durSec = 5;
-
-            int scaleWidth = CmbGifScale.SelectedIndex switch
-            {
-                1 => 360,
-                2 => 720,
-                3 => 0,
-                _ => 480
-            };
-
-            int fps = CmbGifFpsRate.SelectedIndex switch
-            {
-                0 => 12,
-                2 => 24,
-                3 => 30,
-                _ => 15
-            };
-
-            string outDir = Path.GetDirectoryName(_trimSourceVideo) ?? AppDomain.CurrentDomain.BaseDirectory;
-            string baseName = Path.GetFileNameWithoutExtension(_trimSourceVideo);
-            string outPath = Path.Combine(outDir, $"{baseName}_anim_{scaleWidth}p.gif");
-
-            BtnMakeGifFast.IsEnabled = false;
-            PbBatchTotal.Visibility = Visibility.Visible;
-            PbBatchTotal.IsIndeterminate = true;
-            TxtStatus.Text = $"Đang tạo ảnh GIF ({durSec}s, {scaleWidth}p, {fps}fps, Palettegen 256 màu)...";
-
-            try
-            {
-                bool ok = await _media.ConvertToGifAsync(_trimSourceVideo, outPath, startSec, durSec, scaleWidth, fps);
-                if (ok && File.Exists(outPath))
+                if (string.Equals(item.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
                 {
-                    _lastOutputDir = outDir;
-                    TxtStatus.Text = $"Tạo ảnh GIF thành công: {Path.GetFileName(outPath)} ({SystemCore.FormatBytes(new FileInfo(outPath).Length)})";
-                    MessageBox.Show($"Tạo ảnh GIF chất lượng cao thành công!\n\nĐã lưu: {outPath}", "Hoàn Tất", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    TxtStatus.Text = "Tạo ảnh GIF thất bại!";
-                    MessageBox.Show("Tạo ảnh GIF thất bại. Vui lòng kiểm tra lại video nguồn và cấu hình FFmpeg.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                    combo.SelectedItem = item;
+                    return;
                 }
             }
-            finally
-            {
-                BtnMakeGifFast.IsEnabled = true;
-                PbBatchTotal.IsIndeterminate = false;
-                PbBatchTotal.Visibility = Visibility.Collapsed;
-            }
+            if (combo.Items.Count > 0) combo.SelectedIndex = 0;
         }
-        #endregion
-
-        #region ================= TAB 4: MEDIA TOOLBOX =================
-        private async void BtnToolMuteVideo_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new OpenFileDialog
-            {
-                Title = "Chọn tệp Video cần tắt tiếng (Mute)",
-                Filter = "Video Files|*.mp4;*.mkv;*.avi;*.mov;*.webm;*.flv;*.wmv;*.ts|All Files (*.*)|*.*"
-            };
-
-            if (dlg.ShowDialog() == true)
-            {
-                string input = dlg.FileName;
-                string outDir = Path.GetDirectoryName(input) ?? AppDomain.CurrentDomain.BaseDirectory;
-                string baseName = Path.GetFileNameWithoutExtension(input);
-                string ext = Path.GetExtension(input);
-                string outPath = Path.Combine(outDir, $"{baseName}_muted{ext}");
-
-                PbBatchTotal.Visibility = Visibility.Visible;
-                PbBatchTotal.IsIndeterminate = true;
-                TxtStatus.Text = $"Đang loại bỏ âm thanh từ {Path.GetFileName(input)}...";
-
-                try
-                {
-                    bool ok = await _media.MuteVideoAsync(input, outPath);
-                    if (ok && File.Exists(outPath))
-                    {
-                        _lastOutputDir = outDir;
-                        TxtStatus.Text = $"Tắt tiếng thành công: {Path.GetFileName(outPath)}";
-                        MessageBox.Show($"Đã tạo bản sao không tiếng thành công (0.1s Stream Copy):\n{outPath}", "Hoàn Tất", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        TxtStatus.Text = "Tắt tiếng thất bại!";
-                        MessageBox.Show("Không thể tắt tiếng video. Vui lòng kiểm tra FFmpeg.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-                finally
-                {
-                    PbBatchTotal.IsIndeterminate = false;
-                    PbBatchTotal.Visibility = Visibility.Collapsed;
-                }
-            }
-        }
-
-        private async void BtnToolExtractFrame_Click(object sender, RoutedEventArgs e)
-        {
-            var dlg = new OpenFileDialog
-            {
-                Title = "Chọn tệp Video để chụp frame ảnh",
-                Filter = "Video Files|*.mp4;*.mkv;*.avi;*.mov;*.webm;*.flv;*.wmv;*.ts|All Files (*.*)|*.*"
-            };
-
-            if (dlg.ShowDialog() == true)
-            {
-                string input = dlg.FileName;
-                string outDir = Path.GetDirectoryName(input) ?? AppDomain.CurrentDomain.BaseDirectory;
-                string baseName = Path.GetFileNameWithoutExtension(input);
-                string outPath = Path.Combine(outDir, $"{baseName}_snapshot.png");
-
-                PbBatchTotal.Visibility = Visibility.Visible;
-                PbBatchTotal.IsIndeterminate = true;
-                TxtStatus.Text = $"Đang trích xuất frame từ {Path.GetFileName(input)} ra PNG...";
-
-                try
-                {
-                    bool ok = await _media.ExtractFrameAsync(input, outPath, 1.0);
-                    if (ok && File.Exists(outPath))
-                    {
-                        _lastOutputDir = outDir;
-                        TxtStatus.Text = $"Chụp frame ảnh thành công: {Path.GetFileName(outPath)}";
-                        MessageBox.Show($"Đã chụp frame ảnh sắc nét ra PNG thành công:\n{outPath}", "Hoàn Tất", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        TxtStatus.Text = "Chụp frame ảnh thất bại!";
-                        MessageBox.Show("Không thể trích xuất frame ảnh từ video này.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-                finally
-                {
-                    PbBatchTotal.IsIndeterminate = false;
-                    PbBatchTotal.Visibility = Visibility.Collapsed;
-                }
-            }
-        }
-
-        private void BtnToolWatermark_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show(
-                "Tính năng Đóng Dấu Watermark:\n\n" +
-                "Cho phép chèn logo ảnh mờ (PNG trong suốt) hoặc dòng chữ bản quyền vào góc video.\n" +
-                "Tính năng này sẽ được kích hoạt với bộ lọc FFmpeg overlay trong bản cập nhật tới!",
-                "Đóng Dấu Bản Quyền (Watermark)",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-
-        private void BtnToolYtDlp_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show(
-                "Trình Tải Video yt-dlp:\n\n" +
-                "Hỗ trợ dán đường link (URL) từ YouTube, TikTok, Facebook, Bilibili để tải video chất lượng 1080p/4K hoặc tách riêng track âm thanh MP3.\n" +
-                "Hệ thống sẽ tự động gọi lệnh yt-dlp cùng FFmpeg để xuất file hoàn chỉnh.",
-                "Tải Video Trực Tuyến (yt-dlp)",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-        #endregion
     }
 }

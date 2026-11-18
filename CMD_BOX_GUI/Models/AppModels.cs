@@ -146,41 +146,126 @@ namespace CMD_BOX_GUI.Models
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
+    public enum ServiceStartupMode
+    {
+        Automatic,
+        AutomaticDelayed,
+        Manual,
+        Disabled
+    }
+
+    public class ServiceStartupModeOption
+    {
+        public ServiceStartupMode Mode { get; init; }
+        public string DisplayName { get; init; } = string.Empty;
+    }
+
     public class SystemServiceItem : INotifyPropertyChanged
     {
+        public static IReadOnlyList<ServiceStartupModeOption> StartupModeOptions { get; } = new[]
+        {
+            new ServiceStartupModeOption { Mode = ServiceStartupMode.Disabled, DisplayName = "🛑 Disabled (Tắt)" },
+            new ServiceStartupModeOption { Mode = ServiceStartupMode.Manual, DisplayName = "✋ Manual (Thủ công)" },
+            new ServiceStartupModeOption { Mode = ServiceStartupMode.Automatic, DisplayName = "⚡ Auto (Tự động)" },
+            new ServiceStartupModeOption { Mode = ServiceStartupMode.AutomaticDelayed, DisplayName = "⏳ Auto Delayed (Trễ)" }
+        };
+
         public string ServiceName { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
         public string Category { get; set; } = "Chung";
         public string Description { get; set; } = string.Empty;
         public string Impact { get; set; } = "Tiết kiệm RAM / CPU";
-        public string RiskLevel { get; set; } = "Safe"; // "Safe" or "Caution"
+        public string RiskLevel { get; set; } = "Safe"; // "Safe", "Moderate", "Complex"
 
-        public string RiskDisplay => RiskLevel == "Safe" ? "🟢 An Toàn" : "🟡 Cẩn Trọng";
-        public string RiskBadgeBg => RiskLevel == "Safe" ? "#142E1C" : "#332600";
-        public string RiskBadgeBorder => RiskLevel == "Safe" ? "#10B981" : "#F59E0B";
-        public string RiskBadgeFg => RiskLevel == "Safe" ? "#34D399" : "#FBBF24";
-
-        private bool _isDisabled;
-        public bool IsDisabled
+        public string RiskDisplay => RiskLevel switch
         {
-            get => _isDisabled;
+            "Safe" => "🟢 An Toàn",
+            "Moderate" => "🟡 Cân Nhắc",
+            _ => "🟠 Ảnh Hưởng Hệ Thống"
+        };
+
+        public string RiskBadgeBg => RiskLevel switch
+        {
+            "Safe" => "#142E1C",
+            "Moderate" => "#332600",
+            _ => "#3B1A14"
+        };
+
+        public string RiskBadgeBorder => RiskLevel switch
+        {
+            "Safe" => "#10B981",
+            "Moderate" => "#F59E0B",
+            _ => "#F97316"
+        };
+
+        public string RiskBadgeFg => RiskLevel switch
+        {
+            "Safe" => "#34D399",
+            "Moderate" => "#FBBF24",
+            _ => "#FB923C"
+        };
+
+        private ServiceStartupMode _currentStartupMode = ServiceStartupMode.Manual;
+        public ServiceStartupMode CurrentStartupMode
+        {
+            get => _currentStartupMode;
             set
             {
-                _isDisabled = value;
+                _currentStartupMode = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(IsDisabled));
                 OnPropertyChanged(nameof(StatusText));
                 OnPropertyChanged(nameof(StatusColor));
-                OnPropertyChanged(nameof(ActionButtonText));
             }
         }
 
-        public string StatusText => _isDisabled ? "🛑 Đã Tắt" : "🟢 Đang Chạy";
-        public string StatusColor => _isDisabled ? "#9E9E9E" : "#10B981";
-        public string ActionButtonText => _isDisabled ? "Bật Lại" : "Tắt Service";
+        private ServiceStartupMode _targetStartupMode = ServiceStartupMode.Disabled;
+        public ServiceStartupMode TargetStartupMode
+        {
+            get => _targetStartupMode;
+            set
+            {
+                _targetStartupMode = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsDisabled
+        {
+            get => _currentStartupMode == ServiceStartupMode.Disabled;
+            set => CurrentStartupMode = value ? ServiceStartupMode.Disabled : ServiceStartupMode.Manual;
+        }
+
+        public string StatusText => _currentStartupMode switch
+        {
+            ServiceStartupMode.Disabled => "🛑 Disabled",
+            ServiceStartupMode.Manual => "✋ Manual",
+            ServiceStartupMode.Automatic => "⚡ Auto",
+            ServiceStartupMode.AutomaticDelayed => "⏳ Auto (Delayed)",
+            _ => "❓ Không rõ"
+        };
+
+        public string StatusColor => _currentStartupMode switch
+        {
+            ServiceStartupMode.Disabled => "#9E9E9E",
+            ServiceStartupMode.Manual => "#38BDF8",
+            ServiceStartupMode.Automatic => "#10B981",
+            ServiceStartupMode.AutomaticDelayed => "#F59E0B",
+            _ => "#9E9E9E"
+        };
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    public class JunkScanSummary
+    {
+        public long QuickCleanBytes { get; set; }
+        public long DeepCleanProBytes { get; set; }
+        public long WindowsOldBytes { get; set; }
+        public long DevCacheBytes { get; set; }
+        public long BrowserCacheBytes { get; set; }
     }
 
     public class BloatwareAppItem : INotifyPropertyChanged

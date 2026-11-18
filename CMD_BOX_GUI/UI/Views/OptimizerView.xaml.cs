@@ -44,8 +44,36 @@ namespace CMD_BOX_GUI.UI.Views
 
         private async Task RefreshAllDataAsync()
         {
+            await RefreshJunkSizesAsync();
             await RefreshServicesAsync();
             await RefreshBloatwareAsync();
+        }
+
+        private async Task RefreshJunkSizesAsync()
+        {
+            try
+            {
+                if (BtnScanJunkSizes != null) BtnScanJunkSizes.IsEnabled = false;
+                var summary = await _optimizer.ScanJunkSizesAsync();
+                BtnCleanQuick.Content = $"⚡ Quick Clean ({SystemCore.FormatBytes(summary.QuickCleanBytes)})";
+                BtnCleanPro.Content = $"🔥 Deep Clean PRO ({SystemCore.FormatBytes(summary.DeepCleanProBytes)})";
+                BtnCleanWindowsOld.Content = $"⚠️ Xóa Windows.old ({SystemCore.FormatBytes(summary.WindowsOldBytes)})";
+                BtnCleanDev.Content = $"💻 Dọn Dev Cache ({SystemCore.FormatBytes(summary.DevCacheBytes)})";
+                BtnCleanBrowser.Content = $"🌐 Dọn Cache Trình Duyệt ({SystemCore.FormatBytes(summary.BrowserCacheBytes)})";
+                UpdateDriveInfo();
+            }
+            catch { }
+            finally
+            {
+                if (BtnScanJunkSizes != null) BtnScanJunkSizes.IsEnabled = true;
+            }
+        }
+
+        private async void BtnScanJunkSizes_Click(object sender, RoutedEventArgs e)
+        {
+            SetRunning(true, "Đang quét dung lượng rác ở từng phân mục...");
+            await RefreshJunkSizesAsync();
+            SetRunning(false, "Đã cập nhật dung lượng rác phát hiện trên các nút dọn dẹp.");
         }
 
         private async Task RefreshServicesAsync()
@@ -97,7 +125,8 @@ namespace CMD_BOX_GUI.UI.Views
             }
 
             if (CmbServicesRiskFilter?.SelectedIndex == 1 && item.RiskLevel != "Safe") return false;
-            if (CmbServicesRiskFilter?.SelectedIndex == 2 && item.RiskLevel != "Caution") return false;
+            if (CmbServicesRiskFilter?.SelectedIndex == 2 && item.RiskLevel != "Moderate") return false;
+            if (CmbServicesRiskFilter?.SelectedIndex == 3 && item.RiskLevel != "Complex") return false;
 
             return true;
         }
@@ -218,44 +247,45 @@ namespace CMD_BOX_GUI.UI.Views
         {
             if (sender is Button btn && btn.Tag is SystemServiceItem item)
             {
-                bool newState = !item.IsDisabled;
-                string actionName = newState ? "tắt" : "bật lại";
-                SetRunning(true, $"Đang {actionName} service [{item.ServiceName}]...");
+                SetRunning(true, $"Đang đặt service [{item.ServiceName}] sang [{item.TargetStartupMode}]...");
 
-                await _optimizer.ToggleServiceStateAsync(item.ServiceName, newState);
+                await _optimizer.ApplyServiceStartupModeAsync(item.ServiceName, item.TargetStartupMode);
                 OptimizerService.RefreshServiceStatus(item);
 
-                SetRunning(false, $"Thao tác [{actionName}] service [{item.ServiceName}] hoàn tất!");
+                SetRunning(false, $"Đã áp dụng [{item.TargetStartupMode}] cho service [{item.ServiceName}]!");
             }
         }
 
         private async void BtnDisableAllSelectedServices_Click(object sender, RoutedEventArgs e)
         {
-            var servicesToDisable = _unneededServices.Where(s => !s.IsDisabled).ToList();
-            if (servicesToDisable.Count == 0)
+            var servicesToApply = _unneededServices
+                .Where(s => s.TargetStartupMode != s.CurrentStartupMode)
+                .ToList();
+
+            if (servicesToApply.Count == 0)
             {
-                MessageBox.Show("Tất cả các dịch vụ trong danh sách này đã được vô hiệu hóa từ trước!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Tất cả dịch vụ đã ở đúng chế độ mục tiêu bạn chọn!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
             var confirm = MessageBox.Show(
-                $"Bạn có chắc muốn vô hiệu hóa {servicesToDisable.Count} dịch vụ telemetry/nền đang chạy?\n(Thao tác gom lệnh chạy 1 lần duy nhất, không hiện nhiều popup xác nhận).",
-                "Xác nhận tắt Services",
+                $"Áp dụng chế độ khởi động mục tiêu cho {servicesToApply.Count} dịch vụ đã thay đổi?\n(Gom toàn bộ lệnh chạy 1 lần duy nhất).",
+                "Xác nhận áp dụng Services",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
             if (confirm != MessageBoxResult.Yes) return;
 
-            SetRunning(true, $"Đang vô hiệu hóa {servicesToDisable.Count} dịch vụ nền ngốn tài nguyên...");
-            await _optimizer.DisableServicesBatchAsync(servicesToDisable.Select(s => s.ServiceName));
+            SetRunning(true, $"Đang áp dụng cấu hình cho {servicesToApply.Count} dịch vụ...");
+            await _optimizer.ApplyServicesStartupBatchAsync(servicesToApply.Select(s => (s.ServiceName, s.TargetStartupMode)));
 
             foreach (var svc in _unneededServices)
             {
                 OptimizerService.RefreshServiceStatus(svc);
             }
 
-            SetRunning(false, $"Đã tắt thành công {servicesToDisable.Count} dịch vụ nền ngốn tài nguyên!");
-            MessageBox.Show($"Đã vô hiệu hóa thành công {servicesToDisable.Count} dịch vụ nền!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+            SetRunning(false, $"Đã áp dụng thành công cấu hình cho {servicesToApply.Count} dịch vụ!");
+            MessageBox.Show($"Đã áp dụng thành công cho {servicesToApply.Count} dịch vụ!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void BtnSelectAllBloatware_Click(object sender, RoutedEventArgs e)
@@ -330,6 +360,7 @@ namespace CMD_BOX_GUI.UI.Views
             SetRunning(true, "Đang chạy Quick Clean...");
             var progress = new Progress<int>(v => PbOptimizer.Value = v);
             long freed = await _optimizer.CleanQuickAsync(progress);
+            await RefreshJunkSizesAsync();
             SetRunning(false, $"Quick Clean xong! Giải phóng: {SystemCore.FormatBytes(freed)}");
         }
 
@@ -338,6 +369,7 @@ namespace CMD_BOX_GUI.UI.Views
             SetRunning(true, "Đang chạy Deep Clean PRO...");
             var progress = new Progress<int>(v => PbOptimizer.Value = v);
             long freed = await _optimizer.CleanDiskProAsync(progress);
+            await RefreshJunkSizesAsync();
             SetRunning(false, $"Deep Clean PRO xong! Giải phóng: {SystemCore.FormatBytes(freed)}");
         }
 
@@ -346,6 +378,7 @@ namespace CMD_BOX_GUI.UI.Views
             SetRunning(true, "Đang dọn cache Dev...");
             var progress = new Progress<int>(v => PbOptimizer.Value = v);
             long freed = await _optimizer.CleanDevCachesAsync(progress);
+            await RefreshJunkSizesAsync();
             SetRunning(false, $"Dọn cache Dev xong! Giải phóng: {SystemCore.FormatBytes(freed)}");
         }
 
@@ -353,6 +386,7 @@ namespace CMD_BOX_GUI.UI.Views
         {
             SetRunning(true, "Đang dọn cache trình duyệt...");
             await _optimizer.ClearBrowserCacheAsync();
+            await RefreshJunkSizesAsync();
             SetRunning(false, "Đã dọn sạch cache trình duyệt!");
         }
 
@@ -404,6 +438,7 @@ namespace CMD_BOX_GUI.UI.Views
             SetRunning(true, "Đang dọn Windows.old...");
             var progress = new Progress<int>(v => PbOptimizer.Value = v);
             long freed = await _optimizer.CleanWindowsOldAsync(progress);
+            await RefreshJunkSizesAsync();
             SetRunning(false, $"Dọn Windows.old xong! Giải phóng: {SystemCore.FormatBytes(freed)}");
         }
 
