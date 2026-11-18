@@ -25,17 +25,23 @@ namespace CMD_BOX_GUI.UI.Views
             public string DialogFilter { get; init; } = string.Empty;
             public Func<string, bool> FileFilter { get; init; } = _ => true;
             public TextBlock CountLabel { get; init; } = null!;
+            public Border CardBorder { get; init; } = null!;
             public Func<string, string, CancellationToken, Task<bool>> ProcessFileAsync { get; init; } = null!;
             public List<string> Files { get; } = new();
         }
 
         private readonly MediaService _mediaService = new();
         private readonly Dictionary<string, MediaCardConfig> _cards = new(StringComparer.OrdinalIgnoreCase);
+        private string _activeCardKey = "compress_media";
+        private bool _isAutoFormatMode = true;
+        private string _customImageFormat = "auto";
+        private string _customVideoFormat = ".mp4";
+        private int _customFormatQuality = 0;
         private bool _isRunning;
         private CancellationTokenSource? _cts;
         private string? _lastOutputDirectory;
 
-        private const string MediaFilter = "Video & Ảnh|*.mp4;*.mkv;*.avi;*.mov;*.wmv;*.webm;*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.ico;*.gif|Video Files|*.mp4;*.mkv;*.avi;*.mov;*.wmv;*.webm;*.flv;*.m4v|Image Files|*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.ico;*.tiff;*.gif|All Files (*.*)|*.*";
+        private const string MediaFilter = "Video & Ảnh|*.mp4;*.mkv;*.avi;*.mov;*.wmv;*.webm;*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.ico;*.gif;*.heic;*.heif;*.avif;*.jfif|Video Files|*.mp4;*.mkv;*.avi;*.mov;*.wmv;*.webm;*.flv;*.m4v|Image Files|*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.ico;*.tiff;*.gif;*.heic;*.heif;*.avif;*.jfif|All Files (*.*)|*.*";
         private const string VideoFilter = "Video Files|*.mp4;*.mkv;*.avi;*.mov;*.wmv;*.webm;*.flv;*.m4v;*.ts;*.3gp|All Files (*.*)|*.*";
         private const string AudioOrVideoFilter = "Audio & Video|*.mp3;*.wav;*.flac;*.aac;*.m4a;*.ogg;*.mp4;*.mkv;*.avi;*.mov;*.webm|All Files (*.*)|*.*";
 
@@ -43,6 +49,7 @@ namespace CMD_BOX_GUI.UI.Views
         {
             InitializeComponent();
             InitializeCardRegistry();
+            SetActiveCard("compress_media");
         }
 
         private void MediaView_Loaded(object sender, RoutedEventArgs e)
@@ -64,6 +71,7 @@ namespace CMD_BOX_GUI.UI.Views
                 DialogFilter = MediaFilter,
                 FileFilter = p => MediaService.IsVideoFile(p) || MediaService.IsImageFile(p),
                 CountLabel = TxtCount_compress_media,
+                CardBorder = Card_compress_media,
                 ProcessFileAsync = (input, outDir, ct) =>
                 {
                     int level = CmbCompressLevel.SelectedIndex;
@@ -76,16 +84,18 @@ namespace CMD_BOX_GUI.UI.Views
             RegisterCard(new MediaCardConfig
             {
                 Key = "convert_media",
-                Title = "Đổi Đuôi Hàng Loạt",
-                DialogTitle = "Chọn Video hoặc Ảnh cần chuyển đổi định dạng",
+                Title = "Đổi Định Dạng",
+                DialogTitle = "Chọn Video hoặc Ảnh cần đổi định dạng",
                 DialogFilter = MediaFilter,
                 FileFilter = p => MediaService.IsVideoFile(p) || MediaService.IsImageFile(p),
                 CountLabel = TxtCount_convert_media,
+                CardBorder = Card_convert_media,
                 ProcessFileAsync = (input, outDir, ct) =>
                 {
-                    string ext = (CmbConvertExt.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? ".mp4";
+                    string ext = MediaService.ResolveTargetExtension(input, _isAutoFormatMode, _customImageFormat, _customVideoFormat);
+                    int quality = _isAutoFormatMode ? 0 : _customFormatQuality;
                     string outPath = BuildUniqueOutputPath(outDir, input, "", ext);
-                    return _mediaService.ConvertMediaFormatAsync(input, outPath, ct);
+                    return _mediaService.ConvertMediaFormatAsync(input, outPath, quality, ct);
                 }
             });
 
@@ -97,6 +107,7 @@ namespace CMD_BOX_GUI.UI.Views
                 DialogFilter = MediaFilter,
                 FileFilter = p => MediaService.IsVideoFile(p) || MediaService.IsImageFile(p),
                 CountLabel = TxtCount_enhance_media,
+                CardBorder = Card_enhance_media,
                 ProcessFileAsync = (input, outDir, ct) =>
                 {
                     int level = CmbEnhanceLevel.SelectedIndex;
@@ -114,6 +125,7 @@ namespace CMD_BOX_GUI.UI.Views
                 DialogFilter = VideoFilter,
                 FileFilter = MediaService.IsVideoFile,
                 CountLabel = TxtCount_extract_audio,
+                CardBorder = Card_extract_audio,
                 ProcessFileAsync = (input, outDir, ct) =>
                 {
                     string fmt = (CmbExtractAudioFormat.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "mp3";
@@ -130,6 +142,7 @@ namespace CMD_BOX_GUI.UI.Views
                 DialogFilter = AudioOrVideoFilter,
                 FileFilter = p => MediaService.IsAudioFile(p) || MediaService.IsVideoFile(p),
                 CountLabel = TxtCount_volume_audio,
+                CardBorder = Card_volume_audio,
                 ProcessFileAsync = (input, outDir, ct) =>
                 {
                     string tag = (CmbAudioVolume.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "1.5";
@@ -148,6 +161,7 @@ namespace CMD_BOX_GUI.UI.Views
                 DialogFilter = VideoFilter,
                 FileFilter = MediaService.IsVideoFile,
                 CountLabel = TxtCount_trim_video,
+                CardBorder = Card_trim_video,
                 ProcessFileAsync = (input, outDir, ct) =>
                 {
                     double start = ParseDoubleOrDefault(TxtTrimStart.Text, 0);
@@ -172,12 +186,54 @@ namespace CMD_BOX_GUI.UI.Views
             PnlTabGeneral.Visibility = rb == TabGeneral ? Visibility.Visible : Visibility.Collapsed;
             PnlTabAudioTrim.Visibility = rb == TabAudioTrim ? Visibility.Visible : Visibility.Collapsed;
             PnlTabTools.Visibility = rb == TabTools ? Visibility.Visible : Visibility.Collapsed;
+
+            if (rb == TabGeneral)
+            {
+                SetActiveCard("compress_media");
+            }
+            else if (rb == TabAudioTrim)
+            {
+                SetActiveCard("extract_audio");
+            }
+
+            bool isToolTab = rb == TabTools;
+            BtnRunActiveCard.Visibility = isToolTab ? Visibility.Collapsed : Visibility.Visible;
+            BtnClearActiveCard.Visibility = isToolTab ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void Card_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement el && el.Tag is string key)
+            {
+                SetActiveCard(key);
+            }
+        }
+
+        private void SetActiveCard(string key)
+        {
+            if (!_cards.TryGetValue(key, out var activeCard)) return;
+            _activeCardKey = key;
+
+            var activeBrush = TryFindResource("AccentCyan") as Brush ?? Brushes.DeepSkyBlue;
+            var normalBrush = TryFindResource("BorderSubtle") as Brush ?? Brushes.DimGray;
+
+            foreach (var c in _cards.Values)
+            {
+                if (c.CardBorder == null) continue;
+                bool isSelected = string.Equals(c.Key, key, StringComparison.OrdinalIgnoreCase);
+                c.CardBorder.BorderBrush = isSelected ? activeBrush : normalBrush;
+                c.CardBorder.BorderThickness = new Thickness(isSelected ? 1.5 : 1);
+            }
+
+            UpdateGlobalRunButton();
         }
 
         private void CardPickFiles_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not FrameworkElement el || el.Tag is not string key) return;
             if (!_cards.TryGetValue(key, out var card)) return;
+
+            SetActiveCard(key);
 
             var dlg = new OpenFileDialog
             {
@@ -192,17 +248,6 @@ namespace CMD_BOX_GUI.UI.Views
             }
         }
 
-        private void CardClearFiles_Click(object sender, RoutedEventArgs e)
-        {
-            e.Handled = true;
-            if (sender is not FrameworkElement el || el.Tag is not string key) return;
-            if (!_cards.TryGetValue(key, out var card)) return;
-
-            card.Files.Clear();
-            UpdateCardCountDisplay(card);
-            TxtStatus.Text = $"Đã xóa danh sách tệp của '{card.Title}'.";
-        }
-
         private void Card_Drop(object sender, DragEventArgs e)
         {
             if (sender is not FrameworkElement el || el.Tag is not string key) return;
@@ -210,6 +255,7 @@ namespace CMD_BOX_GUI.UI.Views
             if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
             if (e.Data.GetData(DataFormats.FileDrop) is not string[] dropped) return;
 
+            SetActiveCard(key);
             var valid = dropped.Where(f => File.Exists(f) && card.FileFilter(f)).ToArray();
             if (valid.Length > 0)
             {
@@ -233,6 +279,7 @@ namespace CMD_BOX_GUI.UI.Views
                 AddFilesToCard(mediaCard, media);
                 TabGeneral.IsChecked = true;
                 TabMedia_Click(TabGeneral, new RoutedEventArgs());
+                SetActiveCard("compress_media");
             }
             if (audios.Length > 0 && _cards.TryGetValue("volume_audio", out var audioCard))
             {
@@ -241,6 +288,7 @@ namespace CMD_BOX_GUI.UI.Views
                 {
                     TabAudioTrim.IsChecked = true;
                     TabMedia_Click(TabAudioTrim, new RoutedEventArgs());
+                    SetActiveCard("volume_audio");
                 }
             }
         }
@@ -268,43 +316,46 @@ namespace CMD_BOX_GUI.UI.Views
         private void UpdateCardCountDisplay(MediaCardConfig card)
         {
             int count = card.Files.Count;
-            card.CountLabel.Text = count == 0 ? "0 tệp đã chọn" : $"📂 {count} tệp đã chọn";
+            card.CountLabel.Text = count == 0 ? "0 tệp" : $"📂 {count} tệp";
             card.CountLabel.Foreground = count > 0
                 ? (TryFindResource("AccentSuccess") as Brush ?? Brushes.MediumSeaGreen)
                 : (TryFindResource("TextSecondary") as Brush ?? Brushes.Gray);
 
-            int totalFiles = _cards.Values.Sum(c => c.Files.Count);
-            BtnRunAllSelected.Content = $"⚡ Chạy Tất Cả ({totalFiles})";
+            UpdateGlobalRunButton();
+        }
+
+        private void UpdateGlobalRunButton()
+        {
+            if (!_cards.TryGetValue(_activeCardKey, out var activeCard)) return;
+            BtnRunActiveCard.Content = $"▶ Chạy: {activeCard.Title} ({activeCard.Files.Count})";
         }
 
         // =========================================================================
-        // 3. THỰC THI TÁC VỤ TRÊN CARD & NÚT CHẠY TẤT CẢ
+        // 3. THỰC THI 1 CARD ĐANG CHỌN MỖI PHIÊN (TIẾT KIỆM TÀI NGUYÊN)
         // =========================================================================
 
-        private async void CardRun_Click(object sender, RoutedEventArgs e)
+        private async void BtnRunActiveCard_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not FrameworkElement el || el.Tag is not string key) return;
-            if (!_cards.TryGetValue(key, out var card)) return;
+            if (!_cards.TryGetValue(_activeCardKey, out var activeCard)) return;
 
-            if (card.Files.Count == 0)
+            if (activeCard.Files.Count == 0)
             {
-                CardPickFiles_Click(sender, e);
-                if (card.Files.Count == 0) return;
+                var dlg = new OpenFileDialog
+                {
+                    Title = activeCard.DialogTitle,
+                    Filter = activeCard.DialogFilter,
+                    Multiselect = true
+                };
+
+                if (dlg.ShowDialog() == true && dlg.FileNames.Length > 0)
+                {
+                    AddFilesToCard(activeCard, dlg.FileNames);
+                }
+
+                if (activeCard.Files.Count == 0) return;
             }
 
-            await ExecuteCardsAsync(new[] { card });
-        }
-
-        private async void BtnRunAllSelected_Click(object sender, RoutedEventArgs e)
-        {
-            var activeCards = _cards.Values.Where(c => c.Files.Count > 0).ToList();
-            if (activeCards.Count == 0)
-            {
-                MessageBox.Show("Chưa có Card nào được chọn tệp. Hãy nhấn vào một Card bất kỳ để chọn tệp trước!", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            await ExecuteCardsAsync(activeCards);
+            await ExecuteCardsAsync(new[] { activeCard });
         }
 
         private async Task ExecuteCardsAsync(IReadOnlyList<MediaCardConfig> cardsToRun)
@@ -383,14 +434,12 @@ namespace CMD_BOX_GUI.UI.Views
             }
         }
 
-        private void BtnClearAllCards_Click(object sender, RoutedEventArgs e)
+        private void BtnClearActiveCard_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var card in _cards.Values)
-            {
-                card.Files.Clear();
-                UpdateCardCountDisplay(card);
-            }
-            TxtStatus.Text = "Đã xóa danh sách tệp của tất cả các Card.";
+            if (!_cards.TryGetValue(_activeCardKey, out var activeCard)) return;
+            activeCard.Files.Clear();
+            UpdateCardCountDisplay(activeCard);
+            TxtStatus.Text = $"Đã xóa danh sách tệp của '{activeCard.Title}'.";
         }
 
         private void BtnOpenLastOutput_Click(object sender, RoutedEventArgs e)
@@ -457,8 +506,8 @@ namespace CMD_BOX_GUI.UI.Views
 
         private void SetControlsEnabled(bool enabled)
         {
-            BtnRunAllSelected.IsEnabled = enabled;
-            BtnClearAllCards.IsEnabled = enabled;
+            BtnRunActiveCard.IsEnabled = enabled;
+            BtnClearActiveCard.IsEnabled = enabled;
         }
 
         private static string BuildUniqueOutputPath(string outDir, string inputPath, string suffix, string targetExt)
@@ -482,6 +531,92 @@ namespace CMD_BOX_GUI.UI.Views
             return double.TryParse(raw.Trim().Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out double val)
                 ? val
                 : fallback;
+        }
+
+        // =========================================================================
+        // 5. BẢNG TÙY CHỈNH ĐỔI ĐỊNH DẠNG (MODAL OVERLAY)
+        // =========================================================================
+
+        private void BtnOpenFormatModal_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            SetActiveCard("convert_media");
+
+            RbFormatAuto.IsChecked = _isAutoFormatMode;
+            RbFormatCustom.IsChecked = !_isAutoFormatMode;
+            SelectComboItemByTag(CmbFormatTargetImage, _customImageFormat);
+            SelectComboItemByTag(CmbFormatTargetVideo, _customVideoFormat);
+            CmbFormatQuality.SelectedIndex = Math.Clamp(_customFormatQuality, 0, 2);
+
+            UpdateCustomFormatPanelState();
+            PnlFormatModal.Visibility = Visibility.Visible;
+        }
+
+        private void BtnCloseFormatModal_Click(object sender, RoutedEventArgs e)
+        {
+            PnlFormatModal.Visibility = Visibility.Collapsed;
+        }
+
+        private void FormatModeRadio_Changed(object sender, RoutedEventArgs e)
+        {
+            UpdateCustomFormatPanelState();
+        }
+
+        private void UpdateCustomFormatPanelState()
+        {
+            if (PnlCustomFormatOptions == null) return;
+            bool isCustom = RbFormatCustom?.IsChecked == true;
+            PnlCustomFormatOptions.IsEnabled = isCustom;
+            PnlCustomFormatOptions.Opacity = isCustom ? 1.0 : 0.6;
+        }
+
+        private void BtnResetFormatAuto_Click(object sender, RoutedEventArgs e)
+        {
+            RbFormatAuto.IsChecked = true;
+            CmbFormatTargetImage.SelectedIndex = 0;
+            CmbFormatTargetVideo.SelectedIndex = 0;
+            CmbFormatQuality.SelectedIndex = 0;
+            UpdateCustomFormatPanelState();
+        }
+
+        private void BtnApplyFormatModal_Click(object sender, RoutedEventArgs e)
+        {
+            _isAutoFormatMode = RbFormatAuto.IsChecked == true;
+            _customImageFormat = (CmbFormatTargetImage.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "auto";
+            _customVideoFormat = (CmbFormatTargetVideo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? ".mp4";
+            _customFormatQuality = Math.Max(0, CmbFormatQuality.SelectedIndex);
+
+            UpdateConvertModeSummary();
+            PnlFormatModal.Visibility = Visibility.Collapsed;
+        }
+
+        private void UpdateConvertModeSummary()
+        {
+            if (_isAutoFormatMode)
+            {
+                TxtConvertModeSummary.Text = "Tự động: Ảnh giữ chuẩn (HEIC ➔ JPG) • Video ➔ MP4";
+                BtnOpenFormatModal.Content = "🎛️ Bảng Định Dạng";
+            }
+            else
+            {
+                string imgLabel = _customImageFormat == "auto" ? "Tự động" : _customImageFormat.ToUpperInvariant();
+                string vidLabel = _customVideoFormat == "keep" ? "Giữ gốc" : _customVideoFormat.ToUpperInvariant();
+                TxtConvertModeSummary.Text = $"Tùy chỉnh: Ảnh ➔ {imgLabel} • Video ➔ {vidLabel}";
+                BtnOpenFormatModal.Content = $"🎛️ {imgLabel} / {vidLabel}";
+            }
+        }
+
+        private static void SelectComboItemByTag(ComboBox combo, string tag)
+        {
+            foreach (var item in combo.Items.OfType<ComboBoxItem>())
+            {
+                if (string.Equals(item.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
+                {
+                    combo.SelectedItem = item;
+                    return;
+                }
+            }
+            if (combo.Items.Count > 0) combo.SelectedIndex = 0;
         }
     }
 }

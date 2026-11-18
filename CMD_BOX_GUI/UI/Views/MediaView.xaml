@@ -8,10 +8,12 @@
              Loaded="MediaView_Loaded">
     <UserControl.Resources>
         <Style x:Key="MediaFeatureCard" TargetType="Border" BasedOn="{StaticResource CardPanel}">
-            <Setter Property="Width" Value="292"/>
-            <Setter Property="Margin" Value="0,0,12,12"/>
-            <Setter Property="Padding" Value="14"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="Padding" Value="12,10"/>
             <Setter Property="AllowDrop" Value="True"/>
+            <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
         <Style x:Key="CardPickerZone" TargetType="Button">
@@ -19,7 +21,7 @@
             <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="10,9"/>
+            <Setter Property="Padding" Value="12,8"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -49,7 +51,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- ================= 0. TOP SUB-TABS & GLOBAL ACTIONS ================= -->
+        <!-- ================= 0. TOP SUB-TABS & 1 SHARED ACTION BAR ================= -->
         <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
             <WrapPanel DockPanel.Dock="Left" VerticalAlignment="Center">
                 <RadioButton x:Name="TabGeneral" Content="🎞️ Video &amp; Ảnh" Style="{StaticResource SubTabButton}" IsChecked="True" Click="TabMedia_Click" Margin="0,0,6,4"/>
@@ -58,277 +60,247 @@
             </WrapPanel>
 
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
-                <Button x:Name="BtnRunAllSelected" Content="⚡ Chạy Tất Cả (0)" Style="{StaticResource PrimaryButton}" Padding="12,6" FontSize="11" FontWeight="SemiBold" Margin="0,0,6,0" Click="BtnRunAllSelected_Click" ToolTip="Chạy tuần tự mọi Card đã chọn tệp"/>
-                <Button x:Name="BtnClearAllCards" Content="🗑️ Xóa Hết" Style="{StaticResource SecondaryButton}" Padding="10,6" FontSize="11" Margin="0,0,6,0" Click="BtnClearAllCards_Click" ToolTip="Xóa danh sách tệp của tất cả các Card"/>
-                <Button x:Name="BtnOpenLastOutput" Content="📂 Mở Thư Mục Xuất" Style="{StaticResource SecondaryButton}" Padding="10,6" FontSize="11" Click="BtnOpenLastOutput_Click" ToolTip="Mở thư mục chứa kết quả gần nhất"/>
+                <Button x:Name="BtnRunActiveCard" Content="▶ Chạy: Nén Dung Lượng (0)" Style="{StaticResource PrimaryButton}" Padding="14,6" FontSize="11.5" FontWeight="SemiBold" Margin="0,0,6,0" Click="BtnRunActiveCard_Click" ToolTip="Chỉ chạy 1 Card đang chọn để tiết kiệm tài nguyên"/>
+                <Button x:Name="BtnClearActiveCard" Content="🗑️ Xóa Tệp" Style="{StaticResource SecondaryButton}" Padding="10,6" FontSize="11" Margin="0,0,6,0" Click="BtnClearActiveCard_Click" ToolTip="Xóa danh sách tệp của Card đang chọn"/>
+                <Button x:Name="BtnOpenLastOutput" Content="📂 Mở Thư Mục" Style="{StaticResource SecondaryButton}" Padding="10,6" FontSize="11" Click="BtnOpenLastOutput_Click" ToolTip="Mở thư mục chứa kết quả gần nhất"/>
             </StackPanel>
         </DockPanel>
 
         <!-- ================= 1. MAIN CARD WORKSPACE ================= -->
         <Grid Grid.Row="1">
 
-            <!-- TAB 1: VIDEO & ẢNH (3 CARD GỘP THÔNG MINH) -->
+            <!-- TAB 1: VIDEO & ẢNH (CARD TỐI GIẢN) -->
             <ScrollViewer x:Name="PnlTabGeneral" VerticalScrollBarVisibility="Auto" Visibility="Visible">
-                <WrapPanel Margin="0,0,0,6">
+                <StackPanel Margin="0,0,4,6">
 
-                    <!-- Card 1: Nén Dung Lượng (Cả Video & Ảnh) -->
-                    <Border Style="{StaticResource MediaFeatureCard}" Tag="compress_media" Drop="Card_Drop">
-                        <StackPanel>
-                            <Button Style="{StaticResource CardPickerZone}" Tag="compress_media" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Video hoặc Ảnh (hoặc kéo thả vào Card)">
-                                <StackPanel>
-                                    <DockPanel Margin="0,0,0,4">
-                                        <TextBlock Text="🗜️ Nén Dung Lượng" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" DockPanel.Dock="Left"/>
-                                        <TextBlock Text="＋ Chọn" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}" DockPanel.Dock="Right" VerticalAlignment="Center"/>
-                                    </DockPanel>
-                                    <TextBlock Text="Nén cả Video &amp; Ảnh, giữ độ nét HD" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,8"/>
-                                    <DockPanel>
-                                        <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="8,2" DockPanel.Dock="Left">
-                                            <TextBlock x:Name="TxtCount_compress_media" Text="0 tệp đã chọn" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
-                                        </Border>
-                                        <Button Content="✕" Style="{StaticResource IconToolButton}" Padding="5,1" FontSize="10" DockPanel.Dock="Right" Tag="compress_media" Click="CardClearFiles_Click" ToolTip="Xóa tệp của Card này"/>
-                                    </DockPanel>
-                                </StackPanel>
+                    <!-- Card 1: Nén Dung Lượng -->
+                    <Border x:Name="Card_compress_media" Style="{StaticResource MediaFeatureCard}" Tag="compress_media" Drop="Card_Drop" MouseLeftButtonDown="Card_MouseLeftButtonDown">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="260"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0" Style="{StaticResource CardPickerZone}" Tag="compress_media" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Video/Ảnh hoặc kéo thả vào Card">
+                                <DockPanel>
+                                    <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,3" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                        <TextBlock x:Name="TxtCount_compress_media" Text="0 tệp" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="🗜️ Nén Dung Lượng" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                        <TextBlock Text="Video &amp; Ảnh • Nhấn hoặc kéo thả tệp" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </DockPanel>
                             </Button>
 
-                            <Grid Margin="0,10,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
                                 <TextBlock Text="Mức nén:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <ComboBox x:Name="CmbCompressLevel" Grid.Column="1" Height="28" FontSize="11">
+                                <ComboBox x:Name="CmbCompressLevel" Width="185" Height="30" FontSize="11">
                                     <ComboBoxItem Content="Nhẹ (~85% chất lượng)"/>
                                     <ComboBoxItem Content="Cân bằng (Khuyên dùng)" IsSelected="True"/>
                                     <ComboBoxItem Content="Siêu nén (Nhỏ nhất)"/>
                                 </ComboBox>
-                            </Grid>
-
-                            <Button Content="▶ Nén Ngay" Style="{StaticResource PrimaryButton}" Padding="10,7" FontSize="11" FontWeight="SemiBold" Tag="compress_media" Click="CardRun_Click"/>
-                        </StackPanel>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
-                    <!-- Card 2: Đổi Đuôi Hàng Loạt (Cả Video & Ảnh) -->
-                    <Border Style="{StaticResource MediaFeatureCard}" Tag="convert_media" Drop="Card_Drop">
-                        <StackPanel>
-                            <Button Style="{StaticResource CardPickerZone}" Tag="convert_media" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Video hoặc Ảnh cần đổi đuôi">
-                                <StackPanel>
-                                    <DockPanel Margin="0,0,0,4">
-                                        <TextBlock Text="🔄 Đổi Đuôi Hàng Loạt" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" DockPanel.Dock="Left"/>
-                                        <TextBlock Text="＋ Chọn" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}" DockPanel.Dock="Right" VerticalAlignment="Center"/>
-                                    </DockPanel>
-                                    <TextBlock Text="Hỗ trợ Video (MP4/MKV) &amp; Ảnh (PNG/JPG/WEBP)" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,8"/>
-                                    <DockPanel>
-                                        <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="8,2" DockPanel.Dock="Left">
-                                            <TextBlock x:Name="TxtCount_convert_media" Text="0 tệp đã chọn" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
-                                        </Border>
-                                        <Button Content="✕" Style="{StaticResource IconToolButton}" Padding="5,1" FontSize="10" DockPanel.Dock="Right" Tag="convert_media" Click="CardClearFiles_Click" ToolTip="Xóa tệp của Card này"/>
-                                    </DockPanel>
-                                </StackPanel>
+                    <!-- Card 2: Đổi Định Dạng -->
+                    <Border x:Name="Card_convert_media" Style="{StaticResource MediaFeatureCard}" Tag="convert_media" Drop="Card_Drop" MouseLeftButtonDown="Card_MouseLeftButtonDown">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="260"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0" Style="{StaticResource CardPickerZone}" Tag="convert_media" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Video/Ảnh hoặc kéo thả vào Card">
+                                <DockPanel>
+                                    <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,3" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                        <TextBlock x:Name="TxtCount_convert_media" Text="0 tệp" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="🔄 Đổi Định Dạng" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                        <TextBlock x:Name="TxtConvertModeSummary" Text="Tự động: Ảnh giữ chuẩn (HEIC ➔ JPG) • Video ➔ MP4" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DockPanel>
                             </Button>
 
-                            <Grid Margin="0,10,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Text="Đuôi đích:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <ComboBox x:Name="CmbConvertExt" Grid.Column="1" Height="28" FontSize="11">
-                                    <ComboBoxItem Content=".mp4 (Video)" Tag=".mp4" IsSelected="True"/>
-                                    <ComboBoxItem Content=".mkv (Video)" Tag=".mkv"/>
-                                    <ComboBoxItem Content=".mov (Video)" Tag=".mov"/>
-                                    <ComboBoxItem Content=".png (Ảnh)" Tag=".png"/>
-                                    <ComboBoxItem Content=".jpg (Ảnh)" Tag=".jpg"/>
-                                    <ComboBoxItem Content=".webp (Ảnh)" Tag=".webp"/>
-                                    <ComboBoxItem Content=".ico (Icon)" Tag=".ico"/>
-                                </ComboBox>
-                            </Grid>
-
-                            <Button Content="▶ Đổi Đuôi Ngay" Style="{StaticResource PrimaryButton}" Padding="10,7" FontSize="11" FontWeight="SemiBold" Tag="convert_media" Click="CardRun_Click"/>
-                        </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                <Button x:Name="BtnOpenFormatModal" Content="🎛️ Bảng Định Dạng" Style="{StaticResource SecondaryButton}" Height="30" Padding="12,5" FontSize="11" Click="BtnOpenFormatModal_Click" ToolTip="Mở bảng tùy chỉnh định dạng đầu ra (mặc định dùng logic tự động chuẩn)"/>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
-                    <!-- Card 3: Làm Nét & Khử Nhiễu (Cả Video & Ảnh) -->
-                    <Border Style="{StaticResource MediaFeatureCard}" Tag="enhance_media" Drop="Card_Drop">
-                        <StackPanel>
-                            <Button Style="{StaticResource CardPickerZone}" Tag="enhance_media" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Video hoặc Ảnh cần làm nét">
-                                <StackPanel>
-                                    <DockPanel Margin="0,0,0,4">
-                                        <TextBlock Text="✨ Làm Nét Media" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" DockPanel.Dock="Left"/>
-                                        <TextBlock Text="＋ Chọn" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}" DockPanel.Dock="Right" VerticalAlignment="Center"/>
-                                    </DockPanel>
-                                    <TextBlock Text="Khử nhiễu &amp; tăng độ nét cho Video / Ảnh" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,8"/>
-                                    <DockPanel>
-                                        <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="8,2" DockPanel.Dock="Left">
-                                            <TextBlock x:Name="TxtCount_enhance_media" Text="0 tệp đã chọn" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
-                                        </Border>
-                                        <Button Content="✕" Style="{StaticResource IconToolButton}" Padding="5,1" FontSize="10" DockPanel.Dock="Right" Tag="enhance_media" Click="CardClearFiles_Click" ToolTip="Xóa tệp của Card này"/>
-                                    </DockPanel>
-                                </StackPanel>
+                    <!-- Card 3: Làm Nét Media -->
+                    <Border x:Name="Card_enhance_media" Style="{StaticResource MediaFeatureCard}" Tag="enhance_media" Drop="Card_Drop" MouseLeftButtonDown="Card_MouseLeftButtonDown">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="260"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0" Style="{StaticResource CardPickerZone}" Tag="enhance_media" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Video/Ảnh hoặc kéo thả vào Card">
+                                <DockPanel>
+                                    <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,3" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                        <TextBlock x:Name="TxtCount_enhance_media" Text="0 tệp" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="✨ Làm Nét Media" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                        <TextBlock Text="Khử nhiễu &amp; tăng độ nét Video / Ảnh" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </DockPanel>
                             </Button>
 
-                            <Grid Margin="0,10,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
                                 <TextBlock Text="Cấp độ:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <ComboBox x:Name="CmbEnhanceLevel" Grid.Column="1" Height="28" FontSize="11">
+                                <ComboBox x:Name="CmbEnhanceLevel" Width="185" Height="30" FontSize="11">
                                     <ComboBoxItem Content="Nhẹ (Tự nhiên)"/>
                                     <ComboBoxItem Content="Tiêu chuẩn (HD)" IsSelected="True"/>
                                     <ComboBoxItem Content="Mạnh (Sắc nét cao)"/>
                                 </ComboBox>
-                            </Grid>
-
-                            <Button Content="▶ Làm Nét Ngay" Style="{StaticResource PrimaryButton}" Padding="10,7" FontSize="11" FontWeight="SemiBold" Tag="enhance_media" Click="CardRun_Click"/>
-                        </StackPanel>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
-                </WrapPanel>
+                </StackPanel>
             </ScrollViewer>
 
-            <!-- TAB 2: ÂM THANH & CẮT VIDEO (3 CARD CHUYÊN BIỆT) -->
+            <!-- TAB 2: ÂM THANH & CẮT VIDEO (CARD TỐI GIẢN) -->
             <ScrollViewer x:Name="PnlTabAudioTrim" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
-                <WrapPanel Margin="0,0,0,6">
+                <StackPanel Margin="0,0,4,6">
 
                     <!-- Card 1: Tách Nhạc Từ Video -->
-                    <Border Style="{StaticResource MediaFeatureCard}" Tag="extract_audio" Drop="Card_Drop">
-                        <StackPanel>
-                            <Button Style="{StaticResource CardPickerZone}" Tag="extract_audio" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Video cần tách nhạc">
-                                <StackPanel>
-                                    <DockPanel Margin="0,0,0,4">
-                                        <TextBlock Text="🎵 Tách Âm Thanh" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" DockPanel.Dock="Left"/>
-                                        <TextBlock Text="＋ Chọn" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}" DockPanel.Dock="Right" VerticalAlignment="Center"/>
-                                    </DockPanel>
-                                    <TextBlock Text="Trích xuất MP3 / WAV / AAC / FLAC từ Video" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,8"/>
-                                    <DockPanel>
-                                        <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="8,2" DockPanel.Dock="Left">
-                                            <TextBlock x:Name="TxtCount_extract_audio" Text="0 tệp đã chọn" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
-                                        </Border>
-                                        <Button Content="✕" Style="{StaticResource IconToolButton}" Padding="5,1" FontSize="10" DockPanel.Dock="Right" Tag="extract_audio" Click="CardClearFiles_Click" ToolTip="Xóa tệp của Card này"/>
-                                    </DockPanel>
-                                </StackPanel>
+                    <Border x:Name="Card_extract_audio" Style="{StaticResource MediaFeatureCard}" Tag="extract_audio" Drop="Card_Drop" MouseLeftButtonDown="Card_MouseLeftButtonDown">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="260"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0" Style="{StaticResource CardPickerZone}" Tag="extract_audio" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Video cần tách nhạc">
+                                <DockPanel>
+                                    <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,3" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                        <TextBlock x:Name="TxtCount_extract_audio" Text="0 tệp" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="🎵 Tách Âm Thanh" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                        <TextBlock Text="Trích xuất MP3 / WAV / AAC / FLAC" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </DockPanel>
                             </Button>
 
-                            <Grid Margin="0,10,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
                                 <TextBlock Text="Xuất ra:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <ComboBox x:Name="CmbExtractAudioFormat" Grid.Column="1" Height="28" FontSize="11">
+                                <ComboBox x:Name="CmbExtractAudioFormat" Width="185" Height="30" FontSize="11">
                                     <ComboBoxItem Content="mp3" IsSelected="True"/>
                                     <ComboBoxItem Content="wav"/>
                                     <ComboBoxItem Content="aac"/>
                                     <ComboBoxItem Content="flac"/>
                                     <ComboBoxItem Content="ogg"/>
                                 </ComboBox>
-                            </Grid>
-
-                            <Button Content="▶ Tách Nhạc Ngay" Style="{StaticResource PrimaryButton}" Padding="10,7" FontSize="11" FontWeight="SemiBold" Tag="extract_audio" Click="CardRun_Click"/>
-                        </StackPanel>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
-                    <!-- Card 2: Khuếch Đại Âm Lượng -->
-                    <Border Style="{StaticResource MediaFeatureCard}" Tag="volume_audio" Drop="Card_Drop">
-                        <StackPanel>
-                            <Button Style="{StaticResource CardPickerZone}" Tag="volume_audio" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Audio hoặc Video">
-                                <StackPanel>
-                                    <DockPanel Margin="0,0,0,4">
-                                        <TextBlock Text="🔊 Chỉnh Âm Lượng" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" DockPanel.Dock="Left"/>
-                                        <TextBlock Text="＋ Chọn" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}" DockPanel.Dock="Right" VerticalAlignment="Center"/>
-                                    </DockPanel>
-                                    <TextBlock Text="Tăng hoặc giảm độ lớn tiếng Audio/Video" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,8"/>
-                                    <DockPanel>
-                                        <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="8,2" DockPanel.Dock="Left">
-                                            <TextBlock x:Name="TxtCount_volume_audio" Text="0 tệp đã chọn" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
-                                        </Border>
-                                        <Button Content="✕" Style="{StaticResource IconToolButton}" Padding="5,1" FontSize="10" DockPanel.Dock="Right" Tag="volume_audio" Click="CardClearFiles_Click" ToolTip="Xóa tệp của Card này"/>
-                                    </DockPanel>
-                                </StackPanel>
+                    <!-- Card 2: Chỉnh Âm Lượng -->
+                    <Border x:Name="Card_volume_audio" Style="{StaticResource MediaFeatureCard}" Tag="volume_audio" Drop="Card_Drop" MouseLeftButtonDown="Card_MouseLeftButtonDown">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="260"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0" Style="{StaticResource CardPickerZone}" Tag="volume_audio" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Audio hoặc Video">
+                                <DockPanel>
+                                    <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,3" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                        <TextBlock x:Name="TxtCount_volume_audio" Text="0 tệp" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="🔊 Chỉnh Âm Lượng" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                        <TextBlock Text="Tăng hoặc giảm độ lớn Audio / Video" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </DockPanel>
                             </Button>
 
-                            <Grid Margin="0,10,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
                                 <TextBlock Text="Mức âm:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <ComboBox x:Name="CmbAudioVolume" Grid.Column="1" Height="28" FontSize="11">
+                                <ComboBox x:Name="CmbAudioVolume" Width="185" Height="30" FontSize="11">
                                     <ComboBoxItem Content="Giảm 50% (0.5x)" Tag="0.5"/>
                                     <ComboBoxItem Content="Tăng +50% (1.5x)" Tag="1.5" IsSelected="True"/>
                                     <ComboBoxItem Content="Tăng gấp đôi (2.0x)" Tag="2.0"/>
                                     <ComboBoxItem Content="Tăng cực đại (3.0x)" Tag="3.0"/>
                                 </ComboBox>
-                            </Grid>
-
-                            <Button Content="▶ Điều Chỉnh Âm" Style="{StaticResource PrimaryButton}" Padding="10,7" FontSize="11" FontWeight="SemiBold" Tag="volume_audio" Click="CardRun_Click"/>
-                        </StackPanel>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
                     <!-- Card 3: Cắt Video Nhanh -->
-                    <Border Style="{StaticResource MediaFeatureCard}" Tag="trim_video" Drop="Card_Drop">
-                        <StackPanel>
-                            <Button Style="{StaticResource CardPickerZone}" Tag="trim_video" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Video cần cắt đoạn">
-                                <StackPanel>
-                                    <DockPanel Margin="0,0,0,4">
-                                        <TextBlock Text="✂️ Cắt Video Nhanh" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" DockPanel.Dock="Left"/>
-                                        <TextBlock Text="＋ Chọn" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}" DockPanel.Dock="Right" VerticalAlignment="Center"/>
-                                    </DockPanel>
-                                    <TextBlock Text="Cắt đoạn video tức thì không render lại" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,8"/>
-                                    <DockPanel>
-                                        <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="8,2" DockPanel.Dock="Left">
-                                            <TextBlock x:Name="TxtCount_trim_video" Text="0 tệp đã chọn" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
-                                        </Border>
-                                        <Button Content="✕" Style="{StaticResource IconToolButton}" Padding="5,1" FontSize="10" DockPanel.Dock="Right" Tag="trim_video" Click="CardClearFiles_Click" ToolTip="Xóa tệp của Card này"/>
-                                    </DockPanel>
-                                </StackPanel>
+                    <Border x:Name="Card_trim_video" Style="{StaticResource MediaFeatureCard}" Tag="trim_video" Drop="Card_Drop" MouseLeftButtonDown="Card_MouseLeftButtonDown">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="260"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0" Style="{StaticResource CardPickerZone}" Tag="trim_video" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Video cần cắt đoạn">
+                                <DockPanel>
+                                    <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,3" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                        <TextBlock x:Name="TxtCount_trim_video" Text="0 tệp" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="✂️ Cắt Video Nhanh" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                        <TextBlock Text="Cắt đoạn tức thì không render lại" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </DockPanel>
                             </Button>
 
-                            <Grid Margin="0,10,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="8"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Bắt đầu (giây):" FontSize="10" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,2"/>
-                                    <TextBox x:Name="TxtTrimStart" Style="{StaticResource FlatTextBox}" Text="0" Padding="6,4" FontSize="11"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Độ dài (giây):" FontSize="10" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,2"/>
-                                    <TextBox x:Name="TxtTrimDuration" Style="{StaticResource FlatTextBox}" Text="15" Padding="6,4" FontSize="11"/>
-                                </StackPanel>
-                            </Grid>
-
-                            <Button Content="▶ Cắt Video Ngay" Style="{StaticResource PrimaryButton}" Padding="10,7" FontSize="11" FontWeight="SemiBold" Tag="trim_video" Click="CardRun_Click"/>
-                        </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                <TextBlock Text="Từ (s):" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBox x:Name="TxtTrimStart" Style="{StaticResource FlatTextBox}" Text="0" Width="62" Height="30" Padding="6,5" FontSize="11" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="Độ dài (s):" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBox x:Name="TxtTrimDuration" Style="{StaticResource FlatTextBox}" Text="15" Width="62" Height="30" Padding="6,5" FontSize="11" VerticalContentAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
-                </WrapPanel>
+                </StackPanel>
             </ScrollViewer>
 
             <!-- TAB 3: CẤU HÌNH -->
             <ScrollViewer x:Name="PnlTabTools" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
-                <WrapPanel Margin="0,0,0,6">
+                <StackPanel Margin="0,0,4,6">
                     <Border Style="{StaticResource MediaFeatureCard}">
-                        <StackPanel>
-                            <TextBlock Text="⚙️ CẤU HÌNH ENGINE FFMPEG" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,6"/>
-                            <TextBlock x:Name="TxtFfmpegPathInfo" Text="Đang kiểm tra đường dẫn ffmpeg.exe..." FontSize="11" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,12"/>
-                            <WrapPanel>
-                                <Button Content="📂 Chọn ffmpeg.exe..." Style="{StaticResource PrimaryButton}" Padding="10,6" FontSize="11" Margin="0,0,6,0" Click="BtnBrowseFfmpeg_Click"/>
-                                <Button Content="🔄 Kiểm Tra Lại" Style="{StaticResource SecondaryButton}" Padding="10,6" FontSize="11" Click="BtnRefreshFfmpeg_Click"/>
-                            </WrapPanel>
-                        </StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="⚙️ CẤU HÌNH ENGINE FFMPEG" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                                <TextBlock x:Name="TxtFfmpegPathInfo" Text="Đang kiểm tra đường dẫn ffmpeg.exe..." FontSize="11" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="📂 Chọn ffmpeg.exe..." Style="{StaticResource PrimaryButton}" Padding="12,7" FontSize="11" Margin="0,0,6,0" Click="BtnBrowseFfmpeg_Click"/>
+                                <Button Content="🔄 Kiểm Tra Lại" Style="{StaticResource SecondaryButton}" Padding="10,7" FontSize="11" Click="BtnRefreshFfmpeg_Click"/>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
                     <Border Style="{StaticResource MediaFeatureCard}">
-                        <StackPanel>
-                            <TextBlock Text="📁 NƠI LƯU TỆP ĐẦU RA" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,6"/>
-                            <TextBlock Text="Mỗi tệp xử lý xong được lưu tự động vào thư mục con 'CMD_BOX_Output' ngay cạnh tệp gốc." FontSize="11" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,12"/>
-                            <Button Content="📂 Mở Thư Mục Kết Quả Gần Nhất" Style="{StaticResource SecondaryButton}" Padding="10,6" FontSize="11" Click="BtnOpenLastOutput_Click"/>
-                        </StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Text="📁 NƠI LƯU TỆP ĐẦU RA" FontSize="12.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+                                <TextBlock Text="Mỗi tệp xử lý xong được lưu tự động vào thư mục con 'CMD_BOX_Output' ngay cạnh tệp gốc." FontSize="11" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="📂 Mở Thư Mục Kết Quả Gần Nhất" Style="{StaticResource SecondaryButton}" Padding="12,7" FontSize="11" Click="BtnOpenLastOutput_Click"/>
+                            </StackPanel>
+                        </Grid>
                     </Border>
-                </WrapPanel>
+                </StackPanel>
             </ScrollViewer>
 
         </Grid>
@@ -349,6 +321,78 @@
                     </StackPanel>
                 </DockPanel>
             </Grid>
+        </Border>
+
+        <!-- ================= 3. BẢNG TÙY CHỈNH ĐỔI ĐỊNH DẠNG (MODAL OVERLAY) ================= -->
+        <Border x:Name="PnlFormatModal" Grid.RowSpan="3" Background="#99000000" Visibility="Collapsed" Margin="-16">
+            <Border Style="{StaticResource CardPanel}" Width="470" VerticalAlignment="Center" HorizontalAlignment="Center" CornerRadius="10" Padding="20">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,12">
+                        <TextBlock Text="🎛️ BẢNG TÙY CHỈNH ĐỔI ĐỊNH DẠNG" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                        <Button Content="✕" Style="{StaticResource IconToolButton}" Padding="6,2" FontSize="11" DockPanel.Dock="Right" Click="BtnCloseFormatModal_Click" ToolTip="Đóng bảng"/>
+                    </DockPanel>
+
+                    <RadioButton x:Name="RbFormatAuto" Content="🤖 Tự động thông minh (Mặc định)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" IsChecked="True" Margin="0,0,0,4" Checked="FormatModeRadio_Changed"/>
+                    <TextBlock Text="• Ảnh JPG/PNG/JPEG/WEBP: Giữ nguyên định dạng gốc&#x0a;• Ảnh HEIC/HEIF/AVIF: Chuyển về JPG bảo toàn độ nét cao&#x0a;• Video mọi loại: Chuyển về MP4 (H.264 + AAC)"
+                               FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="20,0,0,12" TextWrapping="Wrap"/>
+
+                    <RadioButton x:Name="RbFormatCustom" Content="🛠️ Tùy chỉnh định dạng thủ công" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8" Checked="FormatModeRadio_Changed"/>
+
+                    <Border x:Name="PnlCustomFormatOptions" Background="{DynamicResource BgSecondary}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="20,0,0,12" IsEnabled="False" Opacity="0.6">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="115"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Định dạng Ảnh:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="CmbFormatTargetImage" Grid.Row="0" Grid.Column="1" Height="28" FontSize="11">
+                                <ComboBoxItem Content="Tự động (Giữ chuẩn / HEIC ➔ JPG)" Tag="auto" IsSelected="True"/>
+                                <ComboBoxItem Content=".jpg (Ảnh phổ biến)" Tag=".jpg"/>
+                                <ComboBoxItem Content=".png (Không nén / Trong suốt)" Tag=".png"/>
+                                <ComboBoxItem Content=".webp (Web nhẹ &amp; nét)" Tag=".webp"/>
+                                <ComboBoxItem Content=".bmp (Ảnh thô)" Tag=".bmp"/>
+                                <ComboBoxItem Content=".ico (Icon tối đa 256px)" Tag=".ico"/>
+                            </ComboBox>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Định dạng Video:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="CmbFormatTargetVideo" Grid.Row="2" Grid.Column="1" Height="28" FontSize="11">
+                                <ComboBoxItem Content=".mp4 (Khuyên dùng)" Tag=".mp4" IsSelected="True"/>
+                                <ComboBoxItem Content=".mkv (Chất lượng cao)" Tag=".mkv"/>
+                                <ComboBoxItem Content=".mov (QuickTime)" Tag=".mov"/>
+                                <ComboBoxItem Content=".webm (VP9 + Opus)" Tag=".webm"/>
+                                <ComboBoxItem Content=".avi (Tương thích cũ)" Tag=".avi"/>
+                                <ComboBoxItem Content="Giữ nguyên định dạng gốc" Tag="keep"/>
+                            </ComboBox>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Chất lượng:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="CmbFormatQuality" Grid.Row="4" Grid.Column="1" Height="28" FontSize="11">
+                                <ComboBoxItem Content="Bảo toàn độ nét cao (Mặc định)" IsSelected="True"/>
+                                <ComboBoxItem Content="Cân bằng (Nét &amp; gọn)"/>
+                                <ComboBoxItem Content="Nhẹ dung lượng"/>
+                            </ComboBox>
+                        </Grid>
+                    </Border>
+
+                    <TextBlock Text="🛡️ Tự động chuẩn hóa mã màu (yuv420p/yuvj420p), kích thước chẵn tránh lỗi codec và giữ nguyên Metadata gốc."
+                               FontSize="10.5" Foreground="{DynamicResource AccentSuccess}" TextWrapping="Wrap" Margin="0,0,0,14"/>
+
+                    <DockPanel LastChildFill="False">
+                        <Button Content="↺ Về Tự Động" Style="{StaticResource SecondaryButton}" Padding="10,6" FontSize="11" DockPanel.Dock="Left" Click="BtnResetFormatAuto_Click"/>
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                            <Button Content="Hủy" Style="{StaticResource SecondaryButton}" Padding="12,6" FontSize="11" Margin="0,0,6,0" Click="BtnCloseFormatModal_Click"/>
+                            <Button Content="✓ Áp Dụng" Style="{StaticResource PrimaryButton}" Padding="14,6" FontSize="11" FontWeight="SemiBold" Click="BtnApplyFormatModal_Click"/>
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
         </Border>
     </Grid>
 </UserControl>
