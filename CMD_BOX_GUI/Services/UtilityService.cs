@@ -145,32 +145,25 @@ namespace CMD_BOX_GUI.Services
         public async Task OpenBatteryReportHtmlAsync()
         {
             string htmlPath = Path.Combine(Path.GetTempPath(), "cmd_battery_report.html");
-            Logger.Info("Đang xuất báo cáo pin HTML...");
-            await ProcessRunner.RunProcessAsync("powercfg", $"/batteryreport /output \"{htmlPath}\"");
-            if (File.Exists(htmlPath))
+            if (await ExportBatteryReportHtmlAsync(htmlPath))
             {
                 Process.Start(new ProcessStartInfo { FileName = htmlPath, UseShellExecute = true });
                 Logger.Success("Đã mở báo cáo pin HTML trên trình duyệt.");
             }
         }
 
-        public async Task UninstallBloatwareAsync()
+        public async Task<bool> ExportBatteryReportHtmlAsync(string outputPath)
         {
-            Logger.Info("Đang gỡ bỏ ứng dụng rác Windows & OneDrive...");
-            var opt = new OptimizerService();
-            await opt.DebloatUwpAppsAsync();
-            await SystemCore.RestartExplorerAsync();
-        }
+            Logger.Info($"Đang xuất báo cáo pin HTML tới: {outputPath}");
+            int code = await ProcessRunner.RunProcessAsync("powercfg", $"/batteryreport /output \"{outputPath}\"");
+            if (code == 0 && File.Exists(outputPath))
+            {
+                Logger.Success($"Đã xuất báo cáo pin thành công: {outputPath}");
+                return true;
+            }
 
-        public async Task InstallQuickAppAsync(string appName, string wingetId)
-        {
-            Logger.Info($"Đang cài đặt phần mềm {appName}...");
-            int code = await ProcessRunner.RunProcessAsync("winget", $"install --id {wingetId} --silent --accept-source-agreements --accept-package-agreements",
-                line => Logger.Info($"[Winget] {line}"),
-                err => Logger.Warning($"[Winget] {err}"));
-
-            if (code == 0) Logger.Success($"Đã cài đặt thành công {appName}!");
-            else Logger.Warning($"Cài đặt {appName} kết thúc (Mã: {code}).");
+            Logger.Error("Không thể xuất báo cáo pin (máy không có pin hoặc powercfg thất bại).");
+            return false;
         }
     }
 }

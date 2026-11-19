@@ -1,9 +1,12 @@
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using CMD_BOX_GUI.Core;
 using CMD_BOX_GUI.Services;
+using Microsoft.Win32;
 
 namespace CMD_BOX_GUI.UI.Views
 {
@@ -19,9 +22,8 @@ namespace CMD_BOX_GUI.UI.Views
         // ================= SUB-TAB SWITCHING =================
         private void TabUtil_Click(object sender, RoutedEventArgs e)
         {
-            if (PnlUtilApps == null || PnlUtilAuto == null || PnlUtilHardware == null) return;
+            if (PnlUtilAuto == null || PnlUtilHardware == null) return;
 
-            PnlUtilApps.Visibility = TabUtilApps.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
             PnlUtilAuto.Visibility = TabUtilAuto.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
             PnlUtilHardware.Visibility = TabUtilHardware.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -30,13 +32,6 @@ namespace CMD_BOX_GUI.UI.Views
         {
             PbUtilities.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
             TxtUtilStatus.Text = statusText;
-        }
-
-        private async Task InstallAppAsync(string name, string id)
-        {
-            SetRunning(true, $"Đang cài đặt [{name}] qua Winget...");
-            await _utility.InstallQuickAppAsync(name, id);
-            SetRunning(false, $"Tác vụ cài đặt [{name}] hoàn tất.");
         }
 
         private async void BtnGetCurrentMousePos_Click(object sender, RoutedEventArgs e)
@@ -97,120 +92,60 @@ namespace CMD_BOX_GUI.UI.Views
             finally { BtnAutoPasteLines.IsEnabled = true; }
         }
 
+        private async void BtnExportBatteryHtml_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new SaveFileDialog
+            {
+                Title = "Lưu file báo cáo pin (Battery Report)",
+                Filter = "HTML Report (*.html)|*.html",
+                FileName = $"battery-report-{DateTime.Now:yyyyMMdd-HHmm}.html",
+                DefaultExt = ".html"
+            };
+
+            if (dlg.ShowDialog() != true || string.IsNullOrWhiteSpace(dlg.FileName)) return;
+
+            BtnExportBatteryHtml.IsEnabled = false;
+            BtnOpenBatteryHtml.IsEnabled = false;
+            SetRunning(true, "Đang xuất file báo cáo pin...");
+            try
+            {
+                bool ok = await _utility.ExportBatteryReportHtmlAsync(dlg.FileName);
+                if (ok)
+                {
+                    SetRunning(false, $"Đã xuất báo cáo pin: {Path.GetFileName(dlg.FileName)}");
+                    string? folder = Path.GetDirectoryName(dlg.FileName);
+                    if (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
+                    {
+                        Process.Start(new ProcessStartInfo { FileName = "explorer.exe", Arguments = $"/select,\"{dlg.FileName}\"", UseShellExecute = true });
+                    }
+                }
+                else
+                {
+                    SetRunning(false, "Xuất báo cáo pin thất bại (máy không hỗ trợ pin hoặc lỗi powercfg).");
+                }
+            }
+            finally
+            {
+                BtnExportBatteryHtml.IsEnabled = true;
+                BtnOpenBatteryHtml.IsEnabled = true;
+            }
+        }
+
         private async void BtnOpenBatteryHtml_Click(object sender, RoutedEventArgs e)
         {
-            SetRunning(true, "Đang trích xuất báo cáo pin (batteryreport)...");
-            await _utility.OpenBatteryReportHtmlAsync();
-            SetRunning(false, "Đã mở báo cáo pin trên trình duyệt.");
-        }
-
-        // ================= 1. TRÌNH DUYỆT & GIAO TIẾP =================
-        private async void BtnInstallChrome_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Google Chrome", "Google.Chrome");
-        }
-
-        private async void BtnInstallBrave_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Brave Browser", "Brave.Brave");
-        }
-
-        private async void BtnInstallFirefox_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Mozilla Firefox", "Mozilla.Firefox");
-        }
-
-        private async void BtnInstallZalo_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Zalo PC", "VNG.Zalo");
-        }
-
-        private async void BtnInstallTelegram_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Telegram Desktop", "Telegram.TelegramDesktop");
-        }
-
-        private async void BtnInstallDiscord_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Discord", "Discord.Discord");
-        }
-
-        // ================= 2. LẬP TRÌNH & DEV TOOLS =================
-        private async void BtnInstallVSCode_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Visual Studio Code", "Microsoft.VisualStudioCode");
-        }
-
-        private async void BtnInstallGit_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Git", "Git.Git");
-        }
-
-        private async void BtnInstallNode_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Node.js (LTS)", "OpenJS.NodeJS.LTS");
-        }
-
-        private async void BtnInstallPython_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Python 3", "Python.Python.3.12");
-        }
-
-        private async void BtnInstallNotepadPlusPlus_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Notepad++", "Notepad++.Notepad++");
-        }
-
-        private async void BtnInstallPostman_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Postman", "Postman.Postman");
-        }
-
-        private async void BtnInstallDocker_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Docker Desktop", "Docker.DockerDesktop");
-        }
-
-        // ================= 3. TIỆN ÍCH & HỆ THỐNG =================
-        private async void BtnInstall7Zip_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("7-Zip", "7zip.7zip");
-        }
-
-        private async void BtnInstallWinRAR_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("WinRAR", "RARLab.WinRAR");
-        }
-
-        private async void BtnInstallUniKey_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("UniKey", "PhamKimLong.UniKey");
-        }
-
-        private async void BtnInstallEverything_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Everything Search", "voidtools.Everything");
-        }
-
-        private async void BtnInstallRevo_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Revo Uninstaller", "RevoUninstaller.RevoUninstaller");
-        }
-
-        // ================= 4. GIẢI TRÍ & ĐỒ HỌA / STREAM =================
-        private async void BtnInstallVLC_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("VLC Media Player", "VideoLAN.VLC");
-        }
-
-        private async void BtnInstallSpotify_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("Spotify", "Spotify.Spotify");
-        }
-
-        private async void BtnInstallOBS_Click(object sender, RoutedEventArgs e)
-        {
-            await InstallAppAsync("OBS Studio", "OBSProject.OBSStudio");
+            BtnExportBatteryHtml.IsEnabled = false;
+            BtnOpenBatteryHtml.IsEnabled = false;
+            SetRunning(true, "Đang trích xuất và mở báo cáo pin trên web...");
+            try
+            {
+                await _utility.OpenBatteryReportHtmlAsync();
+                SetRunning(false, "Đã mở báo cáo pin trên trình duyệt.");
+            }
+            finally
+            {
+                BtnExportBatteryHtml.IsEnabled = true;
+                BtnOpenBatteryHtml.IsEnabled = true;
+            }
         }
     }
 }

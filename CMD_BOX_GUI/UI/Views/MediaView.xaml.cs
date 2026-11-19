@@ -119,6 +119,25 @@ namespace CMD_BOX_GUI.UI.Views
 
             RegisterCard(new MediaCardConfig
             {
+                Key = "strip_metadata",
+                Title = "Xóa Metadata",
+                DialogTitle = "Chọn Video hoặc Ảnh cần xóa Metadata (EXIF/GPS/Thông tin ẩn)",
+                DialogFilter = MediaFilter,
+                FileFilter = p => MediaService.IsVideoFile(p) || MediaService.IsImageFile(p),
+                CountLabel = TxtCount_strip_metadata,
+                CardBorder = Card_strip_metadata,
+                ProcessFileAsync = (input, outDir, ct) =>
+                {
+                    string ext = MediaService.IsImageFile(input)
+                        ? MediaService.GetDefaultTargetExtension(input)
+                        : Path.GetExtension(input);
+                    string outPath = BuildUniqueOutputPath(outDir, input, "_clean", ext);
+                    return _mediaService.StripMetadataAsync(input, outPath, ct);
+                }
+            });
+
+            RegisterCard(new MediaCardConfig
+            {
                 Key = "extract_audio",
                 Title = "Tách Âm Thanh",
                 DialogTitle = "Chọn Video cần tách nhạc",

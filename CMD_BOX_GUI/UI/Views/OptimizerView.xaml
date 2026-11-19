@@ -7,6 +7,44 @@
              mc:Ignorable="d" 
              d:DesignHeight="720" d:DesignWidth="920"
              Loaded="UserControl_Loaded">
+    <UserControl.Resources>
+        <Style x:Key="CleanupFeatureCard" TargetType="Border" BasedOn="{StaticResource CardPanel}">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="Padding" Value="10"/>
+        </Style>
+
+        <Style x:Key="CleanupBlockButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource BgInput}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtle}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BgCardHover}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentCyan}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <!-- 0. Top Navigation Sub-Tabs (Đưa hẳn lên đỉnh) -->
@@ -23,101 +61,97 @@
             <WrapPanel>
                 <RadioButton x:Name="TabOptGeneral" Content="⚡ Dọn Dẹp &amp; Tinh Chỉnh" Style="{StaticResource SubTabButton}" IsChecked="True" Click="TabOpt_Click" Margin="0,0,6,4"/>
                 <RadioButton x:Name="TabOptServices" Content="🛡️ Dịch Vụ Rác (Services)" Style="{StaticResource SubTabButton}" Click="TabOpt_Click" Margin="0,0,6,4"/>
-                <RadioButton x:Name="TabOptBloatware" Content="📦 Gỡ App Rác (UWP)" Style="{StaticResource SubTabButton}" Click="TabOpt_Click" Margin="0,0,6,4"/>
-                <RadioButton x:Name="TabOptRescue" Content="🩺 Cứu Hộ &amp; Sửa Lỗi" Style="{StaticResource SubTabButton}" Click="TabOpt_Click" Margin="0,0,6,4"/>
             </WrapPanel>
         </Border>
 
         <!-- ================= 1. MAIN TAB CONTENT ================= -->
         <Grid Grid.Row="1">
 
-            <!-- UI 1: DỌN DẸP & TINH CHỈNH NHANH -->
+            <!-- UI 1: DỌN DẸP RÁC Ổ ĐĨA & BỘ NHỚ ĐỆM -->
             <ScrollViewer x:Name="PnlOptGeneral" VerticalScrollBarVisibility="Auto" Visibility="Visible">
-                <StackPanel Margin="0,0,6,0">
-                    <!-- Khối Chẩn Đoán Sức Khỏe PC & Profiles 1-Click (Bloatynosy Style) -->
-                    <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="14">
-                        <StackPanel>
-                            <Grid Margin="0,0,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                        <TextBlock Text="🩺" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock Text="CHẨN ĐOÁN TÌNH TRẠNG PC &amp; PROFILES TỐI ƯU 1-CLICK" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                    <TextBlock x:Name="TxtHealthStatus" Text="Nhấn 'Quét Chẩn Đoán' để phân tích telemetry, rác quảng cáo và app ngầm." FontSize="11" Foreground="{DynamicResource TextMuted}"/>
-                                </StackPanel>
-                                <Button x:Name="BtnHealthCheck" Grid.Column="1" Content="🔍 Quét Chẩn Đoán PC" Style="{StaticResource PrimaryButton}" Padding="14,6" FontSize="11" FontWeight="SemiBold" Click="BtnHealthCheck_Click"/>
-                            </Grid>
-
-                            <!-- Hàng Badges Thống Kê Nhanh -->
-                            <WrapPanel x:Name="PnlHealthBadges" Margin="0,0,0,10" Visibility="Collapsed">
-                                <Border x:Name="BrdHealthScore" Background="#142E1C" BorderBrush="#10B981" BorderThickness="1" CornerRadius="4" Padding="10,4" Margin="0,0,8,6">
-                                    <TextBlock x:Name="TxtHealthScore" Text="🟢 Tối Ưu Tốt" Foreground="#34D399" FontSize="11" FontWeight="Bold"/>
-                                </Border>
-                                <Border Background="{DynamicResource BgInput}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,8,6">
-                                    <TextBlock x:Name="TxtTelemetryBadge" Text="Telemetry: Đang kiểm tra..." FontSize="10.5" Foreground="{DynamicResource TextSecondary}"/>
-                                </Border>
-                                <Border Background="{DynamicResource BgInput}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,8,6">
-                                    <TextBlock x:Name="TxtAdsBadge" Text="Quảng cáo Win 11: Đang kiểm tra..." FontSize="10.5" Foreground="{DynamicResource TextSecondary}"/>
-                                </Border>
-                                <Border Background="{DynamicResource BgInput}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,8,6">
-                                    <TextBlock x:Name="TxtBloatBadge" Text="App rác: Đang kiểm tra..." FontSize="10.5" Foreground="{DynamicResource TextSecondary}"/>
-                                </Border>
-                            </WrapPanel>
-
-                            <!-- Hàng Nút 1-Click Profiles -->
-                            <StackPanel Margin="0,2,0,0">
-                                <TextBlock Text="ÁP DỤNG PROFILE CẤU HÌNH NHANH THEO NHU CẦU:" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource TextSecondary}" Margin="0,0,0,8"/>
-                                <WrapPanel>
-                                    <Button x:Name="BtnProfileGamer" Content="🎮 Gamer Profile (Max FPS)" Style="{StaticResource PrimaryButton}" Margin="0,0,8,6" Padding="12,7" FontSize="11" Click="BtnProfileGamer_Click" ToolTip="Tắt telemetry, Game DVR, Search Indexing, độ trễ thấp &amp; kích hoạt gói điện Ultimate Performance."/>
-                                    <Button x:Name="BtnProfileOffice" Content="💼 Office Profile (Ổn Định)" Style="{StaticResource SecondaryButton}" Margin="0,0,8,6" Padding="12,7" FontSize="11" Click="BtnProfileOffice_Click" ToolTip="Dọn nhanh cache rác, tắt quảng cáo Start Menu &amp; Edge boost, giữ nguyên máy in và chia sẻ mạng."/>
-                                    <Button x:Name="BtnProfilePrivacy" Content="🛡️ Privacy Profile (Bảo Mật)" Style="{StaticResource SecondaryButton}" Margin="0,0,8,6" Padding="12,7" FontSize="11" Click="BtnProfilePrivacy_Click" ToolTip="Tắt sạch telemetry, định vị GPS, báo lỗi, Copilot AI và các kênh thu thập dữ liệu."/>
-                                </WrapPanel>
-                            </StackPanel>
+                <StackPanel Margin="0,0,6,6">
+                    <!-- Thanh tiêu đề & Quét lại dung lượng rác -->
+                    <DockPanel Margin="0,0,0,12" LastChildFill="False">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
+                            <TextBlock Text="🗑️" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="DỌN DẸP Ổ ĐĨA &amp; BỘ NHỚ ĐỆM (DISK CLEANUP)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
                         </StackPanel>
-                    </Border>
+                        <Button x:Name="BtnScanJunkSizes" Content="🔍 Quét Dung Lượng Rác" Style="{StaticResource SecondaryButton}" DockPanel.Dock="Right" Padding="12,6" FontSize="11" Click="BtnScanJunkSizes_Click" ToolTip="Quét lại dung lượng rác thực tế ở từng phân mục"/>
+                    </DockPanel>
 
-                    <!-- Khối Dọn dẹp ổ đĩa -->
-                    <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="14">
-                        <StackPanel>
-                            <DockPanel Margin="0,0,0,10">
-                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left" VerticalAlignment="Center">
-                                    <TextBlock Text="🗑️" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <TextBlock Text="DỌN DẸP Ổ ĐĨA &amp; BỘ NHỚ ĐỆM (DISK CLEANUP)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
+                    <!-- Khối 1: Quick Clean -->
+                    <Border Style="{StaticResource CleanupFeatureCard}">
+                        <Button x:Name="BtnCleanQuick" Style="{StaticResource CleanupBlockButton}" Click="BtnCleanQuick_Click" ToolTip="Dọn nhanh %temp%, C:\Windows\Temp, WER, DirectX Shader Cache, Flush DNS &amp; Thùng rác.">
+                            <DockPanel>
+                                <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,4" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <TextBlock x:Name="TxtSizeQuick" Text="..." FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}"/>
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="⚡ Quick Clean" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <TextBlock Text="Dọn nhanh %temp%, Windows Temp, WER, DirectX Shader Cache, Flush DNS &amp; Thùng rác" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                                 </StackPanel>
-                                <Button x:Name="BtnScanJunkSizes" Content="🔍 Quét Dung Lượng Rác" Style="{StaticResource SecondaryButton}" DockPanel.Dock="Right" Padding="10,4" FontSize="10.5" Click="BtnScanJunkSizes_Click" ToolTip="Quét lại dung lượng rác thực tế ở từng phân mục"/>
                             </DockPanel>
-                            <WrapPanel>
-                                <Button x:Name="BtnCleanQuick" Content="⚡ Quick Clean (...)" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="14,7" FontSize="11" FontWeight="SemiBold" Click="BtnCleanQuick_Click" ToolTip="Dọn nhanh %temp%, C:\Windows\Temp, WER, DirectX Shader Cache, Flush DNS &amp; Thùng rác."/>
-                                <Button x:Name="BtnCleanPro" Content="🔥 Deep Clean PRO (...)" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="14,7" FontSize="11" FontWeight="SemiBold" Click="BtnCleanPro_Click" ToolTip="Quét sâu đa tầng: Prefetch, WinSxS, Delivery Optimization, Shader GPU, Event Logs &amp; 20+ vị trí ngầm."/>
-                                <Button x:Name="BtnCleanWindowsOld" Content="⚠️ Xóa Windows.old (...)" Style="{StaticResource DangerButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnCleanWindowsOld_Click" ToolTip="Xóa các thư mục Windows.old, $Windows.~BT sau khi nâng cấp Windows (giải phóng 15-40GB+)."/>
-                                <Button x:Name="BtnCleanDev" Content="💻 Dọn Dev Cache (...)" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnCleanDev_Click" ToolTip="Xóa cache của NPM, Yarn, Pip, NuGet, Gradle, Cargo &amp; Composer."/>
-                                <Button x:Name="BtnCleanBrowser" Content="🌐 Dọn Cache Trình Duyệt (...)" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnCleanBrowser_Click" ToolTip="Xóa bộ nhớ đệm của 8 trình duyệt (Chrome, Edge, Brave, CocCoc, Firefox, Opera, Vivaldi, Arc)."/>
-                            </WrapPanel>
-                        </StackPanel>
+                        </Button>
                     </Border>
 
-                    <!-- Khối Tinh chỉnh nhanh hiệu năng & Taskbar -->
-                    <Border Style="{StaticResource CardPanel}" Margin="0,0,0,12" Padding="14">
-                        <StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                <TextBlock Text="⚡" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="TINH CHỈNH HIỆU NĂNG &amp; GIAO DIỆN NHANH" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <WrapPanel>
-                                <Button x:Name="BtnDisableStartup" Content="🛑 Tối Ưu Khởi Động" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnDisableStartup_Click" ToolTip="Tắt ứng dụng khởi động thừa (Bảo vệ driver OEM, Audio, GPU)."/>
-                                <Button x:Name="BtnOptimizeServices" Content="🛡️ Tắt Telemetry Ngầm" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnOptimizeServices_Click" ToolTip="Tắt DiagTrack, dmwappush, dịch vụ Xbox thừa và MapsBroker chạy ngầm."/>
-                                <Button x:Name="BtnPrivacyGameDvr" Content="🔒 Tắt Xbox Game DVR" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnPrivacyGameDvr_Click" ToolTip="Tắt Activity History/Timeline, Advertising ID và tắt ghi hình ngầm Xbox Game DVR tăng FPS."/>
-                                <Button x:Name="BtnTaskbar" Content="🪟 Gọn Taskbar Win 11" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnTaskbar_Click" ToolTip="Ẩn ô Searchbox khổng lồ, Widgets, TaskView, Copilot trên thanh Taskbar Windows 11."/>
-                                <Button x:Name="BtnSystemPro" Content="🚀 Low Latency Turbo" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnSystemPro_Click" ToolTip="Tối ưu độ trễ Desktop (MenuShowDelay), mở khóa NetworkThrottling chơi game &amp; tắt Hibernation."/>
-                                <Button x:Name="BtnDisableWin11Ads" Content="🚫 Tắt Ads Start Menu" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnDisableWin11Ads_Click" ToolTip="Tắt quảng cáo ứng dụng được tài trợ trong Start Menu, màn hình khóa và Settings Windows 11."/>
-                                <Button x:Name="BtnDisableCopilot" Content="🤖 Tắt Copilot &amp; AI" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnDisableCopilot_Click" ToolTip="Vô hiệu hóa trợ lý ảo Windows Copilot AI và tính năng chụp màn hình ngầm."/>
-                                <Button x:Name="BtnDisableEdgeBoost" Content="🌐 Tắt Edge Chạy Ngầm" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnDisableEdgeBoost_Click" ToolTip="Tắt tính năng Edge Startup Boost chạy ngầm khi vừa bật máy."/>
-                            </WrapPanel>
-                        </StackPanel>
+                    <!-- Khối 2: Deep Clean PRO -->
+                    <Border Style="{StaticResource CleanupFeatureCard}">
+                        <Button x:Name="BtnCleanPro" Style="{StaticResource CleanupBlockButton}" Click="BtnCleanPro_Click" ToolTip="Quét sâu đa tầng: Prefetch, WinSxS, Delivery Optimization, Shader GPU, Event Logs &amp; 20+ vị trí ngầm.">
+                            <DockPanel>
+                                <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,4" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <TextBlock x:Name="TxtSizePro" Text="..." FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentCyan}"/>
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="🔥 Deep Clean PRO" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <TextBlock Text="Quét sâu đa tầng: Prefetch, WinSxS, Delivery Optimization, Shader GPU, Event Logs &amp; 20+ vị trí ngầm" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Button>
+                    </Border>
+
+                    <!-- Khối 3: Xóa Windows.old -->
+                    <Border Style="{StaticResource CleanupFeatureCard}">
+                        <Button x:Name="BtnCleanWindowsOld" Style="{StaticResource CleanupBlockButton}" Click="BtnCleanWindowsOld_Click" ToolTip="Xóa các thư mục Windows.old, $Windows.~BT sau khi nâng cấp Windows (giải phóng 15-40GB+).">
+                            <DockPanel>
+                                <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,4" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <TextBlock x:Name="TxtSizeWindowsOld" Text="..." FontSize="11" FontWeight="SemiBold" Foreground="#F87171"/>
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="⚠️ Xóa Windows.old" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <TextBlock Text="Xóa các thư mục Windows.old, $Windows.~BT sau khi nâng cấp Windows (giải phóng 15–40GB+)" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Button>
+                    </Border>
+
+                    <!-- Khối 4: Dọn Dev Cache -->
+                    <Border Style="{StaticResource CleanupFeatureCard}">
+                        <Button x:Name="BtnCleanDev" Style="{StaticResource CleanupBlockButton}" Click="BtnCleanDev_Click" ToolTip="Xóa cache của NPM, Yarn, Pip, NuGet, Gradle, Cargo &amp; Composer.">
+                            <DockPanel>
+                                <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,4" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <TextBlock x:Name="TxtSizeDev" Text="..." FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="💻 Dọn Dev Cache" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <TextBlock Text="Xóa cache của NPM, Yarn, Pip, NuGet, Gradle, Cargo &amp; Composer" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Button>
+                    </Border>
+
+                    <!-- Khối 5: Dọn Cache Trình Duyệt -->
+                    <Border Style="{StaticResource CleanupFeatureCard}">
+                        <Button x:Name="BtnCleanBrowser" Style="{StaticResource CleanupBlockButton}" Click="BtnCleanBrowser_Click" ToolTip="Xóa bộ nhớ đệm của 8 trình duyệt (Chrome, Edge, Brave, CocCoc, Firefox, Opera, Vivaldi, Arc).">
+                            <DockPanel>
+                                <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,4" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <TextBlock x:Name="TxtSizeBrowser" Text="..." FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="🌐 Dọn Cache Trình Duyệt" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                    <TextBlock Text="Xóa bộ nhớ đệm của 8 trình duyệt (Chrome, Edge, Brave, CocCoc, Firefox, Opera, Vivaldi, Arc)" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Button>
                     </Border>
                 </StackPanel>
             </ScrollViewer>
@@ -209,111 +243,6 @@
                     </Grid>
                 </Border>
             </Grid>
-
-            <!-- UI 3: GỠ APP RÁC CÀI SẴN (UWP BLOATWARE UNINSTALLER) -->
-            <Grid x:Name="PnlOptBloatware" Visibility="Collapsed">
-                <Border Style="{StaticResource CardPanel}" Padding="14">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <!-- Toolbar Search & Actions -->
-                            <RowDefinition Height="Auto"/>
-                            <!-- DataGrid Content -->
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- Header & Toolbar -->
-                        <Grid Grid.Row="0" Margin="0,0,0,10">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
-                                <TextBlock Text="📦" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="GỠ BỎ ỨNG DỤNG RÁC CÀI SẴN (UWP BLOATWARE UNINSTALLER)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
-                                <TextBlock x:Name="TxtBloatwareStats" Text="• Đang quét hệ thống..." FontSize="11" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                            </StackPanel>
-
-                            <DockPanel Grid.Row="1" LastChildFill="False">
-                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                                    <TextBox x:Name="TxtSearchBloatware" Style="{StaticResource FlatTextBox}" Width="200" Padding="8,4" FontSize="11" Margin="0,0,6,0" TextChanged="TxtSearchBloatware_TextChanged" ToolTip="Tìm kiếm theo tên ứng dụng..."/>
-<ComboBox x:Name="CmbBloatwareRiskFilter" Width="135" Padding="6,3" FontSize="11" Margin="0,0,6,0" SelectionChanged="CmbBloatwareRiskFilter_SelectionChanged">
-                                        <ComboBoxItem Content="Tất Cả Mức Độ" IsSelected="True"/>
-                                        <ComboBoxItem Content="🟢 An Toàn (Safe)"/>
-                                        <ComboBoxItem Content="🟡 Cần Cân Nhắc (Caution)"/>
-                                    </ComboBox>
-                                    <ComboBox x:Name="CmbBloatwareOriginFilter" Width="150" Padding="6,3" FontSize="11" Margin="0,0,8,0" SelectionChanged="CmbBloatwareOriginFilter_SelectionChanged">
-                                        <ComboBoxItem Content="Tất Cả Nguồn Gốc" IsSelected="True"/>
-                                        <ComboBoxItem Content="🌟 Rác Đối Tác (Sponsored)"/>
-                                        <ComboBoxItem Content="💻 Rác Hãng Laptop (OEM)"/>
-                                        <ComboBoxItem Content="🪟 App Mặc Định (Microsoft)"/>
-                                    </ComboBox>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                                    <Button Content="🔄 Quét Lại" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="10.5" Margin="0,0,4,0" Click="BtnRefreshBloatware_Click" ToolTip="Quét lại các app rác thực sự đang cài trên máy"/>
-                                    <Button Content="⚡ Chọn An Toàn" Style="{StaticResource SuccessButton}" Padding="9,4" FontSize="10.5" Margin="0,0,4,0" Click="BtnSelectSafeBloatware_Click" ToolTip="Chỉ tích chọn các ứng dụng an toàn gỡ 100%"/>
-                                    <Button Content="Chọn Tất Cả" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="10.5" Margin="0,0,4,0" Click="BtnSelectAllBloatware_Click"/>
-                                    <Button Content="Bỏ Chọn" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="10.5" Margin="0,0,6,0" Click="BtnDeselectAllBloatware_Click"/>
-                                    <Button x:Name="BtnRemoveSelectedBloatware" Content="🗑️ Gỡ Bỏ App Đã Chọn" Style="{StaticResource DangerButton}" Padding="12,5" FontSize="11" Click="BtnRemoveSelectedBloatware_Click" ToolTip="Gỡ bỏ sạch các app đã chọn (chạy ngầm không spam UAC)"/>
-                                </StackPanel>
-                            </DockPanel>
-                        </Grid>
-
-                        <Border Grid.Row="1" Background="{DynamicResource BgInput}" CornerRadius="4" Padding="0">
-                            <Grid>
-                                <DataGrid x:Name="DgBloatware" Style="{StaticResource FlatDataGrid}">
-                                    <DataGrid.Columns>
-                                        <DataGridCheckBoxColumn Header="CHỌN" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="50"/>
-                                        <DataGridTextColumn Header="TÊN ỨNG DỤNG" Binding="{Binding AppName}" FontWeight="SemiBold" Width="180"/>
-                                        <DataGridTemplateColumn Header="NGUỒN GỐC" Width="120">
-                                            <DataGridTemplateColumn.CellTemplate>
-                                                <DataTemplate>
-                                                    <Border Background="{Binding OriginBadgeBg}" BorderBrush="{Binding OriginBadgeBorder}" BorderThickness="1" CornerRadius="10" Padding="7,2" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding OriginDisplay}" Foreground="{Binding OriginBadgeFg}" FontSize="10" FontWeight="SemiBold"/>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </DataGridTemplateColumn.CellTemplate>
-                                        </DataGridTemplateColumn>
-                                        <DataGridTemplateColumn Header="MỨC ĐỘ" Width="105">
-                                            <DataGridTemplateColumn.CellTemplate>
-                                                <DataTemplate>
-                                                    <Border Background="{Binding RiskBadgeBg}" BorderBrush="{Binding RiskBadgeBorder}" BorderThickness="1" CornerRadius="10" Padding="7,2" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding RiskDisplay}" Foreground="{Binding RiskBadgeFg}" FontSize="10" FontWeight="SemiBold"/>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </DataGridTemplateColumn.CellTemplate>
-                                        </DataGridTemplateColumn>
-                                        <DataGridTextColumn Header="PHÂN LOẠI" Binding="{Binding Category}" Width="95"/>
-                                        <DataGridTextColumn Header="MÔ TẢ CHI TIẾT" Binding="{Binding Description}" Width="*"/>
-                                        <DataGridTextColumn Header="DUNG LƯỢNG" Binding="{Binding EstimatedSize}" Width="95"/>
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                                <TextBlock x:Name="TxtNoBloatware" Text="✨ Tuyệt vời! Không phát hiện ứng dụng rác nào phù hợp với bộ lọc trên máy tính." FontSize="12" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
-                            </Grid>
-                        </Border>
-                    </Grid>
-                </Border>
-            </Grid>
-
-            <!-- UI 4: CỨU HỘ & CHẨN ĐOÁN HỆ THỐNG -->
-            <ScrollViewer x:Name="PnlOptRescue" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
-                <Border Style="{StaticResource CardPanel}" Padding="14">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <TextBlock Text="🩺" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="CỨU HỘ &amp; CHẨN ĐOÁN HỆ THỐNG (SYSTEM RESCUE &amp; REPAIR)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentCyan}" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <WrapPanel>
-                            <Button x:Name="BtnCreateRestorePoint" Content="💾 Tạo Restore Point" Style="{StaticResource PrimaryButton}" Margin="0,0,8,8" Padding="14,7" FontSize="11" FontWeight="SemiBold" Click="BtnCreateRestorePoint_Click" ToolTip="Tạo ngay điểm khôi phục an toàn (System Restore Point) trước khi tinh chỉnh."/>
-                            <Button x:Name="BtnRepairIntegrity" Content="🩺 Vá Lỗi SFC &amp; DISM" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnRepairIntegrity_Click" ToolTip="Quét và tự động sửa chữa toàn bộ file hệ thống hỏng bằng DISM RestoreHealth &amp; SFC Scannow."/>
-                            <Button x:Name="BtnFixWU" Content="🔄 Sửa Windows Update" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnFixWU_Click" ToolTip="Xóa cache kẹt SoftwareDistribution và đặt lại dịch vụ Windows Update."/>
-                            <Button x:Name="BtnPauseWU" Content="⏸️ Tạm Dừng Update (2038)" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnPauseWU_Click" ToolTip="Tạm dừng dịch vụ và hoãn lịch Windows Update đến năm 2038 chống bị ép tự khởi động lại."/>
-                            <Button x:Name="BtnResumeWU" Content="▶️ Khôi Phục Update" Style="{StaticResource SecondaryButton}" Margin="0,0,8,8" Padding="12,7" FontSize="11" Click="BtnResumeWU_Click" ToolTip="Bật lại dịch vụ Windows Update bình thường để cập nhật bản vá bảo mật."/>
-                        </WrapPanel>
-                    </StackPanel>
-                </Border>
-            </ScrollViewer>
         </Grid>
 
         <!-- ================= 2. PROGRESS & STATUS FEEDBACK ================= -->

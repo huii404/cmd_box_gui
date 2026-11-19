@@ -666,5 +666,67 @@ namespace CMD_BOX_GUI.Services
             Logger.Error($"[FFmpeg] Điều chỉnh âm lượng thất bại cho {Path.GetFileName(inputPath)}");
             return false;
         }
+
+        public async Task<bool> StripMetadataAsync(
+            string inputPath,
+            string outputPath,
+            CancellationToken cancellationToken = default)
+        {
+            string ffmpeg = FindFFmpegPath();
+            string fileName = Path.GetFileName(inputPath);
+            long oldSize = new FileInfo(inputPath).Length;
+
+            if (IsVideoFile(inputPath))
+            {
+                Logger.Info($"[FFmpeg] Xóa toàn bộ Metadata Video [{fileName}] (Stream Copy)...");
+                string args = $"-y -i \"{inputPath}\" -map 0 -map_metadata -1 -map_chapters -1 -c copy \"{outputPath}\"";
+                int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
+
+                if (code != 0 || !File.Exists(outputPath))
+                {
+                    string fallbackArgs = $"-y -i \"{inputPath}\" -map_metadata -1 -map_chapters -1 -c:v copy -c:a copy \"{outputPath}\"";
+                    code = await ProcessRunner.RunProcessAsync(ffmpeg, fallbackArgs, cancellationToken: cancellationToken);
+                }
+
+                if (code == 0 && File.Exists(outputPath))
+                {
+                    long newSize = new FileInfo(outputPath).Length;
+                    Logger.Success($"[FFmpeg] Đã xóa sạch Metadata Video: {Path.GetFileName(outputPath)} ({SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)})");
+                    return true;
+                }
+
+                Logger.Error($"[FFmpeg] Xóa Metadata Video thất bại cho {fileName}");
+                return false;
+            }
+
+            if (IsImageFile(inputPath))
+            {
+                string outExt = Path.GetExtension(outputPath).ToLowerInvariant();
+                Logger.Info($"[FFmpeg] Xóa toàn bộ Metadata/EXIF Ảnh [{fileName}]...");
+
+                string args = outExt switch
+                {
+                    ".jpg" or ".jpeg" or ".jfif" => $"-y -i \"{inputPath}\" -map_metadata -1 -frames:v 1 -update 1 -q:v 2 -pix_fmt yuvj420p -color_range 2 \"{outputPath}\"",
+                    ".png" => $"-y -i \"{inputPath}\" -map_metadata -1 -frames:v 1 -update 1 -c:v png -compression_level 6 \"{outputPath}\"",
+                    ".webp" => $"-y -i \"{inputPath}\" -map_metadata -1 -frames:v 1 -update 1 -c:v libwebp -quality 95 \"{outputPath}\"",
+                    ".bmp" => $"-y -i \"{inputPath}\" -map_metadata -1 -frames:v 1 -update 1 -c:v bmp \"{outputPath}\"",
+                    ".gif" => $"-y -i \"{inputPath}\" -map_metadata -1 \"{outputPath}\"",
+                    _ => $"-y -i \"{inputPath}\" -map_metadata -1 -frames:v 1 -update 1 -q:v 2 \"{outputPath}\""
+                };
+
+                int code = await ProcessRunner.RunProcessAsync(ffmpeg, args, cancellationToken: cancellationToken);
+                if (code == 0 && File.Exists(outputPath))
+                {
+                    long newSize = new FileInfo(outputPath).Length;
+                    Logger.Success($"[FFmpeg] Đã xóa sạch Metadata Ảnh: {Path.GetFileName(outputPath)} ({SystemCore.FormatBytes(oldSize)} ➔ {SystemCore.FormatBytes(newSize)})");
+                    return true;
+                }
+
+                Logger.Error($"[FFmpeg] Xóa Metadata Ảnh thất bại cho {fileName}");
+                return false;
+            }
+
+            return false;
+        }
     }
 }

@@ -161,6 +161,35 @@
                         </Grid>
                     </Border>
 
+                    <!-- Card 4: Xóa Metadata -->
+                    <Border x:Name="Card_strip_metadata" Style="{StaticResource MediaFeatureCard}" Tag="strip_metadata" Drop="Card_Drop" MouseLeftButtonDown="Card_MouseLeftButtonDown">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="260"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0" Style="{StaticResource CardPickerZone}" Tag="strip_metadata" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Video/Ảnh hoặc kéo thả vào Card">
+                                <DockPanel>
+                                    <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,3" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                        <TextBlock x:Name="TxtCount_strip_metadata" Text="0 tệp" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="🛡️ Xóa Metadata" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                        <TextBlock Text="Xóa EXIF, GPS, thiết bị, ngày chụp &amp; thông tin ẩn" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Button>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                <TextBlock Text="Chế độ:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <Border Width="185" Height="30" Background="{DynamicResource BgInput}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="6" Padding="10,0">
+                                    <TextBlock Text="Sạch 100% (Bảo mật)" FontSize="11" Foreground="{DynamicResource AccentSuccess}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
                 </StackPanel>
             </ScrollViewer>
 
