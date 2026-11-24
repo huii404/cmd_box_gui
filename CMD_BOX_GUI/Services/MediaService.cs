@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using CMD_BOX_GUI.Core;
 
 namespace CMD_BOX_GUI.Services
@@ -727,6 +731,441 @@ namespace CMD_BOX_GUI.Services
             }
 
             return false;
+        }
+
+        private sealed class ExifPhotoInfo
+        {
+            public string Make { get; init; } = string.Empty;
+            public string Model { get; init; } = string.Empty;
+            public string Lens { get; init; } = string.Empty;
+            public string FocalLength { get; init; } = string.Empty;
+            public string Aperture { get; init; } = string.Empty;
+            public string ShutterSpeed { get; init; } = string.Empty;
+            public string Iso { get; init; } = string.Empty;
+            public string DateTaken { get; init; } = string.Empty;
+        }
+
+        public Task<bool> CreateExifFrameAsync(
+            string inputPath,
+            string outputPath,
+            int frameStyle = 0,
+            CancellationToken cancellationToken = default)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        tcs.SetResult(false);
+                        return;
+                    }
+
+                    string fileName = Path.GetFileName(inputPath);
+                    Logger.Info($"[ExifFrame] Đang trích xuất metadata & render khung ảnh [{fileName}]...");
+
+                    string decodePath = inputPath;
+                    string? tempFallbackPath = null;
+                    BitmapFrame? rawFrame = null;
+
+                    try
+                    {
+                        rawFrame = LoadBitmapFrame(decodePath);
+                    }
+                    catch
+                    {
+                        string ffmpeg = FindFFmpegPath();
+                        if (!File.Exists(ffmpeg))
+                        {
+                            Logger.Error($"[ExifFrame] Windows thiếu codec đọc {Path.GetExtension(inputPath).ToUpperInvariant()} và chưa có ffmpeg.exe để giải mã thay thế.");
+                            tcs.SetResult(false);
+                            return;
+                        }
+
+                        Logger.Info($"[ExifFrame] Dùng FFmpeg giải mã định dạng {Path.GetExtension(inputPath).ToUpperInvariant()}...");
+                        tempFallbackPath = Path.Combine(Path.GetTempPath(), $"cmdbox_exif_{Guid.NewGuid():N}.jpg");
+                        string ffArgs = $"-y -i \"{inputPath}\" -map_metadata 0 -frames:v 1 -update 1 -q:v 1 -pix_fmt yuvj420p -color_range 2 \"{tempFallbackPath}\"";
+                        int ffCode = ProcessRunner.RunProcessAsync(ffmpeg, ffArgs, cancellationToken: cancellationToken).GetAwaiter().GetResult();
+
+                        if (ffCode != 0 || !File.Exists(tempFallbackPath))
+                        {
+                            Logger.Error($"[ExifFrame] FFmpeg không thể giải mã tệp {fileName}.");
+                            tcs.SetResult(false);
+                            return;
+                        }
+
+                        decodePath = tempFallbackPath;
+                        rawFrame = LoadBitmapFrame(decodePath);
+                    }
+
+                    try
+                    {
+                        if (rawFrame == null)
+                        {
+                            Logger.Error($"[ExifFrame] Không đọc được frame ảnh: {fileName}");
+                            tcs.SetResult(false);
+                            return;
+                        }
+
+                        var metadata = rawFrame.Metadata as BitmapMetadata;
+                        ExifPhotoInfo exif = ExtractExifInfo(metadata, inputPath);
+                        if (string.IsNullOrWhiteSpace(exif.Model) && string.IsNullOrWhiteSpace(exif.Make))
+                        {
+                            exif = EnrichExifFromFfmpeg(exif, inputPath);
+                        }
+                        BitmapSource source = ApplyExifOrientation(rawFrame, metadata);
+
+                    int imgW = source.PixelWidth;
+                    int imgH = source.PixelHeight;
+                    int shortSide = Math.Min(imgW, imgH);
+
+                    bool isDark = frameStyle == 1;
+                    bool isPolaroid = frameStyle == 2;
+
+                    double sidePad = Math.Max(24, Math.Round(shortSide * (isPolaroid ? 0.055 : 0.032)));
+                    double topPad = sidePad;
+                    double bottomPad = Math.Max(90, Math.Round(shortSide * (isPolaroid ? 0.175 : 0.125)));
+
+                    int canvasW = (int)Math.Round(imgW + sidePad * 2);
+                    int canvasH = (int)Math.Round(imgH + topPad + bottomPad);
+
+                    // Giới hạn kích thước render tối đa an toàn tránh tràn VRAM với ảnh quá lớn
+                    const int maxDim = 4800;
+                    double scale = 1.0;
+                    if (Math.Max(canvasW, canvasH) > maxDim)
+                    {
+                        scale = (double)maxDim / Math.Max(canvasW, canvasH);
+                        canvasW = (int)Math.Round(canvasW * scale);
+                        canvasH = (int)Math.Round(canvasH * scale);
+                        sidePad *= scale;
+                        topPad *= scale;
+                        bottomPad *= scale;
+                    }
+
+                    double drawImgW = canvasW - sidePad * 2;
+                    double drawImgH = canvasH - topPad - bottomPad;
+
+                    Brush bgBrush = isDark ? new SolidColorBrush(Color.FromRgb(18, 18, 20)) : Brushes.White;
+                    Brush primaryText = isDark ? new SolidColorBrush(Color.FromRgb(244, 244, 246)) : new SolidColorBrush(Color.FromRgb(24, 24, 27));
+                    Brush secondaryText = isDark ? new SolidColorBrush(Color.FromRgb(161, 161, 170)) : new SolidColorBrush(Color.FromRgb(113, 113, 122));
+                    Brush accentBrush = new SolidColorBrush(Color.FromRgb(220, 38, 38)); // Chấm đỏ kiểu Leica
+                    Pen dividerPen = new Pen(isDark ? new SolidColorBrush(Color.FromRgb(55, 55, 62)) : new SolidColorBrush(Color.FromRgb(228, 228, 231)), Math.Max(1.0, bottomPad * 0.014));
+
+                    string cameraTitle = BuildCameraTitle(exif);
+                    string leftSub = !string.IsNullOrWhiteSpace(exif.DateTaken)
+                        ? exif.DateTaken
+                        : $"{imgW} × {imgH}";
+
+                    var specs = new[] { exif.FocalLength, exif.Aperture, exif.ShutterSpeed, exif.Iso }
+                        .Where(s => !string.IsNullOrWhiteSpace(s))
+                        .ToArray();
+                    string specsText = specs.Length > 0 ? string.Join("  ·  ", specs) : $"{imgW} × {imgH} px";
+                    string rightSub = !string.IsNullOrWhiteSpace(exif.Lens) ? exif.Lens : Path.GetExtension(inputPath).TrimStart('.').ToUpperInvariant();
+
+                    double titleSize = Math.Max(13, bottomPad * 0.22);
+                    double subSize = Math.Max(10, bottomPad * 0.145);
+                    var typefaceBold = new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+                    var typefaceSemi = new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
+                    var typefaceReg = new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+
+                    var visual = new DrawingVisual();
+                    using (DrawingContext dc = visual.RenderOpen())
+                    {
+                        dc.DrawRectangle(bgBrush, null, new Rect(0, 0, canvasW, canvasH));
+                        dc.DrawImage(source, new Rect(sidePad, topPad, drawImgW, drawImgH));
+
+                        double barTop = topPad + drawImgH;
+                        double centerY = barTop + bottomPad * 0.5;
+
+                        if (isPolaroid)
+                        {
+                            var ftTitle = CreateFormattedText(cameraTitle, typefaceBold, titleSize, primaryText);
+                            var ftSpecs = CreateFormattedText($"{specsText}   |   {leftSub}", typefaceReg, subSize, secondaryText);
+
+                            double totalTextH = ftTitle.Height + ftSpecs.Height + bottomPad * 0.08;
+                            double startY = centerY - totalTextH / 2.0;
+
+                            dc.DrawText(ftTitle, new Point((canvasW - ftTitle.Width) / 2.0, startY));
+                            dc.DrawText(ftSpecs, new Point((canvasW - ftSpecs.Width) / 2.0, startY + ftTitle.Height + bottomPad * 0.08));
+                        }
+                        else
+                        {
+                            var ftLeftTitle = CreateFormattedText(cameraTitle, typefaceBold, titleSize, primaryText);
+                            var ftLeftSub = CreateFormattedText(leftSub, typefaceReg, subSize, secondaryText);
+
+                            var ftRightTitle = CreateFormattedText(specsText, typefaceSemi, titleSize * 0.92, primaryText);
+                            var ftRightSub = CreateFormattedText(rightSub, typefaceReg, subSize, secondaryText);
+
+                            double leftH = ftLeftTitle.Height + ftLeftSub.Height + bottomPad * 0.05;
+                            double leftY = centerY - leftH / 2.0;
+                            dc.DrawText(ftLeftTitle, new Point(sidePad, leftY));
+                            dc.DrawText(ftLeftSub, new Point(sidePad, leftY + ftLeftTitle.Height + bottomPad * 0.05));
+
+                            double rightH = ftRightTitle.Height + ftRightSub.Height + bottomPad * 0.05;
+                            double rightY = centerY - rightH / 2.0;
+                            double rightTitleX = canvasW - sidePad - ftRightTitle.Width;
+                            double rightSubX = canvasW - sidePad - ftRightSub.Width;
+                            dc.DrawText(ftRightTitle, new Point(rightTitleX, rightY));
+                            dc.DrawText(ftRightSub, new Point(rightSubX, rightY + ftRightTitle.Height + bottomPad * 0.05));
+
+                            // Dấu chấm đỏ + vạch ngăn tinh tế bên trái cụm thông số
+                            double rightBlockLeft = Math.Min(rightTitleX, rightSubX);
+                            double divX = rightBlockLeft - sidePad * 0.65;
+                            if (divX > sidePad + ftLeftTitle.Width + sidePad * 0.5)
+                            {
+                                double dotRadius = Math.Max(3.0, bottomPad * 0.065);
+                                dc.DrawEllipse(accentBrush, null, new Point(divX - dotRadius * 2.4, centerY), dotRadius, dotRadius);
+                                dc.DrawLine(dividerPen, new Point(divX, centerY - bottomPad * 0.24), new Point(divX, centerY + bottomPad * 0.24));
+                            }
+                        }
+                    }
+
+                    var rtb = new RenderTargetBitmap(canvasW, canvasH, 96, 96, PixelFormats.Pbgra32);
+                    rtb.Render(visual);
+
+                    string outExt = Path.GetExtension(outputPath).ToLowerInvariant();
+                    BitmapEncoder encoder = outExt == ".png"
+                        ? new PngBitmapEncoder()
+                        : new JpegBitmapEncoder { QualityLevel = 95 };
+                    encoder.Frames.Add(BitmapFrame.Create(rtb));
+
+                    using (var outFs = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+                    {
+                        encoder.Save(outFs);
+                    }
+
+                    Logger.Success($"[ExifFrame] Đã tạo khung EXIF: {Path.GetFileName(outputPath)} ({canvasW}×{canvasH})");
+                    tcs.SetResult(true);
+                    }
+                    finally
+                    {
+                        if (!string.IsNullOrEmpty(tempFallbackPath) && File.Exists(tempFallbackPath))
+                        {
+                            try { File.Delete(tempFallbackPath); } catch { }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"[ExifFrame] Lỗi tạo khung EXIF: {ex.Message}");
+                    tcs.SetResult(false);
+                }
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.IsBackground = true;
+            thread.Start();
+            return tcs.Task;
+        }
+
+        private static FormattedText CreateFormattedText(string text, Typeface typeface, double emSize, Brush brush)
+        {
+            return new FormattedText(
+                text,
+                CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                typeface,
+                emSize,
+                brush,
+                1.0);
+        }
+
+        private static string BuildCameraTitle(ExifPhotoInfo exif)
+        {
+            if (string.IsNullOrWhiteSpace(exif.Model) && string.IsNullOrWhiteSpace(exif.Make))
+                return "SHOT ON CAMERA";
+
+            if (string.IsNullOrWhiteSpace(exif.Make))
+                return exif.Model.Trim();
+
+            if (string.IsNullOrWhiteSpace(exif.Model))
+                return exif.Make.Trim();
+
+            if (exif.Model.Contains(exif.Make, StringComparison.OrdinalIgnoreCase))
+                return exif.Model.Trim();
+
+            return $"{exif.Make.Trim()} {exif.Model.Trim()}";
+        }
+
+        private static ExifPhotoInfo ExtractExifInfo(BitmapMetadata? meta, string filePath)
+        {
+            if (meta == null)
+            {
+                return new ExifPhotoInfo
+                {
+                    DateTaken = File.GetLastWriteTime(filePath).ToString("yyyy.MM.dd HH:mm")
+                };
+            }
+
+            string make = ReadMetaString(meta, "/app1/ifd/{ushort=271}");
+            string model = ReadMetaString(meta, "/app1/ifd/{ushort=272}");
+            string lens = ReadMetaString(meta, "/app1/ifd/exif/{ushort=42036}");
+
+            double? focal35 = ReadMetaNumber(meta, "/app1/ifd/exif/{ushort=41989}");
+            double? focal = focal35 ?? ReadMetaRational(meta, "/app1/ifd/exif/{ushort=37386}");
+            string focalStr = focal.HasValue && focal.Value > 0 ? $"{Math.Round(focal.Value):0}mm" : string.Empty;
+
+            double? fNum = ReadMetaRational(meta, "/app1/ifd/exif/{ushort=33437}");
+            string fStr = fNum.HasValue && fNum.Value > 0 ? $"f/{fNum.Value.ToString("0.#", CultureInfo.InvariantCulture)}" : string.Empty;
+
+            double? exp = ReadMetaRational(meta, "/app1/ifd/exif/{ushort=33434}");
+            string expStr = string.Empty;
+            if (exp.HasValue && exp.Value > 0)
+            {
+                expStr = exp.Value >= 1.0
+                    ? $"{exp.Value.ToString("0.#", CultureInfo.InvariantCulture)}s"
+                    : $"1/{Math.Round(1.0 / exp.Value):0}s";
+            }
+
+            double? iso = ReadMetaNumber(meta, "/app1/ifd/exif/{ushort=34855}");
+            string isoStr = iso.HasValue && iso.Value > 0 ? $"ISO {(int)iso.Value}" : string.Empty;
+
+            string rawDate = ReadMetaString(meta, "/app1/ifd/exif/{ushort=36867}");
+            string dateStr = FormatExifDate(rawDate, filePath);
+
+            return new ExifPhotoInfo
+            {
+                Make = make,
+                Model = model,
+                Lens = lens,
+                FocalLength = focalStr,
+                Aperture = fStr,
+                ShutterSpeed = expStr,
+                Iso = isoStr,
+                DateTaken = dateStr
+            };
+        }
+
+        private static string FormatExifDate(string rawDate, string filePath)
+        {
+            if (!string.IsNullOrWhiteSpace(rawDate) &&
+                DateTime.TryParseExact(rawDate.Trim(), "yyyy:MM:dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+            {
+                return dt.ToString("yyyy.MM.dd HH:mm");
+            }
+            return File.GetLastWriteTime(filePath).ToString("yyyy.MM.dd HH:mm");
+        }
+
+        private static string ReadMetaString(BitmapMetadata meta, string query)
+        {
+            try
+            {
+                if (meta.ContainsQuery(query))
+                    return meta.GetQuery(query)?.ToString()?.Trim() ?? string.Empty;
+            }
+            catch { }
+            return string.Empty;
+        }
+
+        private static double? ReadMetaRational(BitmapMetadata meta, string query)
+        {
+            try
+            {
+                if (!meta.ContainsQuery(query)) return null;
+                object? val = meta.GetQuery(query);
+                if (val is ulong u)
+                {
+                    uint num = (uint)(u & 0xFFFFFFFF);
+                    uint den = (uint)(u >> 32);
+                    if (den != 0) return (double)num / den;
+                }
+                else if (val is long l)
+                {
+                    int num = (int)(l & 0xFFFFFFFF);
+                    int den = (int)(l >> 32);
+                    if (den != 0) return (double)num / den;
+                }
+                else if (val != null && double.TryParse(val.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out double d))
+                {
+                    return d;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private static double? ReadMetaNumber(BitmapMetadata meta, string query)
+        {
+            try
+            {
+                if (!meta.ContainsQuery(query)) return null;
+                object? val = meta.GetQuery(query);
+                if (val is ushort[] arr && arr.Length > 0) return arr[0];
+                if (val != null) return Convert.ToDouble(val, CultureInfo.InvariantCulture);
+            }
+            catch { }
+            return null;
+        }
+
+        private static BitmapSource ApplyExifOrientation(BitmapSource source, BitmapMetadata? meta)
+        {
+            double? ori = meta != null ? ReadMetaNumber(meta, "/app1/ifd/{ushort=274}") : null;
+            int angle = ori switch
+            {
+                3 => 180,
+                6 => 90,
+                8 => 270,
+                _ => 0
+            };
+
+            if (angle == 0) return source;
+            return new TransformedBitmap(source, new RotateTransform(angle));
+        }
+
+        private static BitmapFrame? LoadBitmapFrame(string path)
+        {
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var decoder = BitmapDecoder.Create(fs, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+            return decoder.Frames.Count > 0 ? decoder.Frames[0] : null;
+        }
+
+        private ExifPhotoInfo EnrichExifFromFfmpeg(ExifPhotoInfo current, string inputPath)
+        {
+            try
+            {
+                string ffmpeg = FindFFmpegPath();
+                if (!File.Exists(ffmpeg)) return current;
+
+                string output = ProcessRunner.RunCommandAndGetOutputAsync(ffmpeg, $"-i \"{inputPath}\"").GetAwaiter().GetResult();
+                if (string.IsNullOrWhiteSpace(output)) return current;
+
+                string make = current.Make;
+                string model = current.Model;
+                string dateTaken = current.DateTaken;
+
+                foreach (var rawLine in output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    int colonIdx = rawLine.IndexOf(':');
+                    if (colonIdx <= 0) continue;
+
+                    string key = rawLine[..colonIdx].Trim().ToLowerInvariant();
+                    string val = rawLine[(colonIdx + 1)..].Trim();
+                    if (string.IsNullOrWhiteSpace(val)) continue;
+
+                    if (string.IsNullOrWhiteSpace(make) && (key == "make" || key.EndsWith(".make")))
+                        make = val;
+                    else if (string.IsNullOrWhiteSpace(model) && (key == "model" || key.EndsWith(".model")))
+                        model = val;
+                    else if ((key == "creation_time" || key == "date") && DateTime.TryParse(val, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var dt))
+                        dateTaken = dt.ToString("yyyy.MM.dd HH:mm");
+                }
+
+                return new ExifPhotoInfo
+                {
+                    Make = make,
+                    Model = model,
+                    Lens = current.Lens,
+                    FocalLength = current.FocalLength,
+                    Aperture = current.Aperture,
+                    ShutterSpeed = current.ShutterSpeed,
+                    Iso = current.Iso,
+                    DateTaken = dateTaken
+                };
+            }
+            catch
+            {
+                return current;
+            }
         }
     }
 }

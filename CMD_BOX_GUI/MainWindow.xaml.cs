@@ -22,12 +22,10 @@ namespace CMD_BOX_GUI
         private readonly OptimizerView _optimizerView = new();
         private readonly UtilitiesView _utilitiesView = new();
         private readonly MediaView _mediaView = new();
-        private readonly GuideView _guideView = new();
 
         private readonly ObservableCollection<WorkspaceTabItem> _openTabs = new();
         private string _currentModule = "Optimizer";
         private WorkspaceTabItem? _activeTab;
-        private int _scratchpadCounter = 1;
 
         private bool _isSidebarOpen = true;
         private bool _isTerminalVisible = true;
@@ -79,12 +77,10 @@ namespace CMD_BOX_GUI
             {
                 "Utilities" => _utilitiesView,
                 "Media" => _mediaView,
-                "Guide" => _guideView,
                 _ => _optimizerView
             };
 
             MainContentHost.Visibility = Visibility.Visible;
-            PnlEmptyWorkspace.Visibility = Visibility.Collapsed;
 
             // Đồng bộ trạng thái RadioButton trên Sidebar
             SyncSidebarSelection(moduleId);
@@ -145,32 +141,6 @@ namespace CMD_BOX_GUI
             Logger.Info($"📂 Đã mở tệp vào Tab: {fullPath}");
         }
 
-        private void CreateNewScratchpadTab()
-        {
-            string defaultName = $"Note_{_scratchpadCounter++}.txt";
-            string tabId = $"note::{Guid.NewGuid():N}";
-
-            WorkspaceTabItem? tabRef = null;
-            var noteView = new FileTabView(
-                defaultName,
-                onTitleChanged: savedName =>
-                {
-                    if (tabRef != null) tabRef.Title = savedName;
-                });
-
-            tabRef = new WorkspaceTabItem
-            {
-                Id = tabId,
-                Icon = "📝",
-                Title = defaultName,
-                ToolTipText = "Tab ghi chú / kịch bản nháp",
-                Content = noteView
-            };
-
-            _openTabs.Add(tabRef);
-            ActivateTab(tabRef);
-        }
-
         private void ActivateTab(WorkspaceTabItem? tab)
         {
             _activeTab = tab;
@@ -183,7 +153,6 @@ namespace CMD_BOX_GUI
             {
                 MainContentHost.Content = tab.Content;
                 MainContentHost.Visibility = Visibility.Visible;
-                PnlEmptyWorkspace.Visibility = Visibility.Collapsed;
                 // Bỏ chọn nút RadioButton trên Sidebar vì đang xem tab file riêng biệt
                 SyncSidebarSelection(null);
             }
@@ -239,7 +208,6 @@ namespace CMD_BOX_GUI
             if (NavOptimizer != null) NavOptimizer.IsChecked = string.Equals(activeId, "Optimizer", StringComparison.OrdinalIgnoreCase);
             if (NavUtilities != null) NavUtilities.IsChecked = string.Equals(activeId, "Utilities", StringComparison.OrdinalIgnoreCase);
             if (NavMedia != null) NavMedia.IsChecked = string.Equals(activeId, "Media", StringComparison.OrdinalIgnoreCase);
-            if (NavGuide != null) NavGuide.IsChecked = string.Equals(activeId, "Guide", StringComparison.OrdinalIgnoreCase);
         }
 
         private void UpdateTabCountStatus()
@@ -334,62 +302,11 @@ namespace CMD_BOX_GUI
             }
         }
 
-        private void MenuNewScratchpad_Click(object sender, RoutedEventArgs e)
-        {
-            CreateNewScratchpadTab();
-        }
-
         private void MenuCloseCurrentTab_Click(object sender, RoutedEventArgs e)
         {
             if (_activeTab != null)
             {
                 CloseTab(_activeTab);
-            }
-        }
-
-        private void MenuCloseAllTabs_Click(object sender, RoutedEventArgs e)
-        {
-            _openTabs.Clear();
-            ActivateTab(null);
-        }
-
-        private void MenuOpenModule_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is FrameworkElement el && el.Tag is string moduleId)
-            {
-                OpenOrActivateModuleTab(moduleId);
-            }
-        }
-
-        private void MenuCopyActiveTab_Click(object sender, RoutedEventArgs e)
-        {
-            if (_activeTab?.Content is FileTabView fileView)
-            {
-                try
-                {
-                    Clipboard.SetDataObject(fileView.GetEditorText(), false);
-                    Logger.Info($"📋 Đã sao chép nội dung từ tab [{_activeTab.Title}].");
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warning($"Không thể sao chép: {ex.Message}");
-                }
-            }
-            else
-            {
-                Logger.Info("Hãy chọn một Tab tệp văn bản / ghi chú để sao chép nội dung.");
-            }
-        }
-
-        private void MenuRunActiveTab_Click(object sender, RoutedEventArgs e)
-        {
-            if (_activeTab?.Content is FileTabView fileView && fileView.CanRunScript)
-            {
-                fileView.ExecuteScriptDirectly();
-            }
-            else
-            {
-                MenuCmdSystemInfo_Click(sender, e);
             }
         }
 
@@ -611,10 +528,6 @@ namespace CMD_BOX_GUI
                         MenuOpenFile_Click(this, new RoutedEventArgs());
                         e.Handled = true;
                         break;
-                    case Key.N:
-                        CreateNewScratchpadTab();
-                        e.Handled = true;
-                        break;
                     case Key.W:
                         if (_activeTab != null) CloseTab(_activeTab);
                         e.Handled = true;
@@ -775,11 +688,6 @@ namespace CMD_BOX_GUI
         {
             _logBatchTimer.Stop();
             base.OnClosed(e);
-        }
-
-        private void NavUtilities_Checked(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 }

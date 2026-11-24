@@ -32,25 +32,6 @@ namespace CMD_BOX_GUI.UI.Views
         };
 
         /// <summary>
-        /// Tạo Tab nháp văn bản (Scratchpad)
-        /// </summary>
-        public FileTabView(string initialTitle = "Scratchpad.txt", Action<string>? onTitleChanged = null)
-        {
-            InitializeComponent();
-            _onTitleChanged = onTitleChanged;
-            _isTextMode = true;
-
-            TxtFileIcon.Text = "📝";
-            TxtFileName.Text = initialTitle;
-            TxtFileMeta.Text = "Ghi chú / Nháp";
-            TxtFilePath.Text = "Chưa lưu vào ổ đĩa — Bấm 'Lưu' để xuất ra file";
-
-            BtnSaveFile.Visibility = Visibility.Visible;
-            BtnCopyText.Visibility = Visibility.Visible;
-            TxtEditor.Text = "// Ghi chú nhanh hoặc dán nội dung / kịch bản vào đây...\r\n";
-        }
-
-        /// <summary>
         /// Tạo Tab từ tệp thực tế được nhập (Import / Drag & Drop)
         /// </summary>
         public FileTabView(string filePath, Action<string>? onSendToMedia = null, Action<string>? onTitleChanged = null)
@@ -62,8 +43,6 @@ namespace CMD_BOX_GUI.UI.Views
 
             LoadFile(filePath);
         }
-
-        public string GetEditorText() => _isTextMode ? TxtEditor.Text : (_filePath ?? string.Empty);
 
         private void LoadFile(string path)
         {

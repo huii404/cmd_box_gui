@@ -190,6 +190,37 @@
                         </Grid>
                     </Border>
 
+                    <!-- Card 5: Tạo Khung EXIF Ảnh -->
+                    <Border x:Name="Card_exif_frame" Style="{StaticResource MediaFeatureCard}" Tag="exif_frame" Drop="Card_Drop" MouseLeftButtonDown="Card_MouseLeftButtonDown">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="260"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0" Style="{StaticResource CardPickerZone}" Tag="exif_frame" Click="CardPickFiles_Click" ToolTip="Nhấn để chọn Ảnh hoặc kéo thả vào Card">
+                                <DockPanel>
+                                    <Border Background="{DynamicResource BgCard}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="1" CornerRadius="10" Padding="10,3" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                                        <TextBlock x:Name="TxtCount_exif_frame" Text="0 tệp" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondary}"/>
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="🖼️ Tạo Khung EXIF Ảnh" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimary}"/>
+                                        <TextBlock Text="Trích xuất tên máy, ống kính, khẩu độ, tốc, ISO &amp; gắn viền nghệ thuật" FontSize="10.5" Foreground="{DynamicResource TextMuted}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Button>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                <TextBlock Text="Kiểu khung:" FontSize="11" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <ComboBox x:Name="CmbExifFrameStyle" Width="185" Height="30" FontSize="11">
+                                    <ComboBoxItem Content="Trắng Tối Giản (Leica)" IsSelected="True"/>
+                                    <ComboBoxItem Content="Đen Điện Ảnh (Dark)"/>
+                                    <ComboBoxItem Content="Polaroid Cổ Điển"/>
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
                 </StackPanel>
             </ScrollViewer>
 

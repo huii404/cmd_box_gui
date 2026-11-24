@@ -48,7 +48,6 @@
                         <!-- 1. FILE -->
                         <MenuItem Header="File" Style="{StaticResource WebTopMenuItem}">
                             <MenuItem Header="📂  Nhập / Mở File vào Tab..." InputGestureText="Ctrl+O" Style="{StaticResource WebSubMenuItem}" Click="MenuOpenFile_Click"/>
-                            <MenuItem Header="📝  Tạo Tab Ghi Chú Nháp" InputGestureText="Ctrl+N" Style="{StaticResource WebSubMenuItem}" Click="MenuNewScratchpad_Click"/>
                             <Separator Style="{StaticResource WebMenuSeparator}"/>
                             <MenuItem Header="💾  Xuất Log Terminal Ra File..." Style="{StaticResource WebSubMenuItem}" Click="MenuExportLog_Click"/>
                             <MenuItem Header="📁  Mở Thư Mục Ứng Dụng" Style="{StaticResource WebSubMenuItem}" Click="MenuOpenAppFolder_Click"/>
@@ -126,8 +125,6 @@
 
                             <!-- Các nút thao tác nhanh -->
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Content="＋" Style="{StaticResource IconToolButton}" Padding="5,2" FontSize="11"
-                                        Click="MenuNewScratchpad_Click" ToolTip="Tạo Tab Ghi chú / Kịch bản mới (Ctrl+N)"/>
                                 <Button Content="📂" Style="{StaticResource IconToolButton}" Padding="5,2" FontSize="10.5"
                                         Click="MenuOpenFile_Click" ToolTip="Mở tệp vào Tab (Ctrl+O)"/>
                                 <Button Content="🎬" Style="{StaticResource IconToolButton}" Padding="5,2" FontSize="10.5"
@@ -141,8 +138,7 @@
                         <StackPanel x:Name="PnlModuleItems">
                             <RadioButton x:Name="NavOptimizer" Content="🧹  System Optimizer" Style="{StaticResource SidebarNavButton}" IsChecked="True" Tag="Optimizer" Click="SidebarModule_Click" Margin="0,0,0,3"/>
                             <RadioButton x:Name="NavUtilities" Content="⚡  Tiện Ích &amp; Tự Động" Style="{StaticResource SidebarNavButton}" Tag="Utilities" Click="SidebarModule_Click" Margin="0,0,0,3"/>
-                            <RadioButton x:Name="NavMedia" Content="🎬  Xử Lý Media" Style="{StaticResource SidebarNavButton}" Tag="Media" Click="SidebarModule_Click" Margin="0,0,0,3"/>
-                            <RadioButton x:Name="NavGuide" Content="📖  Hướng Dẫn Dùng" Style="{StaticResource SidebarNavButton}" Tag="Guide" Click="SidebarModule_Click"/>
+                            <RadioButton x:Name="NavMedia" Content="🎬  Xử Lý Media" Style="{StaticResource SidebarNavButton}" Tag="Media" Click="SidebarModule_Click"/>
                         </StackPanel>
                     </ScrollViewer>
 
@@ -163,7 +159,7 @@
             <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
                     <!-- 0. Dynamic Tab Strip -->
-                    <RowDefinition Height="34"/>
+                    <RowDefinition Height="Auto"/>
                     <!-- 1. Active Tab Content / Empty Drop Zone -->
                     <RowDefinition Height="*"/>
                     <!-- 2. GridSplitter -->
@@ -172,99 +168,61 @@
                     <RowDefinition x:Name="RowTerminal" Height="175" MinHeight="85"/>
                 </Grid.RowDefinitions>
 
-                <!-- 0. Dynamic Tab Strip (Chỉ hiển thị khi có file / tab nháp được mở qua dấu + hoặc Open File) -->
-                <Border x:Name="TabStripBorder" Grid.Row="0" Background="{DynamicResource EditorTabBg}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,0,0,1" Visibility="Collapsed">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                <!-- 0. Dynamic Tab Strip (Chỉ hiển thị khi có file được mở) -->
+                <Border x:Name="TabStripBorder" Grid.Row="0" Height="34" Background="{DynamicResource EditorTabBg}" BorderBrush="{DynamicResource BorderSubtle}" BorderThickness="0,0,0,1" Visibility="Collapsed">
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl x:Name="TabStripItems">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border x:Name="tabRoot"
+                                            Background="{DynamicResource EditorTabBg}"
+                                            BorderBrush="{DynamicResource EditorTabBorder}"
+                                            BorderThickness="0,0,1,0"
+                                            Height="33"
+                                            Cursor="Hand"
+                                            ToolTip="{Binding ToolTipText}"
+                                            MouseLeftButtonDown="TabItem_MouseLeftButtonDown">
+                                        <Grid>
+                                            <!-- Vạch sáng xanh trên đầu tab đang chọn -->
+                                            <Border x:Name="topBar" Height="2" VerticalAlignment="Top" Background="{DynamicResource AccentCyan}" Visibility="Collapsed"/>
 
-                        <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                            <ItemsControl x:Name="TabStripItems">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal"/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border x:Name="tabRoot"
-                                                Background="{DynamicResource EditorTabBg}"
-                                                BorderBrush="{DynamicResource EditorTabBorder}"
-                                                BorderThickness="0,0,1,0"
-                                                Height="33"
-                                                Cursor="Hand"
-                                                ToolTip="{Binding ToolTipText}"
-                                                MouseLeftButtonDown="TabItem_MouseLeftButtonDown">
-                                            <Grid>
-                                                <!-- Vạch sáng xanh trên đầu tab đang chọn -->
-                                                <Border x:Name="topBar" Height="2" VerticalAlignment="Top" Background="{DynamicResource AccentCyan}" Visibility="Collapsed"/>
-
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,6,0">
-                                                    <TextBlock Text="{Binding Icon}" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                    <TextBlock x:Name="txtTitle" Text="{Binding Title}" FontSize="11.5" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" MaxWidth="170" TextTrimming="CharacterEllipsis"/>
-                                                    <Button Content="✕" Style="{StaticResource IconToolButton}"
-                                                            Padding="5,1" Margin="6,0,0,0" FontSize="9.5"
-                                                            Tag="{Binding}"
-                                                            Click="BtnCloseTab_Click"
-                                                            ToolTip="Đóng tab (Ctrl+W)"/>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
-                                        <DataTemplate.Triggers>
-                                            <DataTrigger Binding="{Binding IsMouseOver, ElementName=tabRoot}" Value="True">
-                                                <Setter TargetName="tabRoot" Property="Background" Value="{DynamicResource BgCardHover}"/>
-                                                <Setter TargetName="txtTitle" Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                <Setter TargetName="tabRoot" Property="Background" Value="{DynamicResource EditorTabActiveBg}"/>
-                                                <Setter TargetName="topBar" Property="Visibility" Value="Visible"/>
-                                                <Setter TargetName="txtTitle" Property="Foreground" Value="{DynamicResource TextPrimary}"/>
-                                                <Setter TargetName="txtTitle" Property="FontWeight" Value="SemiBold"/>
-                                            </DataTrigger>
-                                        </DataTemplate.Triggers>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-
-                        <!-- Editor Context Actions bên phải thanh Tab -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,8,0">
-                            <Button Content="▶ Chạy" Style="{StaticResource SecondaryButton}" Padding="8,2" FontSize="10.5" Margin="0,0,4,0"
-                                    Click="MenuRunActiveTab_Click" ToolTip="Thực thi kịch bản của Tab hiện tại"/>
-                            <Button Content="📂" Style="{StaticResource IconToolButton}" Padding="6,2" FontSize="11" Margin="0,0,2,0"
-                                    Click="MenuOpenFile_Click" ToolTip="Mở tệp vào Tab mới (Ctrl+O)"/>
-                            <Button Content="＋" Style="{StaticResource IconToolButton}" Padding="6,2" FontSize="11" Margin="0,0,2,0"
-                                    Click="MenuNewScratchpad_Click" ToolTip="Tạo Tab nháp mới (Ctrl+N)"/>
-                            <Button Content="✕" Style="{StaticResource IconToolButton}" Padding="6,2" FontSize="10.5"
-                                    Click="MenuCloseCurrentTab_Click" ToolTip="Đóng tab hiện tại (Ctrl+W)"/>
-                        </StackPanel>
-                    </Grid>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,6,0">
+                                                <TextBlock Text="{Binding Icon}" FontSize="11.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                <TextBlock x:Name="txtTitle" Text="{Binding Title}" FontSize="11.5" Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" MaxWidth="170" TextTrimming="CharacterEllipsis"/>
+                                                <Button Content="✕" Style="{StaticResource IconToolButton}"
+                                                        Padding="5,1" Margin="6,0,0,0" FontSize="9.5"
+                                                        Tag="{Binding}"
+                                                        Click="BtnCloseTab_Click"
+                                                        ToolTip="Đóng tab (Ctrl+W)"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsMouseOver, ElementName=tabRoot}" Value="True">
+                                            <Setter TargetName="tabRoot" Property="Background" Value="{DynamicResource BgCardHover}"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                            <Setter TargetName="tabRoot" Property="Background" Value="{DynamicResource EditorTabActiveBg}"/>
+                                            <Setter TargetName="topBar" Property="Visibility" Value="Visible"/>
+                                            <Setter TargetName="txtTitle" Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+                                            <Setter TargetName="txtTitle" Property="FontWeight" Value="SemiBold"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </Border>
 
-                <!-- 1. Khung hiển thị nội dung Tab hoặc Màn hình Kéo Thả khi đóng hết Tab -->
+                <!-- 1. Khung hiển thị nội dung Tab / Module -->
                 <Grid Grid.Row="1" Background="{DynamicResource BgPrimary}">
                     <ContentControl x:Name="MainContentHost" Visibility="Visible"/>
-
-                    <!-- Màn hình chào / Kéo thả File khi chưa mở Tab nào -->
-                    <Border x:Name="PnlEmptyWorkspace" Visibility="Collapsed" Padding="24">
-                        <Border Style="{StaticResource CardPanel}" MaxWidth="520" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="28,24">
-                            <StackPanel HorizontalAlignment="Center">
-                                <TextBlock Text="📂" FontSize="38" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                <TextBlock Text="Không Gian Làm Việc Đa Tab" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Kéo thả bất kỳ tệp nào (.txt, .bat, .ps1, .json, ảnh, video...) vào cửa sổ để mở nhanh trong Tab, hoặc chọn công cụ bên dưới:"
-                                           FontSize="11.5" Foreground="{DynamicResource TextSecondary}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,6,0,16"/>
-
-                                <WrapPanel HorizontalAlignment="Center">
-                                    <Button Content="📂 Nhập File (Ctrl+O)" Style="{StaticResource PrimaryButton}" Margin="4" Padding="12,6" FontSize="11.5" Click="MenuOpenFile_Click"/>
-                                    <Button Content="📝 Tạo Tab Nháp" Style="{StaticResource SecondaryButton}" Margin="4" Padding="12,6" FontSize="11.5" Click="MenuNewScratchpad_Click"/>
-                                    <Button Content="🧹 System Optimizer" Style="{StaticResource SecondaryButton}" Margin="4" Padding="12,6" FontSize="11.5" Tag="Optimizer" Click="SidebarModule_Click"/>
-                                    <Button Content="🎬 Xử Lý Media" Style="{StaticResource SecondaryButton}" Margin="4" Padding="12,6" FontSize="11.5" Tag="Media" Click="SidebarModule_Click"/>
-                                </WrapPanel>
-                            </StackPanel>
-                        </Border>
-                    </Border>
                 </Grid>
 
                 <!-- 2. GridSplitter -->

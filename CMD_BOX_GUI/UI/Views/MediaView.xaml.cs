@@ -21,7 +21,6 @@ namespace CMD_BOX_GUI.UI.Views
         {
             public string Key { get; init; } = string.Empty;
             public string Title { get; init; } = string.Empty;
-            public string DialogTitle { get; init; } = string.Empty;
             public string DialogFilter { get; init; } = string.Empty;
             public Func<string, bool> FileFilter { get; init; } = _ => true;
             public TextBlock CountLabel { get; init; } = null!;
@@ -67,7 +66,6 @@ namespace CMD_BOX_GUI.UI.Views
             {
                 Key = "compress_media",
                 Title = "Nén Dung Lượng",
-                DialogTitle = "Chọn Video hoặc Ảnh cần nén giảm dung lượng",
                 DialogFilter = MediaFilter,
                 FileFilter = p => MediaService.IsVideoFile(p) || MediaService.IsImageFile(p),
                 CountLabel = TxtCount_compress_media,
@@ -85,7 +83,6 @@ namespace CMD_BOX_GUI.UI.Views
             {
                 Key = "convert_media",
                 Title = "Đổi Định Dạng",
-                DialogTitle = "Chọn Video hoặc Ảnh cần đổi định dạng",
                 DialogFilter = MediaFilter,
                 FileFilter = p => MediaService.IsVideoFile(p) || MediaService.IsImageFile(p),
                 CountLabel = TxtCount_convert_media,
@@ -103,7 +100,6 @@ namespace CMD_BOX_GUI.UI.Views
             {
                 Key = "enhance_media",
                 Title = "Làm Nét Media",
-                DialogTitle = "Chọn Video hoặc Ảnh cần làm nét & khử nhiễu",
                 DialogFilter = MediaFilter,
                 FileFilter = p => MediaService.IsVideoFile(p) || MediaService.IsImageFile(p),
                 CountLabel = TxtCount_enhance_media,
@@ -121,7 +117,6 @@ namespace CMD_BOX_GUI.UI.Views
             {
                 Key = "strip_metadata",
                 Title = "Xóa Metadata",
-                DialogTitle = "Chọn Video hoặc Ảnh cần xóa Metadata (EXIF/GPS/Thông tin ẩn)",
                 DialogFilter = MediaFilter,
                 FileFilter = p => MediaService.IsVideoFile(p) || MediaService.IsImageFile(p),
                 CountLabel = TxtCount_strip_metadata,
@@ -138,9 +133,25 @@ namespace CMD_BOX_GUI.UI.Views
 
             RegisterCard(new MediaCardConfig
             {
+                Key = "exif_frame",
+                Title = "Tạo Khung EXIF Ảnh",
+                DialogFilter = "Image Files|*.jpg;*.jpeg;*.png;*.webp;*.bmp;*.tiff;*.tif;*.jfif;*.heic;*.heif;*.avif|All Files (*.*)|*.*",
+                FileFilter = MediaService.IsImageFile,
+                CountLabel = TxtCount_exif_frame,
+                CardBorder = Card_exif_frame,
+                ProcessFileAsync = (input, outDir, ct) =>
+                {
+                    int style = CmbExifFrameStyle.SelectedIndex;
+                    string ext = Path.GetExtension(input).Equals(".png", StringComparison.OrdinalIgnoreCase) ? ".png" : ".jpg";
+                    string outPath = BuildUniqueOutputPath(outDir, input, "_exif", ext);
+                    return _mediaService.CreateExifFrameAsync(input, outPath, style, ct);
+                }
+            });
+
+            RegisterCard(new MediaCardConfig
+            {
                 Key = "extract_audio",
                 Title = "Tách Âm Thanh",
-                DialogTitle = "Chọn Video cần tách nhạc",
                 DialogFilter = VideoFilter,
                 FileFilter = MediaService.IsVideoFile,
                 CountLabel = TxtCount_extract_audio,
@@ -157,7 +168,6 @@ namespace CMD_BOX_GUI.UI.Views
             {
                 Key = "volume_audio",
                 Title = "Chỉnh Âm Lượng",
-                DialogTitle = "Chọn Audio hoặc Video cần chỉnh âm lượng",
                 DialogFilter = AudioOrVideoFilter,
                 FileFilter = p => MediaService.IsAudioFile(p) || MediaService.IsVideoFile(p),
                 CountLabel = TxtCount_volume_audio,
@@ -176,7 +186,6 @@ namespace CMD_BOX_GUI.UI.Views
             {
                 Key = "trim_video",
                 Title = "Cắt Video Nhanh",
-                DialogTitle = "Chọn Video cần cắt đoạn",
                 DialogFilter = VideoFilter,
                 FileFilter = MediaService.IsVideoFile,
                 CountLabel = TxtCount_trim_video,
@@ -256,7 +265,6 @@ namespace CMD_BOX_GUI.UI.Views
 
             var dlg = new OpenFileDialog
             {
-                Title = card.DialogTitle,
                 Filter = card.DialogFilter,
                 Multiselect = true
             };
@@ -361,7 +369,6 @@ namespace CMD_BOX_GUI.UI.Views
             {
                 var dlg = new OpenFileDialog
                 {
-                    Title = activeCard.DialogTitle,
                     Filter = activeCard.DialogFilter,
                     Multiselect = true
                 };
@@ -381,11 +388,14 @@ namespace CMD_BOX_GUI.UI.Views
         {
             if (_isRunning) return;
 
-            var status = await _mediaService.GetFFmpegStatusAsync();
-            if (!status.isAvailable)
+            if (cardsToRun.Any(c => !string.Equals(c.Key, "exif_frame", StringComparison.OrdinalIgnoreCase)))
             {
-                MessageBox.Show("Chưa tìm thấy ffmpeg.exe! Vui lòng vào tab 'Cấu Hình' để chọn đường dẫn ffmpeg.exe.", "Thiếu FFmpeg", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                var status = await _mediaService.GetFFmpegStatusAsync();
+                if (!status.isAvailable)
+                {
+                    MessageBox.Show("Chưa tìm thấy ffmpeg.exe! Vui lòng vào tab 'Cấu Hình' để chọn đường dẫn ffmpeg.exe.", "Thiếu FFmpeg", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
             }
 
             int totalFiles = cardsToRun.Sum(c => c.Files.Count);
